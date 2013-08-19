@@ -84,6 +84,37 @@ fn compile_rule(w: &RustWriter, rule: &Rule) {
 	}
 }
 
+fn compile_match_and_then(w: &RustWriter, e: &Expr, then: &fn()) {
+	do w.let_block("seq_res") {
+		compile_expr(w, e);
+	}
+	do w.match_block("seq_res") {
+		w.match_inline_case("Err(pos)", "Err(pos)");
+		do w.match_case("Ok(pos)") {
+			then();
+		}
+	}
+}
+
+fn compile_zero_or_more(w: &RustWriter, e: &Expr) {
+	w.let_mut_stmt("repeat_pos", "pos");
+	do w.loop_block {
+		do w.let_block("step_res") {
+			w.let_stmt("pos", "repeat_pos");
+			compile_expr(w, e);
+		}
+		do w.match_block("step_res") {
+			do w.match_case("Ok(newpos)") {
+				w.line("repeat_pos = newpos;");
+			}
+			do w.match_case("Err(*)") {
+				w.line("break;");
+			}
+		}
+	}
+	w.line("Ok(repeat_pos)");
+}
+
 fn compile_expr(w: &RustWriter, e: &Expr) {
 	match *e {
 		AnyCharExpr => { 
@@ -129,19 +160,12 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 		}
 
 		SequenceExpr(ref exprs) => {
-
 			fn write_seq(w: &RustWriter, exprs: &[~Expr]) {
 				if (exprs.len() == 1) {
 					compile_expr(w, exprs[0]);
 				} else {
-					do w.let_block("seq_res") {
-						compile_expr(w, exprs[0]);
-					}
-					do w.match_block("seq_res") {
-						w.match_inline_case("Err(pos)", "Err(pos)");
-						do w.match_case("Ok(pos)") {
-							write_seq(w, exprs.tail())
-						}
+					do compile_match_and_then(w, exprs[0]) {
+						write_seq(w, exprs.tail());
 					}
 				}
 			}
@@ -152,7 +176,6 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 		}
 
 		ChoiceExpr(ref exprs) => {
-
 			fn write_choice(w: &RustWriter, exprs: &[~Expr]) {
 				if (exprs.len() == 1) {
 					compile_expr(w, exprs[0]);
@@ -172,7 +195,6 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 			if (exprs.len() > 0 ) {
 				write_choice(w, *exprs);
 			}
-
 		}
 
 		OptionalExpr(ref e) => {
@@ -186,26 +208,16 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 		}
 		
 		RepeatExpr(ref e) => {
-			w.let_mut_stmt("repeat_pos", "pos");
-			do w.loop_block {
-				do w.let_block("step_res") {
-					w.let_stmt("pos", "repeat_pos");
-					compile_expr(w, *e);
-				}
-				do w.match_block("step_res") {
-					do w.match_case("Ok(newpos)") {
-						w.line("repeat_pos = newpos;");
-					}
-					do w.match_case("Err(*)") {
-						w.line("break;");
-					}
-				}
-			}
-			w.line("Ok(repeat_pos)");
+			compile_zero_or_more(w, *e);
 		}
 
-		 RepeatOneExpr(ref e)
-		| DelimitedExpr(ref e, _) => fail!("not implemented"),
+		RepeatOneExpr(ref e) => {
+			do compile_match_and_then(w, *e) {
+				compile_zero_or_more(w, *e);
+			}
+		}
+		
+		DelimitedExpr(ref e, _) => fail!("not implemented"),
 
 		  StringifyExpr(*)
 		| PosAssertExpr(*)
@@ -250,12 +262,9 @@ fn main() {
 		},
 		~Rule {
 			name: ~"number",
-			expr: ~SequenceExpr(~[
-				~CharSetExpr(false, ~[CharSetCase{start:'0', end: '9'}]),
-				~RepeatExpr(
-					~CharSetExpr(false, ~[CharSetCase{start:'0', end: '9'}]))
+			expr: ~RepeatOneExpr(
+				~CharSetExpr(false, ~[CharSetCase{start:'0', end: '9'}]))
 
-				])
 		},
 		~Rule {
 			name: ~"atom",
