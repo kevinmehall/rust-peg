@@ -34,8 +34,8 @@ enum Expr {
 	SequenceExpr(~[~Expr]),
 	ChoiceExpr(~[~Expr]),
 	OptionalExpr(~Expr),
-	RepeatExpr(~Expr),
-	RepeatOneExpr(~Expr),
+	ZeroOrMore(~Expr),
+	OneOrMore(~Expr),
 	DelimitedExpr(~Expr, ~Expr),
 	PosAssertExpr(~Expr),
 	NegAssertExpr(~Expr),
@@ -207,11 +207,11 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 			}
 		}
 		
-		RepeatExpr(ref e) => {
+		ZeroOrMore(ref e) => {
 			compile_zero_or_more(w, *e);
 		}
 
-		RepeatOneExpr(ref e) => {
+		OneOrMore(ref e) => {
 			do compile_match_and_then(w, *e) {
 				compile_zero_or_more(w, *e);
 			}
@@ -262,7 +262,7 @@ fn main() {
 		},
 		~Rule {
 			name: ~"number",
-			expr: ~RepeatOneExpr(
+			expr: ~OneOrMore(
 				~CharSetExpr(false, ~[CharSetCase{start:'0', end: '9'}]))
 
 		},

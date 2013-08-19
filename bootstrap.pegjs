@@ -71,10 +71,10 @@ suffixed
         return "~OptionalExpr(\n" + expression + ")\n"
     }
   / expression:primary star {
-      return "~RepeatExpr(\n" + expression + ")\n"
+      return "~ZeroOrMore(\n" + expression + ")\n"
     }
   / expression:primary plus {
-      return "~RepeatOneExpr(\n" + expression + ")\n"
+      return "~OneOrMore(\n" + expression + ")\n"
     }
   / primary
 
