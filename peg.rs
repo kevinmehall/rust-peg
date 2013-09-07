@@ -240,11 +240,29 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 			}
 		}
 		
-		DelimitedExpr(ref e, _) => fail!("not implemented"),
+		DelimitedExpr(_, _) => fail!("not implemented"),
+		StringifyExpr(*) => fail!("not implemented"),
 
-		  StringifyExpr(*)
-		| PosAssertExpr(*)
-		| NegAssertExpr(*) => fail!("not implemented"),
+		PosAssertExpr(ref e) => {
+			do w.let_block("assert_res") {
+				compile_expr(w, *e);
+			}
+			do w.match_block("assert_res") {
+				w.match_inline_case("Ok(*)", "Ok((pos, ()))");
+				w.match_inline_case("Err(*)", "Err(pos)");
+			}
+		}
+
+		NegAssertExpr(ref e) => {
+			do w.let_block("neg_assert_res") {
+				compile_expr(w, *e);
+			}
+			do w.match_block("neg_assert_res") {
+				w.match_inline_case("Err(*)", "Ok((pos, ()))");
+				w.match_inline_case("Ok(*)", "Err(pos)");
+			}
+		}
+
 
 		ActionExpr(ref exprs, ref code) => {
 			w.let_stmt("start_pos", "pos");
