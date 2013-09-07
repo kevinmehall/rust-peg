@@ -1,0 +1,17 @@
+expression -> int
+	= sum
+
+sum -> int
+	= l:product "+" r:product { l+r }
+	/ product
+
+product -> int
+	= l:atom "*" r:atom { l*r }
+	/ atom
+
+atom -> int
+	= number
+	/ "(" v:sum ")" { v }
+
+number -> int
+	= [0-9]+ { std::int::from_str(input.slice(start_pos, pos)).unwrap() }
