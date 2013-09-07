@@ -10,8 +10,15 @@ rule
     }
 
 returntype 
-  = returns tp: identifier { return tp; }
+  = returns tp:$(rust_type) { return tp.trim(); }
   / {return "()"}
+
+rust_type
+  = "()" __
+  / "~" __ rust_type
+  / "[" rust_type "]" __
+  / identifier "<" rust_type ">" __
+  / identifier
 
 expression
   = choice
