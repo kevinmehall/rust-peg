@@ -227,57 +227,7 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 }
 
 fn main() {
-	let grammar = ~Grammar { rules: ~[
-		~Rule {
-			name: ~"sum",
-			expr: ~SequenceExpr(~[
-				~RuleExpr(~"product"),
-				~OptionalExpr(
-					~SequenceExpr(~[
-						~LiteralExpr(~"+"),
-						~RuleExpr(~"product")
-						]))
-
-				])
-		},
-		~Rule {
-			name: ~"product",
-			expr: ~SequenceExpr(~[
-				~RuleExpr(~"atom"),
-				~OptionalExpr(
-					~SequenceExpr(~[
-						~LiteralExpr(~"*"),
-						~RuleExpr(~"atom")
-						]))
-
-				])
-		},
-		~Rule {
-			name: ~"parens",
-			expr: ~SequenceExpr(~[
-				~LiteralExpr(~"("),
-					~RuleExpr(~"sum"),
-					~LiteralExpr(~")")
-					])
-		},
-		~Rule {
-			name: ~"number",
-			expr: ~OneOrMore(
-				~CharSetExpr(false, ~[CharSetCase{start:'0', end: '9'}]))
-
-		},
-		~Rule {
-			name: ~"atom",
-			expr: ~ChoiceExpr(~[
-				~RuleExpr(~"number"),
-				~RuleExpr(~"parens")
-				])
-		}
-		]
-	}
-	;
-
-
+	let grammar = include!("grammar_def.rs");
 	let w = RustWriter::new(io::stdout());
 	compile_grammar(&w, grammar);
 }
