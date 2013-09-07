@@ -5,9 +5,13 @@ grammar
     }
 
 rule
-  = name:identifier equals expression:expression semicolon? {
-      return "~Rule {\n\tname: ~\"" + name + "\",\nexpr: "+ expression + "\n}"
+  = name:identifier returns: returntype equals expression:expression semicolon? {
+      return "~Rule {\n\tname: ~\"" + name + "\",\nexpr: "+ expression + ', ret_type:~"' + returns + '"\n}'
     }
+
+returntype 
+  = returns tp: identifier { return tp; }
+  / {return "()"}
 
 expression
   = choice
@@ -27,13 +31,9 @@ choice
 
 sequence
   = elements:labeled* code:action {
-      if (elements.length !== 1) {
-          return "~SequenceExpr(~[\n" + elements.join(",\n") + "\n])"
-      } else {
-          return elements[0];
-      }
+      return '~ActionExpr(~[\n' + elements.join(",\n") + '\n],~"' + code +'")';
     }
-  / elements:labeled* {
+  / elements:prefixed* {
       if (elements.length !== 1) {
           return "~SequenceExpr(~[\n" + elements.join(",\n") + "\n])"
       } else {
@@ -43,9 +43,11 @@ sequence
 
 labeled
   = label:identifier colon expression:prefixed {
-      return expression;
+      return 'TaggedExpr{ name: Some(~"' + label + '"), expr: '  + expression + '}';
     }
-  / prefixed
+  / expr: prefixed {
+      return 'TaggedExpr{ name: None, expr: '+ expr + '}';
+  }
 
 prefixed
   = dollar expression:suffixed {
@@ -79,7 +81,7 @@ suffixed
   / primary
 
 primary
-  = name:identifier !(string? equals) {
+  = name:identifier !(string? returntype equals) {
       return "~RuleExpr(~\""+name+"\")"
     }
   / literal
@@ -114,6 +116,7 @@ plus      = "+" __ { return "+"; }
 lparen    = "(" __ { return "("; }
 rparen    = ")" __ { return ")"; }
 dot       = "." __ { return "."; }
+returns   = "->" __ {return "->";}
 
 /*
  * Modeled after ECMA-262, 5th ed., 7.6, but much simplified:
