@@ -225,8 +225,8 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 				compile_expr(w, *e);
 			}
 			do w.match_block("optional_res") {
-				w.match_inline_case("Ok((newpos, _))", "Ok((newpos, ()))");
-				w.match_inline_case("Err(*)", "Ok((pos, ()))");
+				w.match_inline_case("Ok((newpos, value))", "Ok((newpos, Some(value)))");
+				w.match_inline_case("Err(*)", "Ok((pos, None))");
 			}
 		}
 		
