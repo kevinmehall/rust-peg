@@ -4,6 +4,7 @@ use std::str;
 mod codegen;
 
 struct Grammar {
+	initializer: Option<~str>,
 	rules: ~[~Rule]
 }
 
@@ -51,6 +52,13 @@ enum Expr {
 
 fn compile_grammar(w: &RustWriter, grammar: &Grammar) {
 	compile_header(w);
+
+	match grammar.initializer {
+		Some(ref initializer) => {
+			w.write(*initializer);
+		}
+		_ => ()
+	}
 
 	for rule in grammar.rules.iter() {
 		compile_rule(w, *rule);

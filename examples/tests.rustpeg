@@ -1,4 +1,6 @@
-
+{
+struct Foo { bar: int }
+}
 
 consonants
 	= ([a-z]![aeiou])+

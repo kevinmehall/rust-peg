@@ -1,7 +1,8 @@
 
 grammar
-  = __ rules:rule* {
-      return "~Grammar { rules: ~[\n" + rules.join(',\n') + "\n]\n}"
+  = __ header: action? rules:rule* {
+      header = header ? ('Some(~"'+header+'")') : "None"
+      return "~Grammar { initializer: " + header + ",\n rules: ~[\n" + rules.join(',\n') + "\n]\n }"
     }
 
 rule
