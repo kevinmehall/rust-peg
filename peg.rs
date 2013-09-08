@@ -88,7 +88,7 @@ fn any_char(input: &str, pos: uint) -> Result<(uint, ()), uint> {
 
 fn compile_rule(w: &RustWriter, rule: &Rule) {
 	do w.def_fn(false, "parse_"+rule.name, "input: &str, pos: uint", "Result<(uint, " + rule.ret_type + ") , uint>") {
-		compile_expr(w, rule.expr);
+		compile_expr(w, rule.expr, rule.ret_type != ~"()");
 	}
 
 	do w.def_fn(true, rule.name, "input: &str", "Result<"+rule.ret_type+", ~str>") {
@@ -104,40 +104,54 @@ fn compile_rule(w: &RustWriter, rule: &Rule) {
 	}
 }
 
-fn compile_match_and_then(w: &RustWriter, e: &Expr, value_name: &str, then: &fn()) {
+fn compile_match_and_then(w: &RustWriter, e: &Expr, value_name: Option<&str>, then: &fn()) {
 	do w.let_block("seq_res") {
-		compile_expr(w, e);
+		compile_expr(w, e, value_name.is_some());
 	}
 	do w.match_block("seq_res") {
 		w.match_inline_case("Err(pos)", "Err(pos)");
-		do w.match_case("Ok((pos, "+value_name+"))") {
+		do w.match_case("Ok((pos, "+value_name.unwrap_or_default("_")+"))") {
 			then();
 		}
 	}
 }
 
-fn compile_zero_or_more(w: &RustWriter, e: &Expr, list_initial: &str) {
+fn compile_zero_or_more(w: &RustWriter, e: &Expr, list_initial: Option<&str>) {
 	w.let_mut_stmt("repeat_pos", "pos");
-	w.let_mut_stmt("repeat_value", list_initial);
+	let result_used = list_initial.is_some();
+	if (result_used) {
+		w.let_mut_stmt("repeat_value", list_initial.unwrap());
+	}
 	do w.loop_block {
 		do w.let_block("step_res") {
 			w.let_stmt("pos", "repeat_pos");
-			compile_expr(w, e);
+			compile_expr(w, e, result_used);
 		}
 		do w.match_block("step_res") {
-			do w.match_case("Ok((newpos, value))") {
+			let match_arm = if result_used {
+				"Ok((newpos, value))"
+			} else {
+				"Ok((newpos, _))"
+			};
+			do w.match_case(match_arm) {
 				w.line("repeat_pos = newpos;");
-				w.line("repeat_value.push(value);")
+				if result_used {
+					w.line("repeat_value.push(value);");
+				}
 			}
 			do w.match_case("Err(*)") {
 				w.line("break;");
 			}
 		}
 	}
-	w.line("Ok((repeat_pos, repeat_value))");
+	if result_used {
+		w.line("Ok((repeat_pos, repeat_value))");
+	} else {
+		w.line("Ok((repeat_pos, ()))");
+	}
 }
 
-fn compile_expr(w: &RustWriter, e: &Expr) {
+fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 	match *e {
 		AnyCharExpr => { 
 			w.line("any_char(input, pos)");
@@ -187,9 +201,9 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 		SequenceExpr(ref exprs) => {
 			fn write_seq(w: &RustWriter, exprs: &[~Expr]) {
 				if (exprs.len() == 1) {
-					compile_expr(w, exprs[0]);
+					compile_expr(w, exprs[0], false);
 				} else {
-					do compile_match_and_then(w, exprs[0], "_") {
+					do compile_match_and_then(w, exprs[0], None) {
 						write_seq(w, exprs.tail());
 					}
 				}
@@ -201,30 +215,30 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 		}
 
 		ChoiceExpr(ref exprs) => {
-			fn write_choice(w: &RustWriter, exprs: &[~Expr]) {
+			fn write_choice(w: &RustWriter, exprs: &[~Expr], result_used: bool) {
 				if (exprs.len() == 1) {
-					compile_expr(w, exprs[0]);
+					compile_expr(w, exprs[0], result_used);
 				} else {
 					do w.let_block("choice_res") {
-						compile_expr(w, exprs[0]);
+						compile_expr(w, exprs[0], result_used);
 					}
 					do w.match_block("choice_res") {
 						w.match_inline_case("Ok((pos, value))", "Ok((pos, value))");
 						do w.match_case("Err(*)") {
-							write_choice(w, exprs.tail());
+							write_choice(w, exprs.tail(), result_used);
 						}
 					}
 				}
 			}
 
 			if (exprs.len() > 0 ) {
-				write_choice(w, *exprs);
+				write_choice(w, *exprs, result_used);
 			}
 		}
 
 		OptionalExpr(ref e) => {
 			do w.let_block("optional_res") {
-				compile_expr(w, *e);
+				compile_expr(w, *e, result_used);
 			}
 			do w.match_block("optional_res") {
 				w.match_inline_case("Ok((newpos, value))", "Ok((newpos, Some(value)))");
@@ -233,12 +247,12 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 		}
 		
 		ZeroOrMore(ref e) => {
-			compile_zero_or_more(w, *e, "~[]");
+			compile_zero_or_more(w, *e, if result_used { Some("~[]") } else { None });
 		}
 
 		OneOrMore(ref e) => {
-			do compile_match_and_then(w, *e, "first_value") {
-				compile_zero_or_more(w, *e, "~[first_value]");
+			do compile_match_and_then(w, *e, if result_used { Some("first_value") } else { None }) {
+				compile_zero_or_more(w, *e, if result_used { Some("~[first_value]") } else { None });
 			}
 		}
 		
@@ -247,7 +261,7 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 
 		PosAssertExpr(ref e) => {
 			do w.let_block("assert_res") {
-				compile_expr(w, *e);
+				compile_expr(w, *e, false);
 			}
 			do w.match_block("assert_res") {
 				w.match_inline_case("Ok(*)", "Ok((pos, ()))");
@@ -257,7 +271,7 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 
 		NegAssertExpr(ref e) => {
 			do w.let_block("neg_assert_res") {
-				compile_expr(w, *e);
+				compile_expr(w, *e, false);
 			}
 			do w.match_block("neg_assert_res") {
 				w.match_inline_case("Err(*)", "Ok((pos, ()))");
@@ -265,15 +279,11 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 			}
 		}
 
-
 		ActionExpr(ref exprs, ref code) => {
 			w.let_stmt("start_pos", "pos");
 			fn write_seq(w: &RustWriter, exprs: &[TaggedExpr], code: &str) {
 				if (exprs.len() > 0) {
-					let name = match exprs.head().name {
-						Some(ref s) => s.as_slice(),
-						None => "_"
-					};
+					let name = exprs.head().name.map(|s| s.as_slice());
 					do compile_match_and_then(w, exprs.head().expr, name) {
 						write_seq(w, exprs.tail(), code);
 					}
