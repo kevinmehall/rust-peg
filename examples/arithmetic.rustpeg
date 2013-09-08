@@ -14,4 +14,4 @@ atom -> int
 	/ "(" v:sum ")" { v }
 
 number -> int
-	= [0-9]+ { std::int::from_str(input.slice(start_pos, pos)).unwrap() }
+	= [0-9]+ { std::int::from_str(match_str).unwrap() }

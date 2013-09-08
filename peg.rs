@@ -87,6 +87,7 @@ fn any_char(input: &str, pos: uint) -> Result<(uint, ()), uint> {
 
 
 fn compile_rule(w: &RustWriter, rule: &Rule) {
+	w.line("#[allow(unused_variable)]");
 	do w.def_fn(false, "parse_"+rule.name, "input: &str, pos: uint", "Result<(uint, " + rule.ret_type + ") , uint>") {
 		compile_expr(w, rule.expr, rule.ret_type != ~"()");
 	}
@@ -288,6 +289,7 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 						write_seq(w, exprs.tail(), code);
 					}
 				} else {
+					w.let_stmt("match_str",  "input.slice(start_pos, pos);");
 					w.write_indent();
 					w.write("Ok((pos, (|| {");
 					w.write(code);
