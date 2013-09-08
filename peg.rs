@@ -116,8 +116,9 @@ fn compile_match_and_then(w: &RustWriter, e: &Expr, value_name: &str, then: &fn(
 	}
 }
 
-fn compile_zero_or_more(w: &RustWriter, e: &Expr) {
+fn compile_zero_or_more(w: &RustWriter, e: &Expr, list_initial: &str) {
 	w.let_mut_stmt("repeat_pos", "pos");
+	w.let_mut_stmt("repeat_value", list_initial);
 	do w.loop_block {
 		do w.let_block("step_res") {
 			w.let_stmt("pos", "repeat_pos");
@@ -126,13 +127,14 @@ fn compile_zero_or_more(w: &RustWriter, e: &Expr) {
 		do w.match_block("step_res") {
 			do w.match_case("Ok((newpos, value))") {
 				w.line("repeat_pos = newpos;");
+				w.line("repeat_value.push(value);")
 			}
 			do w.match_case("Err(*)") {
 				w.line("break;");
 			}
 		}
 	}
-	w.line("Ok((repeat_pos,()))");
+	w.line("Ok((repeat_pos, repeat_value))");
 }
 
 fn compile_expr(w: &RustWriter, e: &Expr) {
@@ -231,12 +233,12 @@ fn compile_expr(w: &RustWriter, e: &Expr) {
 		}
 		
 		ZeroOrMore(ref e) => {
-			compile_zero_or_more(w, *e);
+			compile_zero_or_more(w, *e, "~[]");
 		}
 
 		OneOrMore(ref e) => {
-			do compile_match_and_then(w, *e, "_") {
-				compile_zero_or_more(w, *e);
+			do compile_match_and_then(w, *e, "first_value") {
+				compile_zero_or_more(w, *e, "~[first_value]");
 			}
 		}
 		
