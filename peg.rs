@@ -171,7 +171,7 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 		}
 
 		LiteralExpr(ref s) => {
-			w.line("slice_eq(input, pos, \""+*s+"\")");
+			w.line("slice_eq(input, pos, \""+s.escape_default()+"\")");
 			/*w.if_else("slice_eq(input, pos, \""+*s+"\")",
 				||{ w.line("Ok(pos+" + s.len().to_str() + ")"); },
 				||{ w.line("Err(pos)"); }
@@ -190,9 +190,11 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 						for (i, case) in cases.iter().enumerate() {
 							if i != 0 { w.write(" | "); }
 							if case.start == case.end {
-								w.write("'"+str::from_char(case.start)+"'");
+								w.write("'"+str::from_char(case.start).escape_default()+"'");
 							} else {
-								w.write("'"+str::from_char(case.start)+"'..'"+str::from_char(case.end)+"'");
+								let start = str::from_char(case.start).escape_default();
+								let end = str::from_char(case.end).escape_default();
+								w.write("'"+start+"'..'"+end+"'");
 							}
 						}
 						w.write(" => { "+y_str+" }\n");

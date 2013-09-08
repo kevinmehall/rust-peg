@@ -1,7 +1,12 @@
+{
+  function repr(s) {
+    return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
+  }
+}
 
 grammar
   = __ header: action? rules:rule* {
-      header = header ? ('Some(~"'+header+'")') : "None"
+      header = header ? ('Some(~'+repr(header)+')') : "None"
       return "~Grammar { initializer: " + header + ",\n rules: ~[\n" + rules.join(',\n') + "\n]\n }"
     }
 
@@ -39,7 +44,7 @@ choice
 
 sequence
   = elements:labeled* code:action {
-      return '~ActionExpr(~[\n' + elements.join(",\n") + '\n],~"' + code +'")';
+      return '~ActionExpr(~[\n' + elements.join(",\n") + '\n],~' + repr(code) +')';
     }
   / elements:prefixed* {
       if (elements.length !== 1) {
@@ -153,7 +158,7 @@ identifier "identifier"
  */
 literal "literal"
   = value:(doubleQuotedString / singleQuotedString) flags:"i"? __ {
-      return "~LiteralExpr(~\""+value+"\")"
+      return "~LiteralExpr(~"+repr(value)+")"
     }
 
 string "string"
