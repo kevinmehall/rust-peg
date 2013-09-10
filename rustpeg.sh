@@ -10,4 +10,4 @@ node > grammar_def.rs <<- EOF
 	console.log(parser.parse(source))
 EOF
 
-rust run peg.rs
+rust run bootstrap.rs
