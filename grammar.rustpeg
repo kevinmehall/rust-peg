@@ -1,0 +1,286 @@
+{
+	use peg::*;
+}
+grammar -> ~Grammar
+  = __ header: action? rules:rule* {
+  	  ~Grammar{ initializer:header, rules:rules }
+    }
+
+rule -> ~Rule
+  = name:identifier returns: returntype equals expression:expression semicolon? {
+  	  ~Rule{ name: name, expr: expression, ret_type: returns }
+    }
+
+returntype -> ~str
+  = returns tp:(rust_type {match_str.trim().to_owned()}) { tp }
+  / { ~"()" }
+
+rust_type
+  = "()" __
+  / "~" __ rust_type
+  / "[" rust_type "]" __
+  / identifier "<" rust_type ">" __
+  / identifier ""
+
+expression -> ~Expr
+  = choice
+
+choice -> ~Expr
+  = head:sequence tail:(slash s:sequence {s})* {
+      if (tail.len() > 0) {
+      	let mut list = tail;
+      	list.unshift(head);
+      	~ChoiceExpr(list)
+      } else {
+        head
+      }
+    }
+
+sequence -> ~Expr
+  = elements:labeled* code:action {
+  	  ~ActionExpr(elements, code)
+    }
+  / elements:prefixed* {
+      if (elements.len() != 1) {
+      	  ~SequenceExpr(elements)
+      } else {
+          elements[0]
+      }
+    }
+
+labeled -> TaggedExpr
+  = label:identifier colon expression:prefixed {
+      TaggedExpr{ name: Some(label), expr: expression }
+    }
+  / expr: prefixed {
+      TaggedExpr{ name: None, expr: expr }
+  }
+
+prefixed -> ~Expr
+  = dollar expression:suffixed {
+      expression
+    }
+//  / and code:action {
+//      fail!("/*Semantic and unsupported*/");
+//    }
+  / and expression:suffixed {
+      ~PosAssertExpr(expression)
+    }
+//  / not code:action {
+//      fail!("/*Semantic not unsupported*/");
+//    }
+  / not expression:suffixed {
+      ~NegAssertExpr(expression)
+    }
+  / suffixed
+
+suffixed -> ~Expr
+  = expression:primary question {
+       ~OptionalExpr(expression)
+    }
+  / expression:primary star {
+    	~ZeroOrMore(expression)
+    }
+  / expression:primary plus {
+    	~OneOrMore(expression)
+    }
+  / primary
+
+primary -> ~Expr
+  = name:identifier !(string? returntype equals) {
+      ~RuleExpr(name)
+    }
+  / literal
+  / class
+  / dot { ~AnyCharExpr }
+  / lparen expression:expression rparen { expression }
+
+/* "Lexical" elements */
+
+action -> ~str
+  = braced:braced __ { braced }
+
+braced -> ~str
+  = "{" b:(((braced "") / nonBraceCharacters)* {match_str.to_owned()}) "}" {b}
+
+nonBraceCharacters
+  = nonBraceCharacter+
+
+nonBraceCharacter
+  = [^{}]
+
+equals    = "="  __ 
+colon     = ":"  __ 
+semicolon = ";"  __ 
+slash     = "/"  __ 
+and       = "&"  __ 
+not       = "!"  __ 
+dollar    = "$"  __ 
+question  = "?"  __ 
+star      = "*"  __ 
+plus      = "+"  __ 
+lparen    = "("  __ 
+rparen    = ")"  __ 
+dot       = "."  __ 
+returns   = "->" __
+
+/*
+ * Modeled after ECMA-262, 5th ed., 7.6, but much simplified:
+ *
+ * * no Unicode escape sequences
+ *
+ * * "Unicode combining marks" and "Unicode connection punctuation" can't be
+ *   part of the identifier
+ *
+ * * only [a-zA-Z] is considered a "Unicode letter"
+ *
+ * * only [0-9] is considered a "Unicode digit"
+ *
+ * The simplifications were made just to make the implementation little bit
+ * easier, there is no "philosophical" reason behind them.
+ *
+ * Contrary to ECMA 262, the "$" character is not valid because it serves other
+ * purpose in the grammar.
+ */
+identifier -> ~str
+  = chars:((letter / "_") (letter / digit / "_")* {match_str.to_owned()}) __ { chars }
+
+/*
+ * Modeled after ECMA-262, 5th ed., 7.8.4. (syntax & semantics, rules only
+ * vaguely).
+ */
+literal -> ~Expr
+  = value:(doubleQuotedString / singleQuotedString) flags:"i"? __ {
+    	~LiteralExpr(value)
+    }
+
+string -> ~str
+  = string:(doubleQuotedString / singleQuotedString) __ { string }
+
+doubleQuotedString -> ~str
+  = '"' s:doubleQuotedCharacter* '"' { std::str::from_chars(s) }
+
+doubleQuotedCharacter -> char
+  = simpleDoubleQuotedCharacter
+  / simpleEscapeSequence
+  / zeroEscapeSequence
+  / hexEscapeSequence
+  / unicodeEscapeSequence
+  / eolEscapeSequence
+
+simpleDoubleQuotedCharacter -> char
+  = !('"' / "\\" / eolChar) . { match_str.char_at(0) }
+
+singleQuotedString -> ~str
+  = "'" s:singleQuotedCharacter* "'" { std::str::from_chars(s) }
+
+singleQuotedCharacter -> char
+  = simpleSingleQuotedCharacter
+  / simpleEscapeSequence
+  / zeroEscapeSequence
+  / hexEscapeSequence
+  / unicodeEscapeSequence
+  / eolEscapeSequence
+
+simpleSingleQuotedCharacter -> char
+  = !("'" / "\\" / eolChar) . { match_str.char_at(0) }
+
+class -> ~Expr
+  = "[" inverted:"^"? parts:(classCharacterRange / classCharacter)* "]" flags:"i"? __ {
+      ~CharSetExpr(inverted.is_some(), parts)
+    }
+
+classCharacterRange -> CharSetCase
+  = begin:bracketDelimitedCharacter "-" end:bracketDelimitedCharacter {
+  		//TODO: check start > end
+  		CharSetCase{start:begin, end:end}
+    }
+
+classCharacter -> CharSetCase
+  = char_:bracketDelimitedCharacter {
+  		CharSetCase{start:char_, end:char_}
+    }
+
+bracketDelimitedCharacter -> char
+  = simpleBracketDelimitedCharacter
+  / simpleEscapeSequence
+  / zeroEscapeSequence
+  / hexEscapeSequence
+  / unicodeEscapeSequence
+  / eolEscapeSequence
+
+simpleBracketDelimitedCharacter -> char
+  = !("]" / "\\" / eolChar) . { match_str.char_at(0) }
+
+simpleEscapeSequence -> char
+  = "\\" !(digit / "x" / "u" / eolChar) . {
+  		match match_str.char_at(1) {
+  			//'b' => '\b',
+  			//'f' => '\f',
+  			'n' => '\n',
+  			'r' => '\r',
+  			't' => '\t',
+  			//'v' => '\v',
+  			 x  => x
+  		}
+    }
+
+zeroEscapeSequence -> char
+  = "\\0" !digit { 0u8 as char }
+
+hexEscapeSequence -> char
+  = "\\x" value:(hexDigit hexDigit { std::int::from_str_radix(match_str, 16) }) {
+      std::char::from_u32(value.unwrap() as u32).unwrap()
+    }
+
+unicodeEscapeSequence -> char
+  = "\\u" value:(hexDigit hexDigit hexDigit hexDigit {std::int::from_str_radix(match_str, 16)}) {
+      std::char::from_u32(value.unwrap() as u32).unwrap()
+    }
+
+eolEscapeSequence -> char
+  = "\\" eol:eol { '\n' }
+
+digit
+  = [0-9]
+
+hexDigit
+  = [0-9a-fA-F]
+
+letter
+  = lowerCaseLetter
+  / upperCaseLetter
+
+lowerCaseLetter
+  = [a-z]
+
+upperCaseLetter
+  = [A-Z]
+
+__ = (whitespace / eol / comment)*
+
+/* Modeled after ECMA-262, 5th ed., 7.4. */
+comment
+  = singleLineComment
+  / multiLineComment
+
+singleLineComment
+  = "//" (!eolChar .)*
+
+multiLineComment
+  = "/*" (!"*/" .)* "*/"
+
+/* Modeled after ECMA-262, 5th ed., 7.3. */
+eol
+  = "\n"
+  / "\r\n"
+  / "\r"
+  / "\u2028"
+  / "\u2029"
+
+eolChar
+  = [\n\r\u2028\u2029]
+
+/* Modeled after ECMA-262, 5th ed., 7.2. */
+whitespace
+  = [ \t\u00A0\uFEFF\u1680\u180E\u2000-\u200A\u202F\u205F\u3000] // \v\f removed
