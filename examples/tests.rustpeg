@@ -9,7 +9,7 @@ options -> Option<()>
 	= "abc" v:"def"? {v}
 
 number -> int
-	= [0-9]+ { std::int::from_str(match_str).unwrap() }
+	= [0-9]+ { from_str::<int>(match_str).unwrap() }
 
 list -> ~[int]
 	= (n:number "," {n})+

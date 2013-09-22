@@ -1,5 +1,6 @@
 {
 	use peg::*;
+  use std::num::from_str_radix;
 }
 grammar -> ~Grammar
   = __ header: action? rules:rule* {
@@ -229,12 +230,12 @@ zeroEscapeSequence -> char
   = "\\0" !digit { 0u8 as char }
 
 hexEscapeSequence -> char
-  = "\\x" value:(hexDigit hexDigit { std::int::from_str_radix(match_str, 16) }) {
+  = "\\x" value:(hexDigit hexDigit { from_str_radix::<int>(match_str, 16) }) {
       std::char::from_u32(value.unwrap() as u32).unwrap()
     }
 
 unicodeEscapeSequence -> char
-  = "\\u" value:(hexDigit hexDigit hexDigit hexDigit {std::int::from_str_radix(match_str, 16)}) {
+  = "\\u" value:(hexDigit hexDigit hexDigit hexDigit { from_str_radix::<int>(match_str, 16)}) {
       std::char::from_u32(value.unwrap() as u32).unwrap()
     }
 

@@ -49,7 +49,7 @@ pub enum Expr {
 }
 
 pub fn compile_grammar(w: &RustWriter, grammar: &Grammar) {
-	compile_header(w, grammar.initializer.map(|s| s.as_slice()).unwrap_or_default(""));
+	compile_header(w, grammar.initializer.map(|s| s.as_slice()).unwrap_or(""));
 
 	for rule in grammar.rules.iter() {
 		compile_rule(w, *rule);
@@ -112,7 +112,7 @@ fn compile_match_and_then(w: &RustWriter, e: &Expr, value_name: Option<&str>, th
 	}
 	do w.match_block("seq_res") {
 		w.match_inline_case("Err(pos)", "Err(pos)");
-		do w.match_case("Ok((pos, "+value_name.unwrap_or_default("_")+"))") {
+		do w.match_case("Ok((pos, "+value_name.unwrap_or("_")+"))") {
 			then();
 		}
 	}
