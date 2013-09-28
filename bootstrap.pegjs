@@ -2,6 +2,10 @@
   function repr(s) {
     return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
   }
+
+  function repr_char(c) {
+    return "'" + c.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t') + "'"
+  }
 }
 
 grammar
@@ -205,12 +209,12 @@ classCharacterRange
         );
       }
 
-      return "CharSetCase{start:'"+begin+"', end: '"+end+"'}"
+      return "CharSetCase{start:"+repr_char(begin)+", end: "+repr_char(end)+"}"
     }
 
 classCharacter
   = char_:bracketDelimitedCharacter {
-      return "CharSetCase{start:'"+char_+"', end: '"+char_+"'}"
+      return "CharSetCase{start:"+repr_char(char_)+", end: "+repr_char(char_)+"}"
     }
 
 bracketDelimitedCharacter
