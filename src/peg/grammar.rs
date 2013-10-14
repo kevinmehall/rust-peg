@@ -23,6 +23,19 @@ fn any_char(input: &str, pos: uint) -> Result<(uint, ()), uint> {
         Err(pos)
     }
 }
+
+fn pos_to_line(input: &str, pos: uint) -> uint {
+	let mut remaining = pos as int;
+	let mut lineno: uint = 1;
+	for line in input.line_iter() {
+		remaining -= (line.len() as int) + 1;
+		if (remaining <= 0) {
+			return lineno;
+		}
+		lineno+=1;
+	}
+	return lineno;
+}
 #[allow(unused_variable)]
 fn parse_grammar(input: &str, pos: uint) -> Result<(uint, ~Grammar) , uint> {
     let start_pos = pos;
@@ -84,10 +97,10 @@ pub fn grammar(input: &str) -> Result<~Grammar, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -150,10 +163,10 @@ pub fn rule(input: &str) -> Result<~Rule, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -204,10 +217,10 @@ pub fn returntype(input: &str) -> Result<~str, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -340,10 +353,10 @@ pub fn rust_type(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -356,10 +369,10 @@ pub fn expression(input: &str) -> Result<~Expr, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -433,10 +446,10 @@ pub fn choice(input: &str) -> Result<~Expr, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -527,10 +540,10 @@ pub fn sequence(input: &str) -> Result<~Expr, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -591,10 +604,10 @@ pub fn labeled(input: &str) -> Result<TaggedExpr, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -691,10 +704,10 @@ pub fn prefixed(input: &str) -> Result<~Expr, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -791,10 +804,10 @@ pub fn suffixed(input: &str) -> Result<~Expr, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -923,10 +936,10 @@ pub fn primary(input: &str) -> Result<~Expr, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -957,10 +970,10 @@ pub fn action(input: &str) -> Result<~str, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1040,10 +1053,10 @@ pub fn braced(input: &str) -> Result<~str, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1079,10 +1092,10 @@ pub fn nonBraceCharacters(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1103,10 +1116,10 @@ pub fn nonBraceCharacter(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1127,10 +1140,10 @@ pub fn equals(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1151,10 +1164,10 @@ pub fn colon(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1175,10 +1188,10 @@ pub fn semicolon(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1199,10 +1212,10 @@ pub fn slash(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1223,10 +1236,10 @@ pub fn and(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1247,10 +1260,10 @@ pub fn not(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1271,10 +1284,10 @@ pub fn dollar(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1295,10 +1308,10 @@ pub fn question(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1319,10 +1332,10 @@ pub fn star(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1343,10 +1356,10 @@ pub fn plus(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1367,10 +1380,10 @@ pub fn lparen(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1391,10 +1404,10 @@ pub fn rparen(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1415,10 +1428,10 @@ pub fn dot(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1439,10 +1452,10 @@ pub fn returns(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1530,10 +1543,10 @@ pub fn identifier(input: &str) -> Result<~str, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1588,10 +1601,10 @@ pub fn literal(input: &str) -> Result<~Expr, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1630,10 +1643,10 @@ pub fn string(input: &str) -> Result<~str, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1689,10 +1702,10 @@ pub fn doubleQuotedString(input: &str) -> Result<~str, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1745,10 +1758,10 @@ pub fn doubleQuotedCharacter(input: &str) -> Result<char, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1801,10 +1814,10 @@ pub fn simpleDoubleQuotedCharacter(input: &str) -> Result<char, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1860,10 +1873,10 @@ pub fn singleQuotedString(input: &str) -> Result<~str, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1916,10 +1929,10 @@ pub fn singleQuotedCharacter(input: &str) -> Result<char, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1972,10 +1985,10 @@ pub fn simpleSingleQuotedCharacter(input: &str) -> Result<char, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2077,10 +2090,10 @@ pub fn class(input: &str) -> Result<~Expr, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2122,10 +2135,10 @@ pub fn classCharacterRange(input: &str) -> Result<CharSetCase, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2150,10 +2163,10 @@ pub fn classCharacter(input: &str) -> Result<CharSetCase, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2206,10 +2219,10 @@ pub fn bracketDelimitedCharacter(input: &str) -> Result<char, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2262,10 +2275,10 @@ pub fn simpleBracketDelimitedCharacter(input: &str) -> Result<char, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2344,10 +2357,10 @@ pub fn simpleEscapeSequence(input: &str) -> Result<char, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2384,10 +2397,10 @@ pub fn zeroEscapeSequence(input: &str) -> Result<char, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2438,10 +2451,10 @@ pub fn hexEscapeSequence(input: &str) -> Result<char, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2508,10 +2521,10 @@ pub fn unicodeEscapeSequence(input: &str) -> Result<char, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2542,10 +2555,10 @@ pub fn eolEscapeSequence(input: &str) -> Result<char, ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2566,10 +2579,10 @@ pub fn digit(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2590,10 +2603,10 @@ pub fn hexDigit(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2614,10 +2627,10 @@ pub fn letter(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2638,10 +2651,10 @@ pub fn lowerCaseLetter(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2662,10 +2675,10 @@ pub fn upperCaseLetter(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2709,10 +2722,10 @@ pub fn __(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2733,10 +2746,10 @@ pub fn comment(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2786,10 +2799,10 @@ pub fn singleLineComment(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2847,10 +2860,10 @@ pub fn multiLineComment(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2895,10 +2908,10 @@ pub fn eol(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2919,10 +2932,10 @@ pub fn eolChar(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2943,9 +2956,9 @@ pub fn whitespace(input: &str) -> Result<(), ~str> {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Unexpected characters at end of input")
+                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
             }
         }
-        Err(pos) => Err("Error at "+ pos.to_str()),
+        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
