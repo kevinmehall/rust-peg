@@ -14,6 +14,7 @@ pub struct Rule {
 	name: ~str,
 	expr: ~Expr,
 	ret_type: ~str,
+	exported: bool,
 }
 
 pub enum Attr {
@@ -106,6 +107,12 @@ fn compile_rule(w: &RustWriter, rule: &Rule) {
 		compile_expr(w, rule.expr, rule.ret_type != ~"()");
 	}
 
+	if rule.exported {
+		compile_rule_export(w, rule);
+	}
+}
+
+fn compile_rule_export(w: &RustWriter, rule: &Rule) {
 	do w.def_fn(true, rule.name, "input: &str", "Result<"+rule.ret_type+", ~str>") {
 		do w.match_block("parse_"+rule.name+"(input, 0)") {
 			do w.match_case("Ok((pos, value))") {

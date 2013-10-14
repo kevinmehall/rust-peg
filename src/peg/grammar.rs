@@ -81,9 +81,7 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, ~Grammar) , uint> {
                         Err(pos) => Err(pos),
                         Ok((pos, rules)) => {
                             let match_str = input.slice(start_pos, pos);;
-                            Ok((pos, {
-  	  ~Grammar{ initializer:header, rules:rules }
-    }))
+                            Ok((pos, { ~Grammar{ initializer:header, rules:rules } }))
                         }
                     }
                 }
@@ -107,45 +105,53 @@ pub fn grammar(input: &str) -> Result<~Grammar, ~str> {
 fn parse_rule(input: &str, pos: uint) -> Result<(uint, ~Rule) , uint> {
     let start_pos = pos;
     let seq_res = {
-        parse_identifier(input, pos)
+        parse_exportflag(input, pos)
     };
     match seq_res {
         Err(pos) => Err(pos),
-        Ok((pos, name)) => {
+        Ok((pos, exported)) => {
             let seq_res = {
-                parse_returntype(input, pos)
+                parse_identifier(input, pos)
             };
             match seq_res {
                 Err(pos) => Err(pos),
-                Ok((pos, returns)) => {
+                Ok((pos, name)) => {
                     let seq_res = {
-                        parse_equals(input, pos)
+                        parse_returntype(input, pos)
                     };
                     match seq_res {
                         Err(pos) => Err(pos),
-                        Ok((pos, _)) => {
+                        Ok((pos, returns)) => {
                             let seq_res = {
-                                parse_expression(input, pos)
+                                parse_equals(input, pos)
                             };
                             match seq_res {
                                 Err(pos) => Err(pos),
-                                Ok((pos, expression)) => {
+                                Ok((pos, _)) => {
                                     let seq_res = {
-                                        let optional_res = {
-                                            parse_semicolon(input, pos)
-                                        };
-                                        match optional_res {
-                                            Ok((newpos, value)) => Ok((newpos, Some(value))),
-                                            Err(*) => Ok((pos, None)),
-                                        }
+                                        parse_expression(input, pos)
                                     };
                                     match seq_res {
                                         Err(pos) => Err(pos),
-                                        Ok((pos, _)) => {
-                                            let match_str = input.slice(start_pos, pos);;
-                                            Ok((pos, {
-  	  ~Rule{ name: name, expr: expression, ret_type: returns }
+                                        Ok((pos, expression)) => {
+                                            let seq_res = {
+                                                let optional_res = {
+                                                    parse_semicolon(input, pos)
+                                                };
+                                                match optional_res {
+                                                    Ok((newpos, value)) => Ok((newpos, Some(value))),
+                                                    Err(*) => Ok((pos, None)),
+                                                }
+                                            };
+                                            match seq_res {
+                                                Err(pos) => Err(pos),
+                                                Ok((pos, _)) => {
+                                                    let match_str = input.slice(start_pos, pos);;
+                                                    Ok((pos, {
+      ~Rule{ name: name, expr: expression, ret_type: returns, exported: exported }
     }))
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -157,16 +163,44 @@ fn parse_rule(input: &str, pos: uint) -> Result<(uint, ~Rule) , uint> {
         }
     }
 }
-pub fn rule(input: &str) -> Result<~Rule, ~str> {
-    match parse_rule(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
+#[allow(unused_variable)]
+fn parse_exportflag(input: &str, pos: uint) -> Result<(uint, bool) , uint> {
+    let choice_res = {
+        let start_pos = pos;
+        let seq_res = {
+            slice_eq(input, pos, "#[export]")
+        };
+        match seq_res {
+            Err(pos) => Err(pos),
+            Ok((pos, _)) => {
+                let seq_res = {
+                    parse___(input, pos)
+                };
+                match seq_res {
+                    Err(pos) => Err(pos),
+                    Ok((pos, _)) => {
+                        let match_str = input.slice(start_pos, pos);;
+                        Ok((pos, {true}))
+                    }
+                }
             }
         }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
+    };
+    match choice_res {
+        Ok((pos, value)) => Ok((pos, value)),
+        Err(*) => {
+            let start_pos = pos;
+            let seq_res = {
+                slice_eq(input, pos, "")
+            };
+            match seq_res {
+                Err(pos) => Err(pos),
+                Ok((pos, _)) => {
+                    let match_str = input.slice(start_pos, pos);;
+                    Ok((pos, {false}))
+                }
+            }
+        }
     }
 }
 #[allow(unused_variable)]
@@ -209,18 +243,6 @@ fn parse_returntype(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
             let match_str = input.slice(start_pos, pos);;
             Ok((pos, { ~"()" }))
         }
-    }
-}
-pub fn returntype(input: &str) -> Result<~str, ~str> {
-    match parse_returntype(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -347,33 +369,9 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     }
 }
-pub fn rust_type(input: &str) -> Result<(), ~str> {
-    match parse_rust_type(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_expression(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
     parse_choice(input, pos)
-}
-pub fn expression(input: &str) -> Result<~Expr, ~str> {
-    match parse_expression(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
 }
 #[allow(unused_variable)]
 fn parse_choice(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
@@ -438,18 +436,6 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                 }
             }
         }
-    }
-}
-pub fn choice(input: &str) -> Result<~Expr, ~str> {
-    match parse_choice(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -534,18 +520,6 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
         }
     }
 }
-pub fn sequence(input: &str) -> Result<~Expr, ~str> {
-    match parse_sequence(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr) , uint> {
     let choice_res = {
@@ -596,18 +570,6 @@ fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr) , uint> {
                 }
             }
         }
-    }
-}
-pub fn labeled(input: &str) -> Result<TaggedExpr, ~str> {
-    match parse_labeled(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -698,18 +660,6 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
         }
     }
 }
-pub fn prefixed(input: &str) -> Result<~Expr, ~str> {
-    match parse_prefixed(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
     let choice_res = {
@@ -796,18 +746,6 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                 }
             }
         }
-    }
-}
-pub fn suffixed(input: &str) -> Result<~Expr, ~str> {
-    match parse_suffixed(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -930,18 +868,6 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
         }
     }
 }
-pub fn primary(input: &str) -> Result<~Expr, ~str> {
-    match parse_primary(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_action(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
     let start_pos = pos;
@@ -962,18 +888,6 @@ fn parse_action(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
                 }
             }
         }
-    }
-}
-pub fn action(input: &str) -> Result<~str, ~str> {
-    match parse_action(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1047,18 +961,6 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
         }
     }
 }
-pub fn braced(input: &str) -> Result<~str, ~str> {
-    match parse_braced(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_nonBraceCharacters(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     let seq_res = {
@@ -1086,18 +988,6 @@ fn parse_nonBraceCharacters(input: &str, pos: uint) -> Result<(uint, ()) , uint>
         }
     }
 }
-pub fn nonBraceCharacters(input: &str) -> Result<(), ~str> {
-    match parse_nonBraceCharacters(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_nonBraceCharacter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     if input.len() > pos {
@@ -1108,18 +998,6 @@ fn parse_nonBraceCharacter(input: &str, pos: uint) -> Result<(uint, ()) , uint> 
         }
     } else {
         Err(pos)
-    }
-}
-pub fn nonBraceCharacter(input: &str) -> Result<(), ~str> {
-    match parse_nonBraceCharacter(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1134,18 +1012,6 @@ fn parse_equals(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     }
 }
-pub fn equals(input: &str) -> Result<(), ~str> {
-    match parse_equals(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_colon(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     let seq_res = {
@@ -1156,18 +1022,6 @@ fn parse_colon(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Ok((pos, _)) => {
             parse___(input, pos)
         }
-    }
-}
-pub fn colon(input: &str) -> Result<(), ~str> {
-    match parse_colon(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1182,18 +1036,6 @@ fn parse_semicolon(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     }
 }
-pub fn semicolon(input: &str) -> Result<(), ~str> {
-    match parse_semicolon(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_slash(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     let seq_res = {
@@ -1204,18 +1046,6 @@ fn parse_slash(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Ok((pos, _)) => {
             parse___(input, pos)
         }
-    }
-}
-pub fn slash(input: &str) -> Result<(), ~str> {
-    match parse_slash(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1230,18 +1060,6 @@ fn parse_and(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     }
 }
-pub fn and(input: &str) -> Result<(), ~str> {
-    match parse_and(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_not(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     let seq_res = {
@@ -1252,18 +1070,6 @@ fn parse_not(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Ok((pos, _)) => {
             parse___(input, pos)
         }
-    }
-}
-pub fn not(input: &str) -> Result<(), ~str> {
-    match parse_not(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1278,18 +1084,6 @@ fn parse_dollar(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     }
 }
-pub fn dollar(input: &str) -> Result<(), ~str> {
-    match parse_dollar(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_question(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     let seq_res = {
@@ -1300,18 +1094,6 @@ fn parse_question(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Ok((pos, _)) => {
             parse___(input, pos)
         }
-    }
-}
-pub fn question(input: &str) -> Result<(), ~str> {
-    match parse_question(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1326,18 +1108,6 @@ fn parse_star(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     }
 }
-pub fn star(input: &str) -> Result<(), ~str> {
-    match parse_star(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_plus(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     let seq_res = {
@@ -1348,18 +1118,6 @@ fn parse_plus(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Ok((pos, _)) => {
             parse___(input, pos)
         }
-    }
-}
-pub fn plus(input: &str) -> Result<(), ~str> {
-    match parse_plus(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1374,18 +1132,6 @@ fn parse_lparen(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     }
 }
-pub fn lparen(input: &str) -> Result<(), ~str> {
-    match parse_lparen(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_rparen(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     let seq_res = {
@@ -1396,18 +1142,6 @@ fn parse_rparen(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Ok((pos, _)) => {
             parse___(input, pos)
         }
-    }
-}
-pub fn rparen(input: &str) -> Result<(), ~str> {
-    match parse_rparen(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1422,18 +1156,6 @@ fn parse_dot(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     }
 }
-pub fn dot(input: &str) -> Result<(), ~str> {
-    match parse_dot(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_returns(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     let seq_res = {
@@ -1444,18 +1166,6 @@ fn parse_returns(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Ok((pos, _)) => {
             parse___(input, pos)
         }
-    }
-}
-pub fn returns(input: &str) -> Result<(), ~str> {
-    match parse_returns(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1537,18 +1247,6 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
         }
     }
 }
-pub fn identifier(input: &str) -> Result<~str, ~str> {
-    match parse_identifier(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_literal(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
     let start_pos = pos;
@@ -1595,18 +1293,6 @@ fn parse_literal(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
         }
     }
 }
-pub fn literal(input: &str) -> Result<~Expr, ~str> {
-    match parse_literal(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_string(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
     let start_pos = pos;
@@ -1635,18 +1321,6 @@ fn parse_string(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
                 }
             }
         }
-    }
-}
-pub fn string(input: &str) -> Result<~str, ~str> {
-    match parse_string(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1696,18 +1370,6 @@ fn parse_doubleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uin
         }
     }
 }
-pub fn doubleQuotedString(input: &str) -> Result<~str, ~str> {
-    match parse_doubleQuotedString(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_doubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , uint> {
     let choice_res = {
@@ -1752,18 +1414,6 @@ fn parse_doubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , 
         }
     }
 }
-pub fn doubleQuotedCharacter(input: &str) -> Result<char, ~str> {
-    match parse_doubleQuotedCharacter(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_simpleDoubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , uint> {
     let start_pos = pos;
@@ -1806,18 +1456,6 @@ fn parse_simpleDoubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, ch
                 }
             }
         }
-    }
-}
-pub fn simpleDoubleQuotedCharacter(input: &str) -> Result<char, ~str> {
-    match parse_simpleDoubleQuotedCharacter(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -1867,18 +1505,6 @@ fn parse_singleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uin
         }
     }
 }
-pub fn singleQuotedString(input: &str) -> Result<~str, ~str> {
-    match parse_singleQuotedString(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_singleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , uint> {
     let choice_res = {
@@ -1923,18 +1549,6 @@ fn parse_singleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , 
         }
     }
 }
-pub fn singleQuotedCharacter(input: &str) -> Result<char, ~str> {
-    match parse_singleQuotedCharacter(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_simpleSingleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , uint> {
     let start_pos = pos;
@@ -1977,18 +1591,6 @@ fn parse_simpleSingleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, ch
                 }
             }
         }
-    }
-}
-pub fn simpleSingleQuotedCharacter(input: &str) -> Result<char, ~str> {
-    match parse_simpleSingleQuotedCharacter(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2084,18 +1686,6 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
         }
     }
 }
-pub fn class(input: &str) -> Result<~Expr, ~str> {
-    match parse_class(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_classCharacterRange(input: &str, pos: uint) -> Result<(uint, CharSetCase) , uint> {
     let start_pos = pos;
@@ -2129,18 +1719,6 @@ fn parse_classCharacterRange(input: &str, pos: uint) -> Result<(uint, CharSetCas
         }
     }
 }
-pub fn classCharacterRange(input: &str) -> Result<CharSetCase, ~str> {
-    match parse_classCharacterRange(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_classCharacter(input: &str, pos: uint) -> Result<(uint, CharSetCase) , uint> {
     let start_pos = pos;
@@ -2155,18 +1733,6 @@ fn parse_classCharacter(input: &str, pos: uint) -> Result<(uint, CharSetCase) , 
   		CharSetCase{start:char_, end:char_}
     }))
         }
-    }
-}
-pub fn classCharacter(input: &str) -> Result<CharSetCase, ~str> {
-    match parse_classCharacter(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2213,18 +1779,6 @@ fn parse_bracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint, char
         }
     }
 }
-pub fn bracketDelimitedCharacter(input: &str) -> Result<char, ~str> {
-    match parse_bracketDelimitedCharacter(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_simpleBracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint, char) , uint> {
     let start_pos = pos;
@@ -2267,18 +1821,6 @@ fn parse_simpleBracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint
                 }
             }
         }
-    }
-}
-pub fn simpleBracketDelimitedCharacter(input: &str) -> Result<char, ~str> {
-    match parse_simpleBracketDelimitedCharacter(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2351,18 +1893,6 @@ fn parse_simpleEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , u
         }
     }
 }
-pub fn simpleEscapeSequence(input: &str) -> Result<char, ~str> {
-    match parse_simpleEscapeSequence(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_zeroEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uint> {
     let start_pos = pos;
@@ -2389,18 +1919,6 @@ fn parse_zeroEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uin
                 }
             }
         }
-    }
-}
-pub fn zeroEscapeSequence(input: &str) -> Result<char, ~str> {
-    match parse_zeroEscapeSequence(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2443,18 +1961,6 @@ fn parse_hexEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uint
                 }
             }
         }
-    }
-}
-pub fn hexEscapeSequence(input: &str) -> Result<char, ~str> {
-    match parse_hexEscapeSequence(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2515,18 +2021,6 @@ fn parse_unicodeEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , 
         }
     }
 }
-pub fn unicodeEscapeSequence(input: &str) -> Result<char, ~str> {
-    match parse_unicodeEscapeSequence(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_eolEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uint> {
     let start_pos = pos;
@@ -2549,18 +2043,6 @@ fn parse_eolEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uint
         }
     }
 }
-pub fn eolEscapeSequence(input: &str) -> Result<char, ~str> {
-    match parse_eolEscapeSequence(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_digit(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     if input.len() > pos {
@@ -2571,18 +2053,6 @@ fn parse_digit(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     } else {
         Err(pos)
-    }
-}
-pub fn digit(input: &str) -> Result<(), ~str> {
-    match parse_digit(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2597,18 +2067,6 @@ fn parse_hexDigit(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Err(pos)
     }
 }
-pub fn hexDigit(input: &str) -> Result<(), ~str> {
-    match parse_hexDigit(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_letter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     let choice_res = {
@@ -2619,18 +2077,6 @@ fn parse_letter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Err(*) => {
             parse_upperCaseLetter(input, pos)
         }
-    }
-}
-pub fn letter(input: &str) -> Result<(), ~str> {
-    match parse_letter(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2645,18 +2091,6 @@ fn parse_lowerCaseLetter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Err(pos)
     }
 }
-pub fn lowerCaseLetter(input: &str) -> Result<(), ~str> {
-    match parse_lowerCaseLetter(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_upperCaseLetter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     if input.len() > pos {
@@ -2667,18 +2101,6 @@ fn parse_upperCaseLetter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     } else {
         Err(pos)
-    }
-}
-pub fn upperCaseLetter(input: &str) -> Result<(), ~str> {
-    match parse_upperCaseLetter(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2716,18 +2138,6 @@ fn parse___(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
     Ok((repeat_pos, ()))
 }
-pub fn __(input: &str) -> Result<(), ~str> {
-    match parse___(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_comment(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     let choice_res = {
@@ -2738,18 +2148,6 @@ fn parse_comment(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Err(*) => {
             parse_multiLineComment(input, pos)
         }
-    }
-}
-pub fn comment(input: &str) -> Result<(), ~str> {
-    match parse_comment(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2791,18 +2189,6 @@ fn parse_singleLineComment(input: &str, pos: uint) -> Result<(uint, ()) , uint> 
             }
             Ok((repeat_pos, ()))
         }
-    }
-}
-pub fn singleLineComment(input: &str) -> Result<(), ~str> {
-    match parse_singleLineComment(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }
 #[allow(unused_variable)]
@@ -2854,18 +2240,6 @@ fn parse_multiLineComment(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     }
 }
-pub fn multiLineComment(input: &str) -> Result<(), ~str> {
-    match parse_multiLineComment(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_eol(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     let choice_res = {
@@ -2902,18 +2276,6 @@ fn parse_eol(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     }
 }
-pub fn eol(input: &str) -> Result<(), ~str> {
-    match parse_eol(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_eolChar(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     if input.len() > pos {
@@ -2926,18 +2288,6 @@ fn parse_eolChar(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Err(pos)
     }
 }
-pub fn eolChar(input: &str) -> Result<(), ~str> {
-    match parse_eolChar(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
-    }
-}
 #[allow(unused_variable)]
 fn parse_whitespace(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     if input.len() > pos {
@@ -2948,17 +2298,5 @@ fn parse_whitespace(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         }
     } else {
         Err(pos)
-    }
-}
-pub fn whitespace(input: &str) -> Result<(), ~str> {
-    match parse_whitespace(input, 0) {
-        Ok((pos, value)) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
-            }
-        }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
     }
 }

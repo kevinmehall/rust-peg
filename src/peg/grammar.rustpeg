@@ -2,15 +2,18 @@
 	use peg::*;
   use std::num::from_str_radix;
 }
+
+#[export]
 grammar -> ~Grammar
-  = __ header: action? rules:rule* {
-  	  ~Grammar{ initializer:header, rules:rules }
-    }
+  = __ header: action? rules:rule*
+  { ~Grammar{ initializer:header, rules:rules } }
 
 rule -> ~Rule
-  = name:identifier returns: returntype equals expression:expression semicolon? {
-  	  ~Rule{ name: name, expr: expression, ret_type: returns }
+  = exported:exportflag name:identifier returns: returntype equals expression:expression semicolon? {
+      ~Rule{ name: name, expr: expression, ret_type: returns, exported: exported }
     }
+
+    exportflag -> bool = "#[export]" __ {true} / "" {false}
 
 returntype -> ~str
   = returns tp:(rust_type {match_str.trim().to_owned()}) { tp }

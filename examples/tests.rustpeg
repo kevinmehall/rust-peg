@@ -2,15 +2,18 @@
 struct Foo { bar: int }
 }
 
+#[export]
 consonants
 	= ([a-z]![aeiou])+
 
+#[export]
 options -> Option<()>
 	= "abc" v:"def"? {v}
 
 number -> int
 	= [0-9]+ { from_str::<int>(match_str).unwrap() }
 
+#[export]
 list -> ~[int]
 	= (n:number "," {n})+
 
