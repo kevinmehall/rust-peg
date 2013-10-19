@@ -50,7 +50,7 @@ pub enum Expr {
 }
 
 pub fn compile_grammar(w: &RustWriter, grammar: &Grammar) {
-	compile_header(w, grammar.initializer.map(|s| s.as_slice()).unwrap_or(""));
+	compile_header(w, grammar.initializer.as_ref().map_default("", |s| s.as_slice()));
 
 	for rule in grammar.rules.iter() {
 		compile_rule(w, *rule);
@@ -307,7 +307,7 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 			w.let_stmt("start_pos", "pos");
 			fn write_seq(w: &RustWriter, exprs: &[TaggedExpr], code: &str) {
 				if (exprs.len() > 0) {
-					let name = exprs.head().name.map(|s| s.as_slice());
+					let name = exprs.head().name.as_ref().map(|s| s.as_slice());
 					do compile_match_and_then(w, exprs.head().expr, name) {
 						write_seq(w, exprs.tail(), code);
 					}

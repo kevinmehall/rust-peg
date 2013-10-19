@@ -1,4 +1,4 @@
-use test_grammar::*;
+use test_grammar::{consonants, options, list};
 mod test_grammar;
 
 #[test]
