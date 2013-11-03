@@ -1,21 +1,26 @@
 use std::cell::Cell;
+use std::rt::io::Writer;
+use std::cast::transmute_mut;
 
 pub struct RustWriter {
-	writer: @Writer,
+	writer: ~Writer,
 	indent: Cell<uint>,
 }
 
 impl RustWriter {
-	pub fn new(writer: @Writer) -> RustWriter {
+	pub fn new<W: Writer+Send>(writer: W) -> RustWriter {
 		RustWriter {
-			writer: writer,
+			writer: ~writer as ~Writer,
 			indent: Cell::new(0)
 		}
 	}
 
 	#[inline]
 	pub fn write(&self, s: &str){
-		self.writer.write_str(s);
+		// This struct cannot be mutable without causing borrowck errors
+		// when methods are passed closures that also reference the struct
+		let w = unsafe { transmute_mut(&self.writer) };
+		w.write(s.as_bytes());
 	}
 
 	pub fn write_indent(&self) {

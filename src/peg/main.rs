@@ -1,7 +1,10 @@
 #[feature(globs)];
 
+use std::str;
+use std::rt::io;
+use std::rt::io::file;
+use std::rt::io::{Reader,Writer};
 use std::os;
-use std::io;
 use peg::{compile_grammar};
 use codegen::RustWriter;
 
@@ -11,9 +14,8 @@ mod grammar;
 
 fn main() {
 	let args = os::args();
-	let filename = args[1];
-	let file = io::read_whole_file_str(&Path::new(filename)).expect("Error reading file");
-	let grammar_def = grammar::grammar(file).unwrap();
+	let source = str::from_utf8(file::open(&Path::new(args[1]), io::Open, io::Read).read_to_end());
+	let grammar_def = grammar::grammar(source).unwrap();
 	let w = RustWriter::new(io::stdout());
 	compile_grammar(&w, grammar_def);
 }
