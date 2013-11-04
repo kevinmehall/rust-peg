@@ -17,10 +17,14 @@ impl RustWriter {
 
 	#[inline]
 	pub fn write(&self, s: &str){
+		self.writer().write(s.as_bytes());
+	}
+
+	#[inline]
+	pub fn writer<'a>(&'a self) -> &'a mut Writer {
 		// This struct cannot be mutable without causing borrowck errors
 		// when methods are passed closures that also reference the struct
-		let w = unsafe { transmute_mut(&self.writer) };
-		w.write(s.as_bytes());
+		unsafe { &'a mut transmute_mut(self).writer as &'a mut Writer }
 	}
 
 	pub fn write_indent(&self) {
@@ -53,27 +57,17 @@ impl RustWriter {
 
 	pub fn let_stmt(&self, varname: &str, value: &str) {
 		self.write_indent();
-		self.write("let ");
-		self.write(varname);
-		self.write(" = ");
-		self.write(value);
-		self.write(";\n");
+		write!(self.writer(), "let {} = {};\n", varname, value);
 	}
 
 	pub fn let_mut_stmt(&self, varname: &str, value: &str) {
 		self.write_indent();
-		self.write("let mut ");
-		self.write(varname);
-		self.write(" = ");
-		self.write(value);
-		self.write(";\n");
+		write!(self.writer(), "let mut {} = {};\n", varname, value);
 	}
 
 	pub fn let_block(&self, varname: &str, inner: &fn()){
 		self.write_indent();
-		self.write("let ");
-		self.write(varname);
-		self.write(" = {\n");
+		write!(self.writer(), "let {} = \\{\n", varname);
 		self.indented(inner);
 		self.write_indent();
 		self.write("};\n")
@@ -89,12 +83,7 @@ impl RustWriter {
 	pub fn def_fn(&self, public: bool, name: &str, args: &str, retn: &str, inner: &fn()) {
 		self.write_indent();
 		if public { self.write("pub "); }
-		self.write("fn ");
-		self.write(name);
-		self.write("(");
-		self.write(args);
-		self.write(") -> ");
-		self.write(retn);
+		write!(self.writer(), "fn {}({}) -> {}", name, args, retn);
 		self.block(inner);
 		self.write("\n");
 	}
@@ -139,59 +128,19 @@ impl RustWriter {
 
 	pub fn match_inline_case(&self, m: &str, e: &str) {
 		self.write_indent();
-		self.write(m);
-		self.write(" => ");
-		self.write(e);
-		self.write(",\n");
+		write!(self.writer(), "{} => {},\n", m, e)
 	}
 
 	pub fn match_case(&self, m: &str, inner: &fn()) {
 		self.write_indent();
-		self.write(m);
-		self.write(" => {\n");
+		write!(self.writer(), "{} => \\{\n", m)
 		self.indented(inner);
 		self.write_indent();
 		self.write("}\n");
 	}
 
-	pub fn def_enum(&self, public: bool, name: &str, inner: &fn()) {
-		self.write_indent();
-		if public { self.write("pub "); }
-		self.write("enum ");
-		self.write(name);
-		self.block(inner);
-		self.write("\n");
-	}
-
-	pub fn enum_simple(&self, name: &str){
-		self.write_indent();
-		self.write(name);
-		self.write(",\n");
-	}
-
-	pub fn enum_tuple(&self, name: &str, types: &[&str]) {
-		self.write_indent();
-		self.write(name);
-		self.write("(");
-		for &i in types.iter() {
-			self.write(i);
-			self.write(", "); // TODO: don't leave a trailing comma
-		}
-		self.write("),\n");
-	}
-
-	pub fn enum_struct(&self, name: &str, inner: &fn()) {
-		self.write_indent();
-		self.write(name);
-		self.block(inner);
-		self.write(",\n");
-	}
-
 	pub fn struct_field(&self, name: &str, typename: &str) {
 		self.write_indent();
-		self.write(name);
-		self.write(": ");
-		self.write(typename);
-		self.write(",\n");
+		write!(self.writer(), "{}: {},\n", name, typename);
 	}
 }
