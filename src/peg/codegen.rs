@@ -1,5 +1,5 @@
 use std::cell::Cell;
-use std::rt::io::Writer;
+use std::io::Writer;
 use std::cast::transmute_mut;
 
 pub struct RustWriter {

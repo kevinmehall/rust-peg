@@ -2,8 +2,8 @@
 #[feature(managed_boxes)];
 
 use std::str;
-use std::rt::io::stdout;
-use std::rt::io::fs::File;
+use std::io::stdout;
+use std::io::fs::File;
 use std::os;
 use peg::{compile_grammar};
 use codegen::RustWriter;
