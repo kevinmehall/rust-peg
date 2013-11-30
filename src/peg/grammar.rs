@@ -27,7 +27,7 @@ fn any_char(input: &str, pos: uint) -> Result<(uint, ()), uint> {
 fn pos_to_line(input: &str, pos: uint) -> uint {
 	let mut remaining = pos as int;
 	let mut lineno: uint = 1;
-	for line in input.line_iter() {
+	for line in input.lines() {
 		remaining -= (line.len() as int) + 1;
 		if (remaining <= 0) {
 			return lineno;
@@ -51,7 +51,7 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, ~Grammar) , uint> {
                 };
                 match optional_res {
                     Ok((newpos, value)) => Ok((newpos, Some(value))),
-                    Err(*) => Ok((pos, None)),
+                    Err(..) => Ok((pos, None)),
                 }
             };
             match seq_res {
@@ -70,7 +70,7 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, ~Grammar) , uint> {
                                     repeat_pos = newpos;
                                     repeat_value.push(value);
                                 }
-                                Err(*) => {
+                                Err(..) => {
                                     break;
                                 }
                             }
@@ -140,7 +140,7 @@ fn parse_rule(input: &str, pos: uint) -> Result<(uint, ~Rule) , uint> {
                                                 };
                                                 match optional_res {
                                                     Ok((newpos, value)) => Ok((newpos, Some(value))),
-                                                    Err(*) => Ok((pos, None)),
+                                                    Err(..) => Ok((pos, None)),
                                                 }
                                             };
                                             match seq_res {
@@ -188,7 +188,7 @@ fn parse_exportflag(input: &str, pos: uint) -> Result<(uint, bool) , uint> {
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let start_pos = pos;
             let seq_res = {
                 slice_eq(input, pos, "")
@@ -238,7 +238,7 @@ fn parse_returntype(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let start_pos = pos;
             let match_str = input.slice(start_pos, pos);;
             Ok((pos, { ~"()" }))
@@ -260,7 +260,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let choice_res = {
                 let seq_res = {
                     slice_eq(input, pos, "~")
@@ -282,7 +282,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         let seq_res = {
                             slice_eq(input, pos, "[")
@@ -312,7 +312,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             let choice_res = {
                                 let seq_res = {
                                     parse_identifier(input, pos)
@@ -350,7 +350,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
                             };
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
-                                Err(*) => {
+                                Err(..) => {
                                     let seq_res = {
                                         parse_identifier(input, pos)
                                     };
@@ -413,7 +413,7 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                             repeat_pos = newpos;
                             repeat_value.push(value);
                         }
-                        Err(*) => {
+                        Err(..) => {
                             break;
                         }
                     }
@@ -455,7 +455,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                         repeat_pos = newpos;
                         repeat_value.push(value);
                     }
-                    Err(*) => {
+                    Err(..) => {
                         break;
                     }
                 }
@@ -482,7 +482,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let start_pos = pos;
             let seq_res = {
                 let mut repeat_pos = pos;
@@ -497,7 +497,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                             repeat_pos = newpos;
                             repeat_value.push(value);
                         }
-                        Err(*) => {
+                        Err(..) => {
                             break;
                         }
                     }
@@ -555,7 +555,7 @@ fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr) , uint> {
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let start_pos = pos;
             let seq_res = {
                 parse_prefixed(input, pos)
@@ -599,7 +599,7 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let choice_res = {
                 let start_pos = pos;
                 let seq_res = {
@@ -625,7 +625,7 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         let start_pos = pos;
                         let seq_res = {
@@ -651,7 +651,7 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             parse_suffixed(input, pos)
                         }
                     }
@@ -687,7 +687,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let choice_res = {
                 let start_pos = pos;
                 let seq_res = {
@@ -713,7 +713,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         let start_pos = pos;
                         let seq_res = {
@@ -739,7 +739,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             parse_primary(input, pos)
                         }
                     }
@@ -766,7 +766,7 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                             };
                             match optional_res {
                                 Ok((newpos, value)) => Ok((newpos, Some(value))),
-                                Err(*) => Ok((pos, None)),
+                                Err(..) => Ok((pos, None)),
                             }
                         };
                         match seq_res {
@@ -785,8 +785,8 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                         }
                     };
                     match neg_assert_res {
-                        Err(*) => Ok((pos, ())),
-                        Ok(*) => Err(pos),
+                        Err(..) => Ok((pos, ())),
+                        Ok(..) => Err(pos),
                     }
                 };
                 match seq_res {
@@ -803,19 +803,19 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let choice_res = {
                 parse_literal(input, pos)
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         parse_class(input, pos)
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             let choice_res = {
                                 let start_pos = pos;
                                 let seq_res = {
@@ -831,7 +831,7 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                             };
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
-                                Err(*) => {
+                                Err(..) => {
                                     let start_pos = pos;
                                     let seq_res = {
                                         parse_lparen(input, pos)
@@ -919,7 +919,7 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
                             };
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
-                                Err(*) => {
+                                Err(..) => {
                                     parse_nonBraceCharacters(input, pos)
                                 }
                             }
@@ -928,7 +928,7 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
                             Ok((newpos, _)) => {
                                 repeat_pos = newpos;
                             }
-                            Err(*) => {
+                            Err(..) => {
                                 break;
                             }
                         }
@@ -979,7 +979,7 @@ fn parse_nonBraceCharacters(input: &str, pos: uint) -> Result<(uint, ()) , uint>
                     Ok((newpos, _)) => {
                         repeat_pos = newpos;
                     }
-                    Err(*) => {
+                    Err(..) => {
                         break;
                     }
                 }
@@ -1179,7 +1179,7 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     slice_eq(input, pos, "_")
                 }
             }
@@ -1197,13 +1197,13 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
                             };
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
-                                Err(*) => {
+                                Err(..) => {
                                     let choice_res = {
                                         parse_digit(input, pos)
                                     };
                                     match choice_res {
                                         Ok((pos, value)) => Ok((pos, value)),
-                                        Err(*) => {
+                                        Err(..) => {
                                             slice_eq(input, pos, "_")
                                         }
                                     }
@@ -1214,7 +1214,7 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
                             Ok((newpos, _)) => {
                                 repeat_pos = newpos;
                             }
-                            Err(*) => {
+                            Err(..) => {
                                 break;
                             }
                         }
@@ -1256,7 +1256,7 @@ fn parse_literal(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
         };
         match choice_res {
             Ok((pos, value)) => Ok((pos, value)),
-            Err(*) => {
+            Err(..) => {
                 parse_singleQuotedString(input, pos)
             }
         }
@@ -1270,7 +1270,7 @@ fn parse_literal(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                 };
                 match optional_res {
                     Ok((newpos, value)) => Ok((newpos, Some(value))),
-                    Err(*) => Ok((pos, None)),
+                    Err(..) => Ok((pos, None)),
                 }
             };
             match seq_res {
@@ -1302,7 +1302,7 @@ fn parse_string(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
         };
         match choice_res {
             Ok((pos, value)) => Ok((pos, value)),
-            Err(*) => {
+            Err(..) => {
                 parse_singleQuotedString(input, pos)
             }
         }
@@ -1345,7 +1345,7 @@ fn parse_doubleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uin
                             repeat_pos = newpos;
                             repeat_value.push(value);
                         }
-                        Err(*) => {
+                        Err(..) => {
                             break;
                         }
                     }
@@ -1377,31 +1377,31 @@ fn parse_doubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , 
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let choice_res = {
                 parse_simpleEscapeSequence(input, pos)
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         parse_zeroEscapeSequence(input, pos)
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             let choice_res = {
                                 parse_hexEscapeSequence(input, pos)
                             };
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
-                                Err(*) => {
+                                Err(..) => {
                                     let choice_res = {
                                         parse_unicodeEscapeSequence(input, pos)
                                     };
                                     match choice_res {
                                         Ok((pos, value)) => Ok((pos, value)),
-                                        Err(*) => {
+                                        Err(..) => {
                                             parse_eolEscapeSequence(input, pos)
                                         }
                                     }
@@ -1424,13 +1424,13 @@ fn parse_simpleDoubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, ch
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         slice_eq(input, pos, "\\")
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             parse_eolChar(input, pos)
                         }
                     }
@@ -1438,8 +1438,8 @@ fn parse_simpleDoubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, ch
             }
         };
         match neg_assert_res {
-            Err(*) => Ok((pos, ())),
-            Ok(*) => Err(pos),
+            Err(..) => Ok((pos, ())),
+            Ok(..) => Err(pos),
         }
     };
     match seq_res {
@@ -1480,7 +1480,7 @@ fn parse_singleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uin
                             repeat_pos = newpos;
                             repeat_value.push(value);
                         }
-                        Err(*) => {
+                        Err(..) => {
                             break;
                         }
                     }
@@ -1512,31 +1512,31 @@ fn parse_singleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , 
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let choice_res = {
                 parse_simpleEscapeSequence(input, pos)
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         parse_zeroEscapeSequence(input, pos)
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             let choice_res = {
                                 parse_hexEscapeSequence(input, pos)
                             };
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
-                                Err(*) => {
+                                Err(..) => {
                                     let choice_res = {
                                         parse_unicodeEscapeSequence(input, pos)
                                     };
                                     match choice_res {
                                         Ok((pos, value)) => Ok((pos, value)),
-                                        Err(*) => {
+                                        Err(..) => {
                                             parse_eolEscapeSequence(input, pos)
                                         }
                                     }
@@ -1559,13 +1559,13 @@ fn parse_simpleSingleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, ch
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         slice_eq(input, pos, "\\")
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             parse_eolChar(input, pos)
                         }
                     }
@@ -1573,8 +1573,8 @@ fn parse_simpleSingleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, ch
             }
         };
         match neg_assert_res {
-            Err(*) => Ok((pos, ())),
-            Ok(*) => Err(pos),
+            Err(..) => Ok((pos, ())),
+            Ok(..) => Err(pos),
         }
     };
     match seq_res {
@@ -1608,7 +1608,7 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                 };
                 match optional_res {
                     Ok((newpos, value)) => Ok((newpos, Some(value))),
-                    Err(*) => Ok((pos, None)),
+                    Err(..) => Ok((pos, None)),
                 }
             };
             match seq_res {
@@ -1625,7 +1625,7 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                                 };
                                 match choice_res {
                                     Ok((pos, value)) => Ok((pos, value)),
-                                    Err(*) => {
+                                    Err(..) => {
                                         parse_classCharacter(input, pos)
                                     }
                                 }
@@ -1635,7 +1635,7 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                                     repeat_pos = newpos;
                                     repeat_value.push(value);
                                 }
-                                Err(*) => {
+                                Err(..) => {
                                     break;
                                 }
                             }
@@ -1657,7 +1657,7 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                                         };
                                         match optional_res {
                                             Ok((newpos, value)) => Ok((newpos, Some(value))),
-                                            Err(*) => Ok((pos, None)),
+                                            Err(..) => Ok((pos, None)),
                                         }
                                     };
                                     match seq_res {
@@ -1742,31 +1742,31 @@ fn parse_bracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint, char
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let choice_res = {
                 parse_simpleEscapeSequence(input, pos)
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         parse_zeroEscapeSequence(input, pos)
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             let choice_res = {
                                 parse_hexEscapeSequence(input, pos)
                             };
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
-                                Err(*) => {
+                                Err(..) => {
                                     let choice_res = {
                                         parse_unicodeEscapeSequence(input, pos)
                                     };
                                     match choice_res {
                                         Ok((pos, value)) => Ok((pos, value)),
-                                        Err(*) => {
+                                        Err(..) => {
                                             parse_eolEscapeSequence(input, pos)
                                         }
                                     }
@@ -1789,13 +1789,13 @@ fn parse_simpleBracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         slice_eq(input, pos, "\\")
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             parse_eolChar(input, pos)
                         }
                     }
@@ -1803,8 +1803,8 @@ fn parse_simpleBracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint
             }
         };
         match neg_assert_res {
-            Err(*) => Ok((pos, ())),
-            Ok(*) => Err(pos),
+            Err(..) => Ok((pos, ())),
+            Ok(..) => Err(pos),
         }
     };
     match seq_res {
@@ -1839,19 +1839,19 @@ fn parse_simpleEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , u
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             let choice_res = {
                                 slice_eq(input, pos, "x")
                             };
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
-                                Err(*) => {
+                                Err(..) => {
                                     let choice_res = {
                                         slice_eq(input, pos, "u")
                                     };
                                     match choice_res {
                                         Ok((pos, value)) => Ok((pos, value)),
-                                        Err(*) => {
+                                        Err(..) => {
                                             parse_eolChar(input, pos)
                                         }
                                     }
@@ -1861,8 +1861,8 @@ fn parse_simpleEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , u
                     }
                 };
                 match neg_assert_res {
-                    Err(*) => Ok((pos, ())),
-                    Ok(*) => Err(pos),
+                    Err(..) => Ok((pos, ())),
+                    Ok(..) => Err(pos),
                 }
             };
             match seq_res {
@@ -1907,8 +1907,8 @@ fn parse_zeroEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uin
                     parse_digit(input, pos)
                 };
                 match neg_assert_res {
-                    Err(*) => Ok((pos, ())),
-                    Ok(*) => Err(pos),
+                    Err(..) => Ok((pos, ())),
+                    Ok(..) => Err(pos),
                 }
             };
             match seq_res {
@@ -2074,7 +2074,7 @@ fn parse_letter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             parse_upperCaseLetter(input, pos)
         }
     }
@@ -2114,13 +2114,13 @@ fn parse___(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         parse_eol(input, pos)
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             parse_comment(input, pos)
                         }
                     }
@@ -2131,7 +2131,7 @@ fn parse___(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
             Ok((newpos, _)) => {
                 repeat_pos = newpos;
             }
-            Err(*) => {
+            Err(..) => {
                 break;
             }
         }
@@ -2145,7 +2145,7 @@ fn parse_comment(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             parse_multiLineComment(input, pos)
         }
     }
@@ -2167,8 +2167,8 @@ fn parse_singleLineComment(input: &str, pos: uint) -> Result<(uint, ()) , uint> 
                             parse_eolChar(input, pos)
                         };
                         match neg_assert_res {
-                            Err(*) => Ok((pos, ())),
-                            Ok(*) => Err(pos),
+                            Err(..) => Ok((pos, ())),
+                            Ok(..) => Err(pos),
                         }
                     };
                     match seq_res {
@@ -2182,7 +2182,7 @@ fn parse_singleLineComment(input: &str, pos: uint) -> Result<(uint, ()) , uint> 
                     Ok((newpos, _)) => {
                         repeat_pos = newpos;
                     }
-                    Err(*) => {
+                    Err(..) => {
                         break;
                     }
                 }
@@ -2209,8 +2209,8 @@ fn parse_multiLineComment(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
                                 slice_eq(input, pos, "*/")
                             };
                             match neg_assert_res {
-                                Err(*) => Ok((pos, ())),
-                                Ok(*) => Err(pos),
+                                Err(..) => Ok((pos, ())),
+                                Ok(..) => Err(pos),
                             }
                         };
                         match seq_res {
@@ -2224,7 +2224,7 @@ fn parse_multiLineComment(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
                         Ok((newpos, _)) => {
                             repeat_pos = newpos;
                         }
-                        Err(*) => {
+                        Err(..) => {
                             break;
                         }
                     }
@@ -2247,25 +2247,25 @@ fn parse_eol(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     };
     match choice_res {
         Ok((pos, value)) => Ok((pos, value)),
-        Err(*) => {
+        Err(..) => {
             let choice_res = {
                 slice_eq(input, pos, "\r\n")
             };
             match choice_res {
                 Ok((pos, value)) => Ok((pos, value)),
-                Err(*) => {
+                Err(..) => {
                     let choice_res = {
                         slice_eq(input, pos, "\r")
                     };
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(*) => {
+                        Err(..) => {
                             let choice_res = {
                                 slice_eq(input, pos, "\u2028")
                             };
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
-                                Err(*) => {
+                                Err(..) => {
                                     slice_eq(input, pos, "\u2029")
                                 }
                             }
