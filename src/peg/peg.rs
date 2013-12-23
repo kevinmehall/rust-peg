@@ -6,20 +6,11 @@ pub struct Grammar {
 	rules: ~[~Rule]
 }
 
-pub enum Item {
-	Rule
-}
-
 pub struct Rule {
 	name: ~str,
 	expr: ~Expr,
 	ret_type: ~str,
 	exported: bool,
-}
-
-pub enum Attr {
-	AttrDefineParser(~str),
-	AttrDefineType(~str)
 }
 
 pub struct CharSetCase {
