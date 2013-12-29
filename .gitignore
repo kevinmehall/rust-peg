@@ -1,0 +1,11 @@
+*~
+.rust
+bin
+build
+
+src/peg/grammar_new.rs
+src/peg/grammar_old.rs
+
+examples/arithmetic.rs
+examples/test_grammar.rs
+
