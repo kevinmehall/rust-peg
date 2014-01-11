@@ -41,7 +41,7 @@ pub enum Expr {
 }
 
 pub fn compile_grammar(w: &RustWriter, grammar: &Grammar) {
-	compile_header(w, grammar.initializer.as_ref().map_default("", |s| s.as_slice()));
+	compile_header(w, grammar.initializer.as_ref().map_or("", |s| s.as_slice()));
 
 	for rule in grammar.rules.iter() {
 		compile_rule(w, *rule);
