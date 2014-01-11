@@ -351,13 +351,37 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
                                 Err(..) => {
-                                    let seq_res = {
-                                        parse_identifier(input, pos)
+                                    let choice_res = {
+                                        let seq_res = {
+                                            parse_identifier(input, pos)
+                                        };
+                                        match seq_res {
+                                            Err(pos) => Err(pos),
+                                            Ok((pos, _)) => {
+                                                let seq_res = {
+                                                    slice_eq(input, pos, "::")
+                                                };
+                                                match seq_res {
+                                                    Err(pos) => Err(pos),
+                                                    Ok((pos, _)) => {
+                                                        parse_rust_type(input, pos)
+                                                    }
+                                                }
+                                            }
+                                        }
                                     };
-                                    match seq_res {
-                                        Err(pos) => Err(pos),
-                                        Ok((pos, _)) => {
-                                            slice_eq(input, pos, "")
+                                    match choice_res {
+                                        Ok((pos, value)) => Ok((pos, value)),
+                                        Err(..) => {
+                                            let seq_res = {
+                                                parse_identifier(input, pos)
+                                            };
+                                            match seq_res {
+                                                Err(pos) => Err(pos),
+                                                Ok((pos, _)) => {
+                                                    slice_eq(input, pos, "")
+                                                }
+                                            }
                                         }
                                     }
                                 }

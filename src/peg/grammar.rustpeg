@@ -24,6 +24,7 @@ rust_type
   / "~" __ rust_type
   / "[" rust_type "]" __
   / identifier "<" rust_type ">" __
+  / identifier "::" rust_type
   / identifier ""
 
 expression -> ~Expr
