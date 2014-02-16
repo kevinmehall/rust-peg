@@ -60,7 +60,7 @@ use std::str::{CharRange};
 #[inline]
 fn slice_eq(input: &str, pos: uint, m: &str) -> Result<(uint, ()), uint> {
     let l = m.len();
-    if (input.len() >= pos + l && input.slice(pos, pos+l) == m) {
+    if input.len() >= pos + l && input.slice(pos, pos+l) == m {
         Ok((pos+l, ()))
     } else {
         Err(pos)
@@ -81,7 +81,7 @@ fn pos_to_line(input: &str, pos: uint) -> uint {
 	let mut lineno: uint = 1;
 	for line in input.lines() {
 		remaining -= (line.len() as int) + 1;
-		if (remaining <= 0) {
+		if remaining <= 0 {
 			return lineno;
 		}
 		lineno+=1;
@@ -132,7 +132,7 @@ fn compile_match_and_then(w: &RustWriter, e: &Expr, value_name: Option<&str>, th
 fn compile_zero_or_more(w: &RustWriter, e: &Expr, list_initial: Option<&str>) {
 	w.let_mut_stmt("repeat_pos", "pos");
 	let result_used = list_initial.is_some();
-	if (result_used) {
+	if result_used {
 		w.let_mut_stmt("repeat_value", list_initial.unwrap());
 	}
 	w.loop_block(|| {
@@ -215,7 +215,7 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 
 		SequenceExpr(ref exprs) => {
 			fn write_seq(w: &RustWriter, exprs: &[~Expr]) {
-				if (exprs.len() == 1) {
+				if exprs.len() == 1 {
 					compile_expr(w, exprs[0], false);
 				} else {
 					compile_match_and_then(w, exprs[0], None, || {
@@ -224,14 +224,14 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 				}
 			}
 
-			if (exprs.len() > 0 ) {
+			if exprs.len() > 0 {
 				write_seq(w, *exprs);
 			}
 		}
 
 		ChoiceExpr(ref exprs) => {
 			fn write_choice(w: &RustWriter, exprs: &[~Expr], result_used: bool) {
-				if (exprs.len() == 1) {
+				if exprs.len() == 1 {
 					compile_expr(w, exprs[0], result_used);
 				} else {
 					w.let_block("choice_res", || {
@@ -246,7 +246,7 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 				}
 			}
 
-			if (exprs.len() > 0 ) {
+			if exprs.len() > 0 {
 				write_choice(w, *exprs, result_used);
 			}
 		}

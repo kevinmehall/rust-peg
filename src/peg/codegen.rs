@@ -41,14 +41,6 @@ impl RustWriter {
 		self.write("\n");
 	}
 
-	pub fn comment(&self, comment: &str) {
-		self.write_indent();
-		self.write("// ");
-		self.write(comment);
-		self.write("\n");
-
-	}
-
 	pub fn indented(&self, inner: || ) {
 		self.indent.with_mut(|i| {*i += 1;});
 		inner();
@@ -97,10 +89,6 @@ impl RustWriter {
 		self.write("\n");
 	}
 
-	pub fn if_block(&self, condition: &str, inner: || ) {
-		self.cond_block("if ", condition, inner);
-	}
-
 	pub fn if_else(&self, condition: &str, if_inner: || , else_inner: || ) {
 		self.write_indent();
 		self.write("if ");
@@ -118,10 +106,6 @@ impl RustWriter {
 		self.write("\n");
 	}
 
-	pub fn while_block(&self, condition: &str, inner: || ) {
-		self.cond_block("while ", condition, inner);
-	}
-
 	pub fn match_block(&self, expr: &str, inner: || ) {
 		self.cond_block("match ", expr, inner);
 	}
@@ -137,10 +121,5 @@ impl RustWriter {
 		self.indented(inner);
 		self.write_indent();
 		self.write("}\n");
-	}
-
-	pub fn struct_field(&self, name: &str, typename: &str) {
-		self.write_indent();
-		(write!(self.writer(), "{}: {},\n", name, typename)).unwrap();
 	}
 }

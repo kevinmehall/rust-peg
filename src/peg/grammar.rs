@@ -8,7 +8,7 @@ use std::str::{CharRange};
 #[inline]
 fn slice_eq(input: &str, pos: uint, m: &str) -> Result<(uint, ()), uint> {
     let l = m.len();
-    if (input.len() >= pos + l && input.slice(pos, pos+l) == m) {
+    if input.len() >= pos + l && input.slice(pos, pos+l) == m {
         Ok((pos+l, ()))
     } else {
         Err(pos)
@@ -29,7 +29,7 @@ fn pos_to_line(input: &str, pos: uint) -> uint {
 	let mut lineno: uint = 1;
 	for line in input.lines() {
 		remaining -= (line.len() as int) + 1;
-		if (remaining <= 0) {
+		if remaining <= 0 {
 			return lineno;
 		}
 		lineno+=1;
@@ -449,7 +449,7 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                 Ok((pos, tail)) => {
                     let match_str = input.slice(start_pos, pos);;
                     Ok((pos, {
-      if (tail.len() > 0) {
+      if tail.len() > 0 {
       	let mut list = tail;
       	list.unshift(head);
       	~ChoiceExpr(list)
@@ -533,7 +533,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                 Ok((pos, elements)) => {
                     let match_str = input.slice(start_pos, pos);;
                     Ok((pos, {
-      if (elements.len() != 1) {
+      if elements.len() != 1 {
       	  ~SequenceExpr(elements)
       } else {
           elements[0]

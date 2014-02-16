@@ -32,7 +32,7 @@ expression -> ~Expr
 
 choice -> ~Expr
   = head:sequence tail:(slash s:sequence {s})* {
-      if (tail.len() > 0) {
+      if tail.len() > 0 {
       	let mut list = tail;
       	list.unshift(head);
       	~ChoiceExpr(list)
@@ -46,7 +46,7 @@ sequence -> ~Expr
   	  ~ActionExpr(elements, code)
     }
   / elements:prefixed* {
-      if (elements.len() != 1) {
+      if elements.len() != 1 {
       	  ~SequenceExpr(elements)
       } else {
           elements[0]
