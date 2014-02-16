@@ -14,8 +14,8 @@ mod grammar;
 
 fn main() {
 	let args = os::args();
-	let source_utf8 = File::open(&Path::new(args[1])).read_to_end();
-	let source = str::from_utf8(source_utf8);
+	let source_utf8 = File::open(&Path::new(args[1])).read_to_end().unwrap();
+	let source = str::from_utf8(source_utf8).unwrap();
 	let grammar_def = grammar::grammar(source);
 
 	match grammar_def {
@@ -25,7 +25,7 @@ fn main() {
 		}
 
 		Err(msg) => {
-			writeln!(&mut stderr() as &mut Writer, "Error parsing language specification: {}", msg);
+			(writeln!(&mut stderr() as &mut Writer, "Error parsing language specification: {}", msg)).unwrap();
 			os::set_exit_status(1);
 		}
 	}

@@ -17,7 +17,7 @@ impl RustWriter {
 
 	#[inline]
 	pub fn write(&self, s: &str){
-		self.writer().write(s.as_bytes());
+		self.writer().write(s.as_bytes()).unwrap();
 	}
 
 	#[inline]
@@ -57,17 +57,17 @@ impl RustWriter {
 
 	pub fn let_stmt(&self, varname: &str, value: &str) {
 		self.write_indent();
-		write!(self.writer(), "let {} = {};\n", varname, value);
+		(write!(self.writer(), "let {} = {};\n", varname, value)).unwrap();
 	}
 
 	pub fn let_mut_stmt(&self, varname: &str, value: &str) {
 		self.write_indent();
-		write!(self.writer(), "let mut {} = {};\n", varname, value);
+		(write!(self.writer(), "let mut {} = {};\n", varname, value)).unwrap();
 	}
 
 	pub fn let_block(&self, varname: &str, inner: || ){
 		self.write_indent();
-		write!(self.writer(), "let {} = \\{\n", varname);
+		(write!(self.writer(), "let {} = \\{\n", varname)).unwrap();
 		self.indented(inner);
 		self.write_indent();
 		self.write("};\n")
@@ -83,7 +83,7 @@ impl RustWriter {
 	pub fn def_fn(&self, public: bool, name: &str, args: &str, retn: &str, inner: || ) {
 		self.write_indent();
 		if public { self.write("pub "); }
-		write!(self.writer(), "fn {}({}) -> {}", name, args, retn);
+		(write!(self.writer(), "fn {}({}) -> {}", name, args, retn)).unwrap();
 		self.block(inner);
 		self.write("\n");
 	}
@@ -128,12 +128,12 @@ impl RustWriter {
 
 	pub fn match_inline_case(&self, m: &str, e: &str) {
 		self.write_indent();
-		write!(self.writer(), "{} => {},\n", m, e)
+		(write!(self.writer(), "{} => {},\n", m, e)).unwrap();
 	}
 
 	pub fn match_case(&self, m: &str, inner: || ) {
 		self.write_indent();
-		write!(self.writer(), "{} => \\{\n", m)
+		(write!(self.writer(), "{} => \\{\n", m)).unwrap();
 		self.indented(inner);
 		self.write_indent();
 		self.write("}\n");
@@ -141,6 +141,6 @@ impl RustWriter {
 
 	pub fn struct_field(&self, name: &str, typename: &str) {
 		self.write_indent();
-		write!(self.writer(), "{}: {},\n", name, typename);
+		(write!(self.writer(), "{}: {},\n", name, typename)).unwrap();
 	}
 }
