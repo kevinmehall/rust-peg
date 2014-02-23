@@ -182,9 +182,6 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 		}
 
 		CharSetExpr(invert, ref cases) => {
-			let result_strs = ("Ok((next, ()))", "Err(pos)");
-			let (y_str, n_str) = if !invert { result_strs } else { result_strs.swap() };
-
 			w.if_else("input.len() > pos",
 				|| {
 					w.line("let CharRange {ch, next} = input.char_range_at(pos);");
@@ -200,8 +197,8 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 								w.write("'"+start+"'..'"+end+"'");
 							}
 						}
-						w.write(" => { "+y_str+" }\n");
-						w.match_inline_case("_", n_str);
+						w.write(" => { "+ if !invert {"Ok((next, ()))"} else {"Err(pos)"} +" }\n");
+						w.match_inline_case("_", if !invert {"Err(pos)"} else {"Ok((next, ()))"});
 					});
 				},
 				|| { w.line("Err(pos)"); }
