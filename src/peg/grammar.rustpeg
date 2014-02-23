@@ -1,6 +1,8 @@
 {
 	use peg::*;
   use std::num::from_str_radix;
+  use std::str;
+  use std::char;
 }
 
 #[export]
@@ -163,7 +165,7 @@ string -> ~str
   = string:(doubleQuotedString / singleQuotedString) __ { string }
 
 doubleQuotedString -> ~str
-  = '"' s:doubleQuotedCharacter* '"' { std::str::from_chars(s) }
+  = '"' s:doubleQuotedCharacter* '"' { str::from_chars(s) }
 
 doubleQuotedCharacter -> char
   = simpleDoubleQuotedCharacter
@@ -177,7 +179,7 @@ simpleDoubleQuotedCharacter -> char
   = !('"' / "\\" / eolChar) . { match_str.char_at(0) }
 
 singleQuotedString -> ~str
-  = "'" s:singleQuotedCharacter* "'" { std::str::from_chars(s) }
+  = "'" s:singleQuotedCharacter* "'" { str::from_chars(s) }
 
 singleQuotedCharacter -> char
   = simpleSingleQuotedCharacter
@@ -235,12 +237,12 @@ zeroEscapeSequence -> char
 
 hexEscapeSequence -> char
   = "\\x" value:(hexDigit hexDigit { from_str_radix::<int>(match_str, 16) }) {
-      std::char::from_u32(value.unwrap() as u32).unwrap()
+      char::from_u32(value.unwrap() as u32).unwrap()
     }
 
 unicodeEscapeSequence -> char
   = "\\u" value:(hexDigit hexDigit hexDigit hexDigit { from_str_radix::<int>(match_str, 16)}) {
-      std::char::from_u32(value.unwrap() as u32).unwrap()
+      char::from_u32(value.unwrap() as u32).unwrap()
     }
 
 eolEscapeSequence -> char
