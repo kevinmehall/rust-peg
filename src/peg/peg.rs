@@ -2,25 +2,25 @@ use codegen::RustWriter;
 use std::str;
 
 pub struct Grammar {
-	initializer: Option<~str>,
-	rules: ~[~Rule]
+	pub initializer: Option<~str>,
+	pub rules: ~[~Rule]
 }
 
 pub struct Rule {
-	name: ~str,
-	expr: ~Expr,
-	ret_type: ~str,
-	exported: bool,
+	pub name: ~str,
+	pub expr: ~Expr,
+	pub ret_type: ~str,
+	pub exported: bool,
 }
 
 pub struct CharSetCase {
-	start: char,
-	end: char
+	pub start: char,
+	pub end: char
 }
 
 pub struct TaggedExpr {
-	name: Option<~str>,
-	expr: ~Expr
+	pub name: Option<~str>,
+	pub expr: ~Expr
 }
 
 pub enum Expr {

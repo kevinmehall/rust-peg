@@ -1,5 +1,5 @@
-#[feature(globs)];
-#[feature(managed_boxes)];
+#![feature(globs)]
+#![feature(managed_boxes)]
 
 use std::str;
 use std::io::{stdout,stderr};

@@ -28,11 +28,9 @@ impl RustWriter {
 	}
 
 	pub fn write_indent(&self) {
-		self.indent.with(|&indent| {
-			for _ in range(0, indent) {
-				self.write("    ");
-			}
-		});
+		for _ in range(0, *self.indent.borrow()) {
+			self.write("    ");
+		}
 	}
 
 	pub fn line(&self, line: &str) {
@@ -42,9 +40,9 @@ impl RustWriter {
 	}
 
 	pub fn indented(&self, inner: || ) {
-		self.indent.with_mut(|i| {*i += 1;});
+		*self.indent.borrow_mut() += 1;
 		inner();
-		self.indent.with_mut(|i| {*i -= 1;});
+		*self.indent.borrow_mut() -= 1;
 	}
 
 	pub fn let_stmt(&self, varname: &str, value: &str) {
