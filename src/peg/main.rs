@@ -21,7 +21,7 @@ fn main() {
 	match grammar_def {
 		Ok(grammar) => {
 			let w = RustWriter::new(stdout());
-			compile_grammar(&w, grammar);
+			compile_grammar(&w, &grammar);
 		}
 
 		Err(msg) => {

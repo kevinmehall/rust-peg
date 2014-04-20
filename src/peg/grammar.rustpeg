@@ -6,13 +6,13 @@
 }
 
 #[export]
-grammar -> ~Grammar
+grammar -> Grammar
   = __ header: action? rules:rule*
-  { ~Grammar{ initializer:header, rules:rules } }
+  { Grammar{ initializer:header, rules:rules } }
 
-rule -> ~Rule
+rule -> Rule
   = exported:exportflag name:identifier returns: returntype equals expression:expression semicolon? {
-      ~Rule{ name: name, expr: expression, ret_type: returns, exported: exported }
+      Rule{ name: name, expr: ~expression, ret_type: returns, exported: exported }
     }
 
     exportflag -> bool = "#[export]" __ {true} / "" {false}
@@ -29,27 +29,27 @@ rust_type
   / identifier "::" rust_type
   / identifier ""
 
-expression -> ~Expr
+expression -> Expr
   = choice
 
-choice -> ~Expr
+choice -> Expr
   = head:sequence tail:(slash s:sequence {s})* {
       if tail.len() > 0 {
       	let mut list = tail;
       	list.unshift(head);
-      	~ChoiceExpr(list)
+      	ChoiceExpr(list)
       } else {
         head
       }
     }
 
-sequence -> ~Expr
+sequence -> Expr
   = elements:labeled* code:action {
-  	  ~ActionExpr(elements, code)
+  	  ActionExpr(elements, code)
     }
   / elements:prefixed* {
       if elements.len() != 1 {
-      	  ~SequenceExpr(elements)
+      	  SequenceExpr(elements)
       } else {
           elements.move_iter().next().unwrap()
       }
@@ -57,13 +57,13 @@ sequence -> ~Expr
 
 labeled -> TaggedExpr
   = label:identifier colon expression:prefixed {
-      TaggedExpr{ name: Some(label), expr: expression }
+      TaggedExpr{ name: Some(label), expr: ~expression }
     }
   / expr: prefixed {
-      TaggedExpr{ name: None, expr: expr }
+      TaggedExpr{ name: None, expr: ~expr }
   }
 
-prefixed -> ~Expr
+prefixed -> Expr
   = dollar expression:suffixed {
       expression
     }
@@ -71,35 +71,35 @@ prefixed -> ~Expr
 //      fail!("/*Semantic and unsupported*/");
 //    }
   / and expression:suffixed {
-      ~PosAssertExpr(expression)
+      PosAssertExpr(~expression)
     }
 //  / not code:action {
 //      fail!("/*Semantic not unsupported*/");
 //    }
   / not expression:suffixed {
-      ~NegAssertExpr(expression)
+      NegAssertExpr(~expression)
     }
   / suffixed
 
-suffixed -> ~Expr
+suffixed -> Expr
   = expression:primary question {
-       ~OptionalExpr(expression)
+       OptionalExpr(~expression)
     }
   / expression:primary star {
-    	~ZeroOrMore(expression)
+    	ZeroOrMore(~expression)
     }
   / expression:primary plus {
-    	~OneOrMore(expression)
+    	OneOrMore(~expression)
     }
   / primary
 
-primary -> ~Expr
+primary -> Expr
   = name:identifier !(string? returntype equals) {
-      ~RuleExpr(name)
+      RuleExpr(name)
     }
   / literal
   / class
-  / dot { ~AnyCharExpr }
+  / dot { AnyCharExpr }
   / lparen expression:expression rparen { expression }
 
 /* "Lexical" elements */
@@ -156,9 +156,9 @@ identifier -> ~str
  * Modeled after ECMA-262, 5th ed., 7.8.4. (syntax & semantics, rules only
  * vaguely).
  */
-literal -> ~Expr
+literal -> Expr
   = value:(doubleQuotedString / singleQuotedString) flags:"i"? __ {
-    	~LiteralExpr(value)
+    	LiteralExpr(value)
     }
 
 string -> ~str
@@ -192,9 +192,9 @@ singleQuotedCharacter -> char
 simpleSingleQuotedCharacter -> char
   = !("'" / "\\" / eolChar) . { match_str.char_at(0) }
 
-class -> ~Expr
+class -> Expr
   = "[" inverted:"^"? parts:(classCharacterRange / classCharacter)* "]" flags:"i"? __ {
-      ~CharSetExpr(inverted.is_some(), parts)
+      CharSetExpr(inverted.is_some(), parts)
     }
 
 classCharacterRange -> CharSetCase

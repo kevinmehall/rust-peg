@@ -3,7 +3,7 @@ use std::str;
 
 pub struct Grammar {
 	pub initializer: Option<~str>,
-	pub rules: Vec<~Rule>,
+	pub rules: Vec<Rule>,
 }
 
 pub struct Rule {
@@ -28,8 +28,8 @@ pub enum Expr {
 	LiteralExpr(~str),
 	CharSetExpr(bool, Vec<CharSetCase>),
 	RuleExpr(~str),
-	SequenceExpr(Vec<~Expr>),
-	ChoiceExpr(Vec<~Expr>),
+	SequenceExpr(Vec<Expr>),
+	ChoiceExpr(Vec<Expr>),
 	OptionalExpr(~Expr),
 	ZeroOrMore(~Expr),
 	OneOrMore(~Expr),
@@ -44,7 +44,7 @@ pub fn compile_grammar(w: &RustWriter, grammar: &Grammar) {
 	compile_header(w, grammar.initializer.as_ref().map_or("", |s| s.as_slice()));
 
 	for rule in grammar.rules.iter() {
-		compile_rule(w, *rule);
+		compile_rule(w, rule);
 	}
 }
 
@@ -215,11 +215,11 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 		}
 
 		SequenceExpr(ref exprs) => {
-			fn write_seq(w: &RustWriter, exprs: &[~Expr]) {
+			fn write_seq(w: &RustWriter, exprs: &[Expr]) {
 				if exprs.len() == 1 {
-					compile_expr(w, exprs[0], false);
+					compile_expr(w, &exprs[0], false);
 				} else {
-					compile_match_and_then(w, exprs[0], None, || {
+					compile_match_and_then(w, &exprs[0], None, || {
 						write_seq(w, exprs.tail());
 					});
 				}
@@ -231,12 +231,12 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 		}
 
 		ChoiceExpr(ref exprs) => {
-			fn write_choice(w: &RustWriter, exprs: &[~Expr], result_used: bool) {
+			fn write_choice(w: &RustWriter, exprs: &[Expr], result_used: bool) {
 				if exprs.len() == 1 {
-					compile_expr(w, exprs[0], result_used);
+					compile_expr(w, &exprs[0], result_used);
 				} else {
 					w.let_block("choice_res", || {
-						compile_expr(w, exprs[0], result_used);
+						compile_expr(w, &exprs[0], result_used);
 					});
 					w.match_block("choice_res", || {
 						w.match_inline_case("Ok((pos, value))", "Ok((pos, value))");

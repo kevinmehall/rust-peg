@@ -38,7 +38,7 @@ fn pos_to_line(input: &str, pos: uint) -> uint {
 	return lineno;
 }
 #[allow(unused_variable)]
-fn parse_grammar(input: &str, pos: uint) -> Result<(uint, ~Grammar) , uint> {
+fn parse_grammar(input: &str, pos: uint) -> Result<(uint, Grammar) , uint> {
     let start_pos = pos;
     let seq_res = {
         parse___(input, pos)
@@ -82,7 +82,7 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, ~Grammar) , uint> {
                         Err(pos) => Err(pos),
                         Ok((pos, rules)) => {
                             let match_str = input.slice(start_pos, pos);;
-                            Ok((pos, { ~Grammar{ initializer:header, rules:rules } }))
+                            Ok((pos, { Grammar{ initializer:header, rules:rules } }))
                         }
                     }
                 }
@@ -90,7 +90,7 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, ~Grammar) , uint> {
         }
     }
 }
-pub fn grammar(input: &str) -> Result<~Grammar, ~str> {
+pub fn grammar(input: &str) -> Result<Grammar, ~str> {
     match parse_grammar(input, 0) {
         Ok((pos, value)) => {
             if pos == input.len() {
@@ -103,7 +103,7 @@ pub fn grammar(input: &str) -> Result<~Grammar, ~str> {
     }
 }
 #[allow(unused_variable)]
-fn parse_rule(input: &str, pos: uint) -> Result<(uint, ~Rule) , uint> {
+fn parse_rule(input: &str, pos: uint) -> Result<(uint, Rule) , uint> {
     let start_pos = pos;
     let seq_res = {
         parse_exportflag(input, pos)
@@ -149,7 +149,7 @@ fn parse_rule(input: &str, pos: uint) -> Result<(uint, ~Rule) , uint> {
                                                 Ok((pos, _)) => {
                                                     let match_str = input.slice(start_pos, pos);;
                                                     Ok((pos, {
-      ~Rule{ name: name, expr: expression, ret_type: returns, exported: exported }
+      Rule{ name: name, expr: ~expression, ret_type: returns, exported: exported }
     }))
                                                 }
                                             }
@@ -395,11 +395,11 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_expression(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
+fn parse_expression(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     parse_choice(input, pos)
 }
 #[allow(unused_variable)]
-fn parse_choice(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
+fn parse_choice(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     let start_pos = pos;
     let seq_res = {
         parse_sequence(input, pos)
@@ -453,7 +453,7 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
       if tail.len() > 0 {
       	let mut list = tail;
       	list.unshift(head);
-      	~ChoiceExpr(list)
+      	ChoiceExpr(list)
       } else {
         head
       }
@@ -464,7 +464,7 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_sequence(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
+fn parse_sequence(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     let choice_res = {
         let start_pos = pos;
         let seq_res = {
@@ -498,7 +498,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                     Ok((pos, code)) => {
                         let match_str = input.slice(start_pos, pos);;
                         Ok((pos, {
-  	  ~ActionExpr(elements, code)
+  	  ActionExpr(elements, code)
     }))
                     }
                 }
@@ -535,7 +535,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                     let match_str = input.slice(start_pos, pos);;
                     Ok((pos, {
       if elements.len() != 1 {
-      	  ~SequenceExpr(elements)
+      	  SequenceExpr(elements)
       } else {
           elements.move_iter().next().unwrap()
       }
@@ -569,7 +569,7 @@ fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr) , uint> {
                             Ok((pos, expression)) => {
                                 let match_str = input.slice(start_pos, pos);;
                                 Ok((pos, {
-      TaggedExpr{ name: Some(label), expr: expression }
+      TaggedExpr{ name: Some(label), expr: ~expression }
     }))
                             }
                         }
@@ -590,7 +590,7 @@ fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr) , uint> {
                 Ok((pos, expr)) => {
                     let match_str = input.slice(start_pos, pos);;
                     Ok((pos, {
-      TaggedExpr{ name: None, expr: expr }
+      TaggedExpr{ name: None, expr: ~expr }
   }))
                 }
             }
@@ -598,7 +598,7 @@ fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
+fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     let choice_res = {
         let start_pos = pos;
         let seq_res = {
@@ -641,7 +641,7 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                             Ok((pos, expression)) => {
                                 let match_str = input.slice(start_pos, pos);;
                                 Ok((pos, {
-      ~PosAssertExpr(expression)
+      PosAssertExpr(~expression)
     }))
                             }
                         }
@@ -667,7 +667,7 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                                     Ok((pos, expression)) => {
                                         let match_str = input.slice(start_pos, pos);;
                                         Ok((pos, {
-      ~NegAssertExpr(expression)
+      NegAssertExpr(~expression)
     }))
                                     }
                                 }
@@ -686,7 +686,7 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
+fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     let choice_res = {
         let start_pos = pos;
         let seq_res = {
@@ -703,7 +703,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                     Ok((pos, _)) => {
                         let match_str = input.slice(start_pos, pos);;
                         Ok((pos, {
-       ~OptionalExpr(expression)
+       OptionalExpr(~expression)
     }))
                     }
                 }
@@ -729,7 +729,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                             Ok((pos, _)) => {
                                 let match_str = input.slice(start_pos, pos);;
                                 Ok((pos, {
-    	~ZeroOrMore(expression)
+    	ZeroOrMore(~expression)
     }))
                             }
                         }
@@ -755,7 +755,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                                     Ok((pos, _)) => {
                                         let match_str = input.slice(start_pos, pos);;
                                         Ok((pos, {
-    	~OneOrMore(expression)
+    	OneOrMore(~expression)
     }))
                                     }
                                 }
@@ -774,7 +774,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_primary(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
+fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     let choice_res = {
         let start_pos = pos;
         let seq_res = {
@@ -819,7 +819,7 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                     Ok((pos, _)) => {
                         let match_str = input.slice(start_pos, pos);;
                         Ok((pos, {
-      ~RuleExpr(name)
+      RuleExpr(name)
     }))
                     }
                 }
@@ -850,7 +850,7 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                                     Err(pos) => Err(pos),
                                     Ok((pos, _)) => {
                                         let match_str = input.slice(start_pos, pos);;
-                                        Ok((pos, { ~AnyCharExpr }))
+                                        Ok((pos, { AnyCharExpr }))
                                     }
                                 }
                             };
@@ -1273,7 +1273,7 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_literal(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
+fn parse_literal(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     let start_pos = pos;
     let seq_res = {
         let choice_res = {
@@ -1309,7 +1309,7 @@ fn parse_literal(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                         Ok((pos, _)) => {
                             let match_str = input.slice(start_pos, pos);;
                             Ok((pos, {
-    	~LiteralExpr(value)
+    	LiteralExpr(value)
     }))
                         }
                     }
@@ -1619,7 +1619,7 @@ fn parse_simpleSingleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, ch
     }
 }
 #[allow(unused_variable)]
-fn parse_class(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
+fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     let start_pos = pos;
     let seq_res = {
         slice_eq(input, pos, "[")
@@ -1696,7 +1696,7 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                                                 Ok((pos, _)) => {
                                                     let match_str = input.slice(start_pos, pos);;
                                                     Ok((pos, {
-      ~CharSetExpr(inverted.is_some(), parts)
+      CharSetExpr(inverted.is_some(), parts)
     }))
                                                 }
                                             }
