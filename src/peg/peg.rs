@@ -3,7 +3,7 @@ use std::str;
 
 pub struct Grammar {
 	pub initializer: Option<~str>,
-	pub rules: ~[~Rule]
+	pub rules: Vec<~Rule>,
 }
 
 pub struct Rule {
@@ -26,10 +26,10 @@ pub struct TaggedExpr {
 pub enum Expr {
 	AnyCharExpr,
 	LiteralExpr(~str),
-	CharSetExpr(bool, ~[CharSetCase]),
+	CharSetExpr(bool, Vec<CharSetCase>),
 	RuleExpr(~str),
-	SequenceExpr(~[~Expr]),
-	ChoiceExpr(~[~Expr]),
+	SequenceExpr(Vec<~Expr>),
+	ChoiceExpr(Vec<~Expr>),
 	OptionalExpr(~Expr),
 	ZeroOrMore(~Expr),
 	OneOrMore(~Expr),
@@ -37,7 +37,7 @@ pub enum Expr {
 	PosAssertExpr(~Expr),
 	NegAssertExpr(~Expr),
 	StringifyExpr(~Expr),
-	ActionExpr(~[TaggedExpr], ~str),
+	ActionExpr(Vec<TaggedExpr>, ~str),
 }
 
 pub fn compile_grammar(w: &RustWriter, grammar: &Grammar) {
@@ -130,10 +130,15 @@ fn compile_match_and_then(w: &RustWriter, e: &Expr, value_name: Option<&str>, th
 
 fn compile_zero_or_more(w: &RustWriter, e: &Expr, list_initial: Option<&str>) {
 	w.let_mut_stmt("repeat_pos", "pos");
-	let result_used = list_initial.is_some();
-	if result_used {
-		w.let_mut_stmt("repeat_value", list_initial.unwrap());
-	}
+	
+	let result_used = match list_initial {
+		Some(repeat_value) => {
+			w.let_mut_stmt("repeat_value", repeat_value);
+			true
+		}
+		_ => false
+	};
+
 	w.loop_block(|| {
 		w.let_block("step_res", || {
 			w.let_stmt("pos", "repeat_pos");
@@ -221,7 +226,7 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 			}
 
 			if exprs.len() > 0 {
-				write_seq(w, *exprs);
+				write_seq(w, exprs.as_slice());
 			}
 		}
 
@@ -243,7 +248,7 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 			}
 
 			if exprs.len() > 0 {
-				write_choice(w, *exprs, result_used);
+				write_choice(w, exprs.as_slice(), result_used);
 			}
 		}
 
@@ -258,12 +263,12 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 		}
 		
 		ZeroOrMore(ref e) => {
-			compile_zero_or_more(w, *e, if result_used { Some("~[]") } else { None });
+			compile_zero_or_more(w, *e, if result_used { Some("vec!()") } else { None });
 		}
 
 		OneOrMore(ref e) => {
 			compile_match_and_then(w, *e, if result_used { Some("first_value") } else { None }, || {
-				compile_zero_or_more(w, *e, if result_used { Some("~[first_value]") } else { None });
+				compile_zero_or_more(w, *e, if result_used { Some("vec!(first_value)") } else { None });
 			});
 		}
 		
@@ -310,7 +315,7 @@ fn compile_expr(w: &RustWriter, e: &Expr, result_used: bool) {
 				}
 			}
 
-			write_seq(w, *exprs, *code);
+			write_seq(w, exprs.as_slice(), *code);
 		}
 	}
 }

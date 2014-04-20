@@ -60,7 +60,7 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, ~Grammar) , uint> {
                 Ok((pos, header)) => {
                     let seq_res = {
                         let mut repeat_pos = pos;
-                        let mut repeat_value = ~[];
+                        let mut repeat_value = vec!();
                         loop {
                             let step_res = {
                                 let pos = repeat_pos;
@@ -409,7 +409,7 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
         Ok((pos, head)) => {
             let seq_res = {
                 let mut repeat_pos = pos;
-                let mut repeat_value = ~[];
+                let mut repeat_value = vec!();
                 loop {
                     let step_res = {
                         let pos = repeat_pos;
@@ -469,7 +469,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
         let start_pos = pos;
         let seq_res = {
             let mut repeat_pos = pos;
-            let mut repeat_value = ~[];
+            let mut repeat_value = vec!();
             loop {
                 let step_res = {
                     let pos = repeat_pos;
@@ -511,7 +511,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
             let start_pos = pos;
             let seq_res = {
                 let mut repeat_pos = pos;
-                let mut repeat_value = ~[];
+                let mut repeat_value = vec!();
                 loop {
                     let step_res = {
                         let pos = repeat_pos;
@@ -537,7 +537,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
       if elements.len() != 1 {
       	  ~SequenceExpr(elements)
       } else {
-          elements[0]
+          elements.move_iter().next().unwrap()
       }
     }))
                 }
@@ -1359,7 +1359,7 @@ fn parse_doubleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uin
         Ok((pos, _)) => {
             let seq_res = {
                 let mut repeat_pos = pos;
-                let mut repeat_value = ~[];
+                let mut repeat_value = vec!();
                 loop {
                     let step_res = {
                         let pos = repeat_pos;
@@ -1387,7 +1387,7 @@ fn parse_doubleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uin
                         Err(pos) => Err(pos),
                         Ok((pos, _)) => {
                             let match_str = input.slice(start_pos, pos);;
-                            Ok((pos, { str::from_chars(s) }))
+                            Ok((pos, { str::from_chars(s.as_slice()) }))
                         }
                     }
                 }
@@ -1494,7 +1494,7 @@ fn parse_singleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uin
         Ok((pos, _)) => {
             let seq_res = {
                 let mut repeat_pos = pos;
-                let mut repeat_value = ~[];
+                let mut repeat_value = vec!();
                 loop {
                     let step_res = {
                         let pos = repeat_pos;
@@ -1522,7 +1522,7 @@ fn parse_singleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uin
                         Err(pos) => Err(pos),
                         Ok((pos, _)) => {
                             let match_str = input.slice(start_pos, pos);;
-                            Ok((pos, { str::from_chars(s) }))
+                            Ok((pos, { str::from_chars(s.as_slice()) }))
                         }
                     }
                 }
@@ -1641,7 +1641,7 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, ~Expr) , uint> {
                 Ok((pos, inverted)) => {
                     let seq_res = {
                         let mut repeat_pos = pos;
-                        let mut repeat_value = ~[];
+                        let mut repeat_value = vec!();
                         loop {
                             let step_res = {
                                 let pos = repeat_pos;
