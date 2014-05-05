@@ -14,6 +14,6 @@ number -> int
 	= [0-9]+ { from_str::<int>(match_str).unwrap() }
 
 #[export]
-list -> ~[int]
+list -> Vec<int>
 	= (n:number "," {n})+
 
