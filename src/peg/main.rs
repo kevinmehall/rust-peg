@@ -14,7 +14,7 @@ mod grammar;
 
 fn main() {
 	let args = os::args();
-	let source_utf8 = File::open(&Path::new(args[1])).read_to_end().unwrap();
+	let source_utf8 = File::open(&Path::new(args.get(1).as_slice())).read_to_end().unwrap();
 	let source = str::from_utf8(source_utf8.as_slice()).unwrap();
 	let grammar_def = grammar::grammar(source);
 

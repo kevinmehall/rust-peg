@@ -1,16 +1,15 @@
-use std::cell::RefCell;
+use std::cell::{RefCell, RefMut};
 use std::io::Writer;
-use std::cast::transmute_mut;
 
 pub struct RustWriter {
-	writer: ~Writer,
+	writer: RefCell<Box<Writer>>,
 	indent: RefCell<uint>,
 }
 
 impl RustWriter {
 	pub fn new<W: Writer+Send>(writer: W) -> RustWriter {
 		RustWriter {
-			writer: ~writer as ~Writer,
+			writer: RefCell::new(box writer as Box<Writer>),
 			indent: RefCell::new(0)
 		}
 	}
@@ -21,10 +20,8 @@ impl RustWriter {
 	}
 
 	#[inline]
-	pub fn writer<'a>(&'a self) -> &'a mut Writer {
-		// This struct cannot be mutable without causing borrowck errors
-		// when methods are passed closures that also reference the struct
-		unsafe { &'a mut transmute_mut(self).writer as &'a mut Writer }
+	pub fn writer<'a>(&'a self) -> RefMut<'a ,Box<Writer>> {
+		self.writer.borrow_mut()
 	}
 
 	pub fn write_indent(&self) {

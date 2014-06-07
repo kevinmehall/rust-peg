@@ -12,18 +12,17 @@ grammar -> Grammar
 
 rule -> Rule
   = exported:exportflag name:identifier returns: returntype equals expression:expression semicolon? {
-      Rule{ name: name, expr: ~expression, ret_type: returns, exported: exported }
+      Rule{ name: name, expr: box expression, ret_type: returns, exported: exported }
     }
 
     exportflag -> bool = "#[export]" __ {true} / "" {false}
 
-returntype -> ~str
-  = returns tp:(rust_type {match_str.trim().to_owned()}) { tp }
-  / { ~"()" }
+returntype -> String
+  = returns tp:(rust_type {match_str.trim().to_string()}) { tp }
+  / { "()".to_string() }
 
 rust_type
   = "()" __
-  / "~" __ rust_type
   / "[" rust_type "]" __
   / identifier "<" rust_type ">" __
   / identifier "::" rust_type
@@ -57,10 +56,10 @@ sequence -> Expr
 
 labeled -> TaggedExpr
   = label:identifier colon expression:prefixed {
-      TaggedExpr{ name: Some(label), expr: ~expression }
+      TaggedExpr{ name: Some(label), expr: box expression }
     }
   / expr: prefixed {
-      TaggedExpr{ name: None, expr: ~expr }
+      TaggedExpr{ name: None, expr: box expr }
   }
 
 prefixed -> Expr
@@ -71,25 +70,25 @@ prefixed -> Expr
 //      fail!("/*Semantic and unsupported*/");
 //    }
   / and expression:suffixed {
-      PosAssertExpr(~expression)
+      PosAssertExpr(box expression)
     }
 //  / not code:action {
 //      fail!("/*Semantic not unsupported*/");
 //    }
   / not expression:suffixed {
-      NegAssertExpr(~expression)
+      NegAssertExpr(box expression)
     }
   / suffixed
 
 suffixed -> Expr
   = expression:primary question {
-       OptionalExpr(~expression)
+       OptionalExpr(box expression)
     }
   / expression:primary star {
-      ZeroOrMore(~expression)
+      ZeroOrMore(box expression)
     }
   / expression:primary plus {
-      OneOrMore(~expression)
+      OneOrMore(box expression)
     }
   / primary
 
@@ -104,11 +103,11 @@ primary -> Expr
 
 /* "Lexical" elements */
 
-action -> ~str
+action -> String
   = braced:braced __ { braced }
 
-braced -> ~str
-  = "{" b:(((braced "") / nonBraceCharacters)* {match_str.to_owned()}) "}" {b}
+braced -> String
+  = "{" b:(((braced "") / nonBraceCharacters)* {match_str.to_string()}) "}" {b}
 
 nonBraceCharacters
   = nonBraceCharacter+
@@ -149,8 +148,8 @@ returns   = "->" __
  * Contrary to ECMA 262, the "$" character is not valid because it serves other
  * purpose in the grammar.
  */
-identifier -> ~str
-  = chars:((letter / "_") (letter / digit / "_")* {match_str.to_owned()}) __ { chars }
+identifier -> String
+  = chars:((letter / "_") (letter / digit / "_")* {match_str.to_string()}) __ { chars }
 
 /*
  * Modeled after ECMA-262, 5th ed., 7.8.4. (syntax & semantics, rules only
@@ -161,10 +160,10 @@ literal -> Expr
       LiteralExpr(value)
     }
 
-string -> ~str
+string -> String
   = string:(doubleQuotedString / singleQuotedString) __ { string }
 
-doubleQuotedString -> ~str
+doubleQuotedString -> String
   = '"' s:doubleQuotedCharacter* '"' { str::from_chars(s.as_slice()) }
 
 doubleQuotedCharacter -> char
@@ -178,7 +177,7 @@ doubleQuotedCharacter -> char
 simpleDoubleQuotedCharacter -> char
   = !('"' / "\\" / eolChar) . { match_str.char_at(0) }
 
-singleQuotedString -> ~str
+singleQuotedString -> String
   = "'" s:singleQuotedCharacter* "'" { str::from_chars(s.as_slice()) }
 
 singleQuotedCharacter -> char

@@ -38,7 +38,7 @@ fn pos_to_line(input: &str, pos: uint) -> uint {
 	return lineno;
 }
 #[allow(unused_variable)]
-fn parse_grammar(input: &str, pos: uint) -> Result<(uint, Grammar) , uint> {
+fn parse_grammar(input: &str, pos: uint) -> Result<(uint, Grammar), uint> {
     let start_pos = pos;
     let seq_res = {
         parse___(input, pos)
@@ -90,20 +90,20 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, Grammar) , uint> {
         }
     }
 }
-pub fn grammar(input: &str) -> Result<Grammar, ~str> {
+pub fn grammar(input: &str) -> Result<Grammar, String> {
     match parse_grammar(input, 0) {
         Ok((pos, value)) => {
             if pos == input.len() {
                 Ok(value)
             } else {
-                Err(~"Expected end of input at " + pos_to_line(input, pos).to_str())
+                Err(format!("Expected end of input at {}", pos_to_line(input, pos).to_str()))
             }
         }
-        Err(pos) => Err("Error at "+ pos_to_line(input, pos).to_str()),
+        Err(pos) => Err(format!("Error at {}", pos_to_line(input, pos).to_str())),
     }
 }
 #[allow(unused_variable)]
-fn parse_rule(input: &str, pos: uint) -> Result<(uint, Rule) , uint> {
+fn parse_rule(input: &str, pos: uint) -> Result<(uint, Rule), uint> {
     let start_pos = pos;
     let seq_res = {
         parse_exportflag(input, pos)
@@ -149,7 +149,7 @@ fn parse_rule(input: &str, pos: uint) -> Result<(uint, Rule) , uint> {
                                                 Ok((pos, _)) => {
                                                     let match_str = input.slice(start_pos, pos);;
                                                     Ok((pos, {
-      Rule{ name: name, expr: ~expression, ret_type: returns, exported: exported }
+      Rule{ name: name, expr: box expression, ret_type: returns, exported: exported }
     }))
                                                 }
                                             }
@@ -165,7 +165,7 @@ fn parse_rule(input: &str, pos: uint) -> Result<(uint, Rule) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_exportflag(input: &str, pos: uint) -> Result<(uint, bool) , uint> {
+fn parse_exportflag(input: &str, pos: uint) -> Result<(uint, bool), uint> {
     let choice_res = {
         let start_pos = pos;
         let seq_res = {
@@ -205,7 +205,7 @@ fn parse_exportflag(input: &str, pos: uint) -> Result<(uint, bool) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_returntype(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
+fn parse_returntype(input: &str, pos: uint) -> Result<(uint, String), uint> {
     let choice_res = {
         let start_pos = pos;
         let seq_res = {
@@ -223,7 +223,7 @@ fn parse_returntype(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
                         Err(pos) => Err(pos),
                         Ok((pos, _)) => {
                             let match_str = input.slice(start_pos, pos);;
-                            Ok((pos, {match_str.trim().to_owned()}))
+                            Ok((pos, {match_str.trim().to_string()}))
                         }
                     }
                 };
@@ -242,12 +242,12 @@ fn parse_returntype(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
         Err(..) => {
             let start_pos = pos;
             let match_str = input.slice(start_pos, pos);;
-            Ok((pos, { ~"()" }))
+            Ok((pos, { "()".to_string() }))
         }
     }
 }
 #[allow(unused_variable)]
-fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let choice_res = {
         let seq_res = {
             slice_eq(input, pos, "()")
@@ -264,18 +264,26 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
         Err(..) => {
             let choice_res = {
                 let seq_res = {
-                    slice_eq(input, pos, "~")
+                    slice_eq(input, pos, "[")
                 };
                 match seq_res {
                     Err(pos) => Err(pos),
                     Ok((pos, _)) => {
                         let seq_res = {
-                            parse___(input, pos)
+                            parse_rust_type(input, pos)
                         };
                         match seq_res {
                             Err(pos) => Err(pos),
                             Ok((pos, _)) => {
-                                parse_rust_type(input, pos)
+                                let seq_res = {
+                                    slice_eq(input, pos, "]")
+                                };
+                                match seq_res {
+                                    Err(pos) => Err(pos),
+                                    Ok((pos, _)) => {
+                                        parse___(input, pos)
+                                    }
+                                }
                             }
                         }
                     }
@@ -286,24 +294,32 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
                 Err(..) => {
                     let choice_res = {
                         let seq_res = {
-                            slice_eq(input, pos, "[")
+                            parse_identifier(input, pos)
                         };
                         match seq_res {
                             Err(pos) => Err(pos),
                             Ok((pos, _)) => {
                                 let seq_res = {
-                                    parse_rust_type(input, pos)
+                                    slice_eq(input, pos, "<")
                                 };
                                 match seq_res {
                                     Err(pos) => Err(pos),
                                     Ok((pos, _)) => {
                                         let seq_res = {
-                                            slice_eq(input, pos, "]")
+                                            parse_rust_type(input, pos)
                                         };
                                         match seq_res {
                                             Err(pos) => Err(pos),
                                             Ok((pos, _)) => {
-                                                parse___(input, pos)
+                                                let seq_res = {
+                                                    slice_eq(input, pos, ">")
+                                                };
+                                                match seq_res {
+                                                    Err(pos) => Err(pos),
+                                                    Ok((pos, _)) => {
+                                                        parse___(input, pos)
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -322,28 +338,12 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
                                     Err(pos) => Err(pos),
                                     Ok((pos, _)) => {
                                         let seq_res = {
-                                            slice_eq(input, pos, "<")
+                                            slice_eq(input, pos, "::")
                                         };
                                         match seq_res {
                                             Err(pos) => Err(pos),
                                             Ok((pos, _)) => {
-                                                let seq_res = {
-                                                    parse_rust_type(input, pos)
-                                                };
-                                                match seq_res {
-                                                    Err(pos) => Err(pos),
-                                                    Ok((pos, _)) => {
-                                                        let seq_res = {
-                                                            slice_eq(input, pos, ">")
-                                                        };
-                                                        match seq_res {
-                                                            Err(pos) => Err(pos),
-                                                            Ok((pos, _)) => {
-                                                                parse___(input, pos)
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                                                parse_rust_type(input, pos)
                                             }
                                         }
                                     }
@@ -352,37 +352,13 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
                                 Err(..) => {
-                                    let choice_res = {
-                                        let seq_res = {
-                                            parse_identifier(input, pos)
-                                        };
-                                        match seq_res {
-                                            Err(pos) => Err(pos),
-                                            Ok((pos, _)) => {
-                                                let seq_res = {
-                                                    slice_eq(input, pos, "::")
-                                                };
-                                                match seq_res {
-                                                    Err(pos) => Err(pos),
-                                                    Ok((pos, _)) => {
-                                                        parse_rust_type(input, pos)
-                                                    }
-                                                }
-                                            }
-                                        }
+                                    let seq_res = {
+                                        parse_identifier(input, pos)
                                     };
-                                    match choice_res {
-                                        Ok((pos, value)) => Ok((pos, value)),
-                                        Err(..) => {
-                                            let seq_res = {
-                                                parse_identifier(input, pos)
-                                            };
-                                            match seq_res {
-                                                Err(pos) => Err(pos),
-                                                Ok((pos, _)) => {
-                                                    slice_eq(input, pos, "")
-                                                }
-                                            }
+                                    match seq_res {
+                                        Err(pos) => Err(pos),
+                                        Ok((pos, _)) => {
+                                            slice_eq(input, pos, "")
                                         }
                                     }
                                 }
@@ -395,11 +371,11 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_expression(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
+fn parse_expression(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
     parse_choice(input, pos)
 }
 #[allow(unused_variable)]
-fn parse_choice(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
+fn parse_choice(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
     let start_pos = pos;
     let seq_res = {
         parse_sequence(input, pos)
@@ -464,7 +440,7 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_sequence(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
+fn parse_sequence(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
     let choice_res = {
         let start_pos = pos;
         let seq_res = {
@@ -546,7 +522,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr) , uint> {
+fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr), uint> {
     let choice_res = {
         let start_pos = pos;
         let seq_res = {
@@ -569,7 +545,7 @@ fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr) , uint> {
                             Ok((pos, expression)) => {
                                 let match_str = input.slice(start_pos, pos);;
                                 Ok((pos, {
-      TaggedExpr{ name: Some(label), expr: ~expression }
+      TaggedExpr{ name: Some(label), expr: box expression }
     }))
                             }
                         }
@@ -590,7 +566,7 @@ fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr) , uint> {
                 Ok((pos, expr)) => {
                     let match_str = input.slice(start_pos, pos);;
                     Ok((pos, {
-      TaggedExpr{ name: None, expr: ~expr }
+      TaggedExpr{ name: None, expr: box expr }
   }))
                 }
             }
@@ -598,7 +574,7 @@ fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
+fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
     let choice_res = {
         let start_pos = pos;
         let seq_res = {
@@ -641,7 +617,7 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
                             Ok((pos, expression)) => {
                                 let match_str = input.slice(start_pos, pos);;
                                 Ok((pos, {
-      PosAssertExpr(~expression)
+      PosAssertExpr(box expression)
     }))
                             }
                         }
@@ -667,7 +643,7 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
                                     Ok((pos, expression)) => {
                                         let match_str = input.slice(start_pos, pos);;
                                         Ok((pos, {
-      NegAssertExpr(~expression)
+      NegAssertExpr(box expression)
     }))
                                     }
                                 }
@@ -686,7 +662,7 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
+fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
     let choice_res = {
         let start_pos = pos;
         let seq_res = {
@@ -703,7 +679,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
                     Ok((pos, _)) => {
                         let match_str = input.slice(start_pos, pos);;
                         Ok((pos, {
-       OptionalExpr(~expression)
+       OptionalExpr(box expression)
     }))
                     }
                 }
@@ -729,7 +705,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
                             Ok((pos, _)) => {
                                 let match_str = input.slice(start_pos, pos);;
                                 Ok((pos, {
-      ZeroOrMore(~expression)
+      ZeroOrMore(box expression)
     }))
                             }
                         }
@@ -755,7 +731,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
                                     Ok((pos, _)) => {
                                         let match_str = input.slice(start_pos, pos);;
                                         Ok((pos, {
-      OneOrMore(~expression)
+      OneOrMore(box expression)
     }))
                                     }
                                 }
@@ -774,7 +750,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
+fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
     let choice_res = {
         let start_pos = pos;
         let seq_res = {
@@ -894,7 +870,7 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_action(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
+fn parse_action(input: &str, pos: uint) -> Result<(uint, String), uint> {
     let start_pos = pos;
     let seq_res = {
         parse_braced(input, pos)
@@ -916,7 +892,7 @@ fn parse_action(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_braced(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
+fn parse_braced(input: &str, pos: uint) -> Result<(uint, String), uint> {
     let start_pos = pos;
     let seq_res = {
         slice_eq(input, pos, "{")
@@ -964,7 +940,7 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
                     Err(pos) => Err(pos),
                     Ok((pos, _)) => {
                         let match_str = input.slice(start_pos, pos);;
-                        Ok((pos, {match_str.to_owned()}))
+                        Ok((pos, {match_str.to_string()}))
                     }
                 }
             };
@@ -987,7 +963,7 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_nonBraceCharacters(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_nonBraceCharacters(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         parse_nonBraceCharacter(input, pos)
     };
@@ -1014,7 +990,7 @@ fn parse_nonBraceCharacters(input: &str, pos: uint) -> Result<(uint, ()) , uint>
     }
 }
 #[allow(unused_variable)]
-fn parse_nonBraceCharacter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_nonBraceCharacter(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let CharRange {ch, next} = input.char_range_at(pos);
         match ch {
@@ -1026,7 +1002,7 @@ fn parse_nonBraceCharacter(input: &str, pos: uint) -> Result<(uint, ()) , uint> 
     }
 }
 #[allow(unused_variable)]
-fn parse_equals(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_equals(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "=")
     };
@@ -1038,7 +1014,7 @@ fn parse_equals(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_colon(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_colon(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, ":")
     };
@@ -1050,7 +1026,7 @@ fn parse_colon(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_semicolon(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_semicolon(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, ";")
     };
@@ -1062,7 +1038,7 @@ fn parse_semicolon(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_slash(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_slash(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "/")
     };
@@ -1074,7 +1050,7 @@ fn parse_slash(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_and(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_and(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "&")
     };
@@ -1086,7 +1062,7 @@ fn parse_and(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_not(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_not(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "!")
     };
@@ -1098,7 +1074,7 @@ fn parse_not(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_dollar(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_dollar(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "$")
     };
@@ -1110,7 +1086,7 @@ fn parse_dollar(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_question(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_question(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "?")
     };
@@ -1122,7 +1098,7 @@ fn parse_question(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_star(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_star(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "*")
     };
@@ -1134,7 +1110,7 @@ fn parse_star(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_plus(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_plus(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "+")
     };
@@ -1146,7 +1122,7 @@ fn parse_plus(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_lparen(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_lparen(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "(")
     };
@@ -1158,7 +1134,7 @@ fn parse_lparen(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_rparen(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_rparen(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, ")")
     };
@@ -1170,7 +1146,7 @@ fn parse_rparen(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_dot(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_dot(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, ".")
     };
@@ -1182,7 +1158,7 @@ fn parse_dot(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_returns(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_returns(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "->")
     };
@@ -1194,7 +1170,7 @@ fn parse_returns(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_identifier(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
+fn parse_identifier(input: &str, pos: uint) -> Result<(uint, String), uint> {
     let start_pos = pos;
     let seq_res = {
         let start_pos = pos;
@@ -1250,7 +1226,7 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
                     Err(pos) => Err(pos),
                     Ok((pos, _)) => {
                         let match_str = input.slice(start_pos, pos);;
-                        Ok((pos, {match_str.to_owned()}))
+                        Ok((pos, {match_str.to_string()}))
                     }
                 }
             }
@@ -1273,7 +1249,7 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_literal(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
+fn parse_literal(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
     let start_pos = pos;
     let seq_res = {
         let choice_res = {
@@ -1319,7 +1295,7 @@ fn parse_literal(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_string(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
+fn parse_string(input: &str, pos: uint) -> Result<(uint, String), uint> {
     let start_pos = pos;
     let seq_res = {
         let choice_res = {
@@ -1349,7 +1325,7 @@ fn parse_string(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_doubleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
+fn parse_doubleQuotedString(input: &str, pos: uint) -> Result<(uint, String), uint> {
     let start_pos = pos;
     let seq_res = {
         slice_eq(input, pos, "\"")
@@ -1396,7 +1372,7 @@ fn parse_doubleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uin
     }
 }
 #[allow(unused_variable)]
-fn parse_doubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , uint> {
+fn parse_doubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char), uint> {
     let choice_res = {
         parse_simpleDoubleQuotedCharacter(input, pos)
     };
@@ -1440,7 +1416,7 @@ fn parse_doubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , 
     }
 }
 #[allow(unused_variable)]
-fn parse_simpleDoubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , uint> {
+fn parse_simpleDoubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char), uint> {
     let start_pos = pos;
     let seq_res = {
         let neg_assert_res = {
@@ -1484,7 +1460,7 @@ fn parse_simpleDoubleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, ch
     }
 }
 #[allow(unused_variable)]
-fn parse_singleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uint> {
+fn parse_singleQuotedString(input: &str, pos: uint) -> Result<(uint, String), uint> {
     let start_pos = pos;
     let seq_res = {
         slice_eq(input, pos, "\'")
@@ -1531,7 +1507,7 @@ fn parse_singleQuotedString(input: &str, pos: uint) -> Result<(uint, ~str) , uin
     }
 }
 #[allow(unused_variable)]
-fn parse_singleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , uint> {
+fn parse_singleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char), uint> {
     let choice_res = {
         parse_simpleSingleQuotedCharacter(input, pos)
     };
@@ -1575,7 +1551,7 @@ fn parse_singleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , 
     }
 }
 #[allow(unused_variable)]
-fn parse_simpleSingleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char) , uint> {
+fn parse_simpleSingleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, char), uint> {
     let start_pos = pos;
     let seq_res = {
         let neg_assert_res = {
@@ -1619,7 +1595,7 @@ fn parse_simpleSingleQuotedCharacter(input: &str, pos: uint) -> Result<(uint, ch
     }
 }
 #[allow(unused_variable)]
-fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
+fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
     let start_pos = pos;
     let seq_res = {
         slice_eq(input, pos, "[")
@@ -1712,7 +1688,7 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_classCharacterRange(input: &str, pos: uint) -> Result<(uint, CharSetCase) , uint> {
+fn parse_classCharacterRange(input: &str, pos: uint) -> Result<(uint, CharSetCase), uint> {
     let start_pos = pos;
     let seq_res = {
         parse_bracketDelimitedCharacter(input, pos)
@@ -1745,7 +1721,7 @@ fn parse_classCharacterRange(input: &str, pos: uint) -> Result<(uint, CharSetCas
     }
 }
 #[allow(unused_variable)]
-fn parse_classCharacter(input: &str, pos: uint) -> Result<(uint, CharSetCase) , uint> {
+fn parse_classCharacter(input: &str, pos: uint) -> Result<(uint, CharSetCase), uint> {
     let start_pos = pos;
     let seq_res = {
         parse_bracketDelimitedCharacter(input, pos)
@@ -1761,7 +1737,7 @@ fn parse_classCharacter(input: &str, pos: uint) -> Result<(uint, CharSetCase) , 
     }
 }
 #[allow(unused_variable)]
-fn parse_bracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint, char) , uint> {
+fn parse_bracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint, char), uint> {
     let choice_res = {
         parse_simpleBracketDelimitedCharacter(input, pos)
     };
@@ -1805,7 +1781,7 @@ fn parse_bracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint, char
     }
 }
 #[allow(unused_variable)]
-fn parse_simpleBracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint, char) , uint> {
+fn parse_simpleBracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint, char), uint> {
     let start_pos = pos;
     let seq_res = {
         let neg_assert_res = {
@@ -1849,7 +1825,7 @@ fn parse_simpleBracketDelimitedCharacter(input: &str, pos: uint) -> Result<(uint
     }
 }
 #[allow(unused_variable)]
-fn parse_simpleEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uint> {
+fn parse_simpleEscapeSequence(input: &str, pos: uint) -> Result<(uint, char), uint> {
     let start_pos = pos;
     let seq_res = {
         slice_eq(input, pos, "\\")
@@ -1919,7 +1895,7 @@ fn parse_simpleEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , u
     }
 }
 #[allow(unused_variable)]
-fn parse_zeroEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uint> {
+fn parse_zeroEscapeSequence(input: &str, pos: uint) -> Result<(uint, char), uint> {
     let start_pos = pos;
     let seq_res = {
         slice_eq(input, pos, "\\0")
@@ -1947,7 +1923,7 @@ fn parse_zeroEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uin
     }
 }
 #[allow(unused_variable)]
-fn parse_hexEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uint> {
+fn parse_hexEscapeSequence(input: &str, pos: uint) -> Result<(uint, char), uint> {
     let start_pos = pos;
     let seq_res = {
         slice_eq(input, pos, "\\x")
@@ -1989,7 +1965,7 @@ fn parse_hexEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uint
     }
 }
 #[allow(unused_variable)]
-fn parse_unicodeEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uint> {
+fn parse_unicodeEscapeSequence(input: &str, pos: uint) -> Result<(uint, char), uint> {
     let start_pos = pos;
     let seq_res = {
         slice_eq(input, pos, "\\u")
@@ -2047,7 +2023,7 @@ fn parse_unicodeEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , 
     }
 }
 #[allow(unused_variable)]
-fn parse_eolEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uint> {
+fn parse_eolEscapeSequence(input: &str, pos: uint) -> Result<(uint, char), uint> {
     let start_pos = pos;
     let seq_res = {
         slice_eq(input, pos, "\\")
@@ -2069,7 +2045,7 @@ fn parse_eolEscapeSequence(input: &str, pos: uint) -> Result<(uint, char) , uint
     }
 }
 #[allow(unused_variable)]
-fn parse_digit(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_digit(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let CharRange {ch, next} = input.char_range_at(pos);
         match ch {
@@ -2081,7 +2057,7 @@ fn parse_digit(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_hexDigit(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_hexDigit(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let CharRange {ch, next} = input.char_range_at(pos);
         match ch {
@@ -2093,7 +2069,7 @@ fn parse_hexDigit(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_letter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_letter(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let choice_res = {
         parse_lowerCaseLetter(input, pos)
     };
@@ -2105,7 +2081,7 @@ fn parse_letter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_lowerCaseLetter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_lowerCaseLetter(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let CharRange {ch, next} = input.char_range_at(pos);
         match ch {
@@ -2117,7 +2093,7 @@ fn parse_lowerCaseLetter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_upperCaseLetter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_upperCaseLetter(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let CharRange {ch, next} = input.char_range_at(pos);
         match ch {
@@ -2129,7 +2105,7 @@ fn parse_upperCaseLetter(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse___(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse___(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let mut repeat_pos = pos;
     loop {
         let step_res = {
@@ -2164,7 +2140,7 @@ fn parse___(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     Ok((repeat_pos, ()))
 }
 #[allow(unused_variable)]
-fn parse_comment(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_comment(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let choice_res = {
         parse_singleLineComment(input, pos)
     };
@@ -2176,7 +2152,7 @@ fn parse_comment(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_singleLineComment(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_singleLineComment(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "//")
     };
@@ -2217,7 +2193,7 @@ fn parse_singleLineComment(input: &str, pos: uint) -> Result<(uint, ()) , uint> 
     }
 }
 #[allow(unused_variable)]
-fn parse_multiLineComment(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_multiLineComment(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let seq_res = {
         slice_eq(input, pos, "/*")
     };
@@ -2266,7 +2242,7 @@ fn parse_multiLineComment(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_eol(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_eol(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     let choice_res = {
         slice_eq(input, pos, "\n")
     };
@@ -2302,7 +2278,7 @@ fn parse_eol(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_eolChar(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_eolChar(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let CharRange {ch, next} = input.char_range_at(pos);
         match ch {
@@ -2314,7 +2290,7 @@ fn parse_eolChar(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
     }
 }
 #[allow(unused_variable)]
-fn parse_whitespace(input: &str, pos: uint) -> Result<(uint, ()) , uint> {
+fn parse_whitespace(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let CharRange {ch, next} = input.char_range_at(pos);
         match ch {
