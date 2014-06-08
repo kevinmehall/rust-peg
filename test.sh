@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-bin/peg examples/tests.rustpeg > examples/test_grammar.rs
+RUST_BACKTRACE=1 bin/peg examples/tests.rustpeg > examples/test_grammar.rs
 rustc --test examples/tests.rs -o tests
 ./tests
 rm tests

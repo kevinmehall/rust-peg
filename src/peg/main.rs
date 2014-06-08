@@ -1,16 +1,18 @@
 #![feature(globs)]
 #![feature(managed_boxes)]
+#![feature(quote)]
+
+extern crate syntax;
 
 use std::str;
 use std::io::{stdout,stderr};
 use std::io::fs::File;
 use std::os;
 use peg::{compile_grammar};
-use codegen::RustWriter;
 
 mod peg;
-mod codegen;
 mod grammar;
+mod rustast;
 
 fn main() {
 	let args = os::args();
@@ -20,8 +22,17 @@ fn main() {
 
 	match grammar_def {
 		Ok(grammar) => {
-			let w = RustWriter::new(stdout());
-			compile_grammar(&w, &grammar);
+			rustast::with_fake_extctxt(|e| {
+
+				let ast = compile_grammar(e, &grammar);
+				let mut out = stdout();
+
+				peg::write_header(&mut out, &grammar).unwrap();
+
+				for item in ast.items.iter() {
+					out.write_line(rustast::item_to_str(&**item).as_slice()).unwrap();
+				}
+			})
 		}
 
 		Err(msg) => {

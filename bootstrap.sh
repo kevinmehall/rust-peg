@@ -3,8 +3,8 @@ set -e
 
 mkdir -p bin
 
-rustc src/peg/main.rs -o bin/peg
-bin/peg src/peg/grammar.rustpeg > src/peg/grammar_new.rs
+rustc src/peg/main.rs -g -o bin/peg
+RUST_BACKTRACE=1 bin/peg src/peg/grammar.rustpeg > src/peg/grammar_new.rs
 
 mv src/peg/grammar.rs src/peg/grammar_old.rs
 mv src/peg/grammar_new.rs src/peg/grammar.rs

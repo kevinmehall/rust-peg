@@ -5,6 +5,7 @@ build
 
 src/peg/grammar_new.rs
 src/peg/grammar_old.rs
+src/peg/grammar.rs
 
 examples/arithmetic.rs
 examples/test_grammar.rs
