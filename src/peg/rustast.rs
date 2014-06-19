@@ -33,20 +33,10 @@ pub fn parse_type(e: &str) -> P<ast::Ty> {
 	r
 }
 
-
-struct ErrLoader;
-impl syntax::ext::base::CrateLoader for ErrLoader {
-	fn load_crate(&mut self, _: &syntax::ast::ViewItem) -> syntax::ext::base::MacroCrate {
-		fail!("can't load_crate")
-	}
-}
-
 pub fn with_fake_extctxt<T>(f: |&ExtCtxt| -> T) -> T {
 	let ps = syntax::parse::new_parse_sess();
-	let mut loader = ErrLoader;
 
 	let mut cx = syntax::ext::base::ExtCtxt::new(&ps, Vec::new(), syntax::ext::expand::ExpansionConfig {
-		loader: &mut loader,
 		deriving_hash_type_parameter: false,
 		crate_id: from_str("test").unwrap(),
 	});
