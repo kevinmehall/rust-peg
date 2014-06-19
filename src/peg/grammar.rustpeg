@@ -26,6 +26,7 @@ rust_type
   / "[" rust_type "]" __
   / identifier "<" rust_type ">" __
   / identifier "::" rust_type
+  / "(" rust_type (__ "," __ rust_type )+ ")" __ 
   / identifier ""
 
 expression -> Expr
