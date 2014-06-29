@@ -52,9 +52,10 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, Grammar), uint> {
                     {
                         let seq_res =
                             match parse_action(input, pos) {
-                                Ok((newpos, value)) =>
-                                Ok((newpos, Some(value))),
-                                Err(..) => Ok((pos, None))
+                                Ok((newpos, value)) => {
+                                    Ok((newpos, Some(value)))
+                                },
+                                Err(..) => { Ok((pos, None)) }
                             };
                         match seq_res {
                             Err(pos) => { Err(pos) },
@@ -71,7 +72,7 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, Grammar), uint> {
                                                 match step_res {
                                                     Ok((newpos, value)) => {
                                                         repeat_pos = newpos;
-                                                        repeat_value.push(value)
+                                                        repeat_value.push(value);
                                                     },
                                                     Err(..) => { break ; }
                                                 }
@@ -145,12 +146,16 @@ fn parse_rule(input: &str, pos: uint) -> Result<(uint, Rule), uint> {
                                                                                 Ok((newpos,
                                                                                     value))
                                                                                 =>
-                                                                                Ok((newpos,
-                                                                                    Some(value))),
+                                                                                {
+                                                                                    Ok((newpos,
+                                                                                        Some(value)))
+                                                                                },
                                                                                 Err(..)
                                                                                 =>
-                                                                                Ok((pos,
-                                                                                    None))
+                                                                                {
+                                                                                    Ok((pos,
+                                                                                        None))
+                                                                                }
                                                                             };
                                                                         match seq_res
                                                                             {
@@ -591,7 +596,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                                                                             newpos;
                                                                                                         repeat_value
                                                                                                             =
-                                                                                                            ()
+                                                                                                            ();
                                                                                                     },
                                                                                                     Err(..)
                                                                                                     =>
@@ -728,7 +733,7 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                     match step_res {
                                         Ok((newpos, value)) => {
                                             repeat_pos = newpos;
-                                            repeat_value.push(value)
+                                            repeat_value.push(value);
                                         },
                                         Err(..) => { break ; }
                                     }
@@ -772,7 +777,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                 match step_res {
                                     Ok((newpos, value)) => {
                                         repeat_pos = newpos;
-                                        repeat_value.push(value)
+                                        repeat_value.push(value);
                                     },
                                     Err(..) => { break ; }
                                 }
@@ -815,7 +820,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                 match step_res {
                                     Ok((newpos, value)) => {
                                         repeat_pos = newpos;
-                                        repeat_value.push(value)
+                                        repeat_value.push(value);
                                     },
                                     Err(..) => { break ; }
                                 }
@@ -1122,10 +1127,13 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                     match parse_string(input,
                                                                        pos) {
                                                         Ok((newpos, value)) =>
-                                                        Ok((newpos,
-                                                            Some(value))),
-                                                        Err(..) =>
-                                                        Ok((pos, None))
+                                                        {
+                                                            Ok((newpos,
+                                                                Some(value)))
+                                                        },
+                                                        Err(..) => {
+                                                            Ok((pos, None))
+                                                        }
                                                     };
                                                 match seq_res {
                                                     Err(pos) => { Err(pos) },
@@ -1337,7 +1345,7 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                                 match step_res {
                                                     Ok((newpos, value)) => {
                                                         repeat_pos = newpos;
-                                                        repeat_value = ()
+                                                        repeat_value = ();
                                                     },
                                                     Err(..) => { break ; }
                                                 }
@@ -1399,7 +1407,7 @@ fn parse_nonBraceCharacters(input: &str, pos: uint) ->
                         match step_res {
                             Ok((newpos, value)) => {
                                 repeat_pos = newpos;
-                                repeat_value = ()
+                                repeat_value = ();
                             },
                             Err(..) => { break ; }
                         }
@@ -1600,7 +1608,7 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                                 match step_res {
                                                     Ok((newpos, value)) => {
                                                         repeat_pos = newpos;
-                                                        repeat_value = ()
+                                                        repeat_value = ();
                                                     },
                                                     Err(..) => { break ; }
                                                 }
@@ -1663,9 +1671,10 @@ fn parse_literal(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                     {
                         let seq_res =
                             match slice_eq(input, pos, "i") {
-                                Ok((newpos, value)) =>
-                                Ok((newpos, Some(value))),
-                                Err(..) => Ok((pos, None))
+                                Ok((newpos, value)) => {
+                                    Ok((newpos, Some(value)))
+                                },
+                                Err(..) => { Ok((pos, None)) }
                             };
                         match seq_res {
                             Err(pos) => { Err(pos) },
@@ -1747,7 +1756,7 @@ fn parse_doubleQuotedString(input: &str, pos: uint) ->
                                     match step_res {
                                         Ok((newpos, value)) => {
                                             repeat_pos = newpos;
-                                            repeat_value.push(value)
+                                            repeat_value.push(value);
                                         },
                                         Err(..) => { break ; }
                                     }
@@ -1890,7 +1899,7 @@ fn parse_singleQuotedString(input: &str, pos: uint) ->
                                     match step_res {
                                         Ok((newpos, value)) => {
                                             repeat_pos = newpos;
-                                            repeat_value.push(value)
+                                            repeat_value.push(value);
                                         },
                                         Err(..) => { break ; }
                                     }
@@ -2022,9 +2031,10 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                     {
                         let seq_res =
                             match slice_eq(input, pos, "^") {
-                                Ok((newpos, value)) =>
-                                Ok((newpos, Some(value))),
-                                Err(..) => Ok((pos, None))
+                                Ok((newpos, value)) => {
+                                    Ok((newpos, Some(value)))
+                                },
+                                Err(..) => { Ok((pos, None)) }
                             };
                         match seq_res {
                             Err(pos) => { Err(pos) },
@@ -2053,7 +2063,7 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                 match step_res {
                                                     Ok((newpos, value)) => {
                                                         repeat_pos = newpos;
-                                                        repeat_value.push(value)
+                                                        repeat_value.push(value);
                                                     },
                                                     Err(..) => { break ; }
                                                 }
@@ -2077,12 +2087,15 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                                     {
                                                                     Ok((newpos,
                                                                         value))
-                                                                    =>
-                                                                    Ok((newpos,
-                                                                        Some(value))),
+                                                                    => {
+                                                                        Ok((newpos,
+                                                                            Some(value)))
+                                                                    },
                                                                     Err(..) =>
-                                                                    Ok((pos,
-                                                                        None))
+                                                                    {
+                                                                        Ok((pos,
+                                                                            None))
+                                                                    }
                                                                 };
                                                             match seq_res {
                                                                 Err(pos) => {
@@ -2627,7 +2640,7 @@ fn parse___(input: &str, pos: uint) -> Result<(uint, ()), uint> {
             match step_res {
                 Ok((newpos, value)) => {
                     repeat_pos = newpos;
-                    repeat_value = ()
+                    repeat_value = ();
                 },
                 Err(..) => { break ; }
             }
@@ -2675,7 +2688,7 @@ fn parse_singleLineComment(input: &str, pos: uint) ->
                         match step_res {
                             Ok((newpos, value)) => {
                                 repeat_pos = newpos;
-                                repeat_value = ()
+                                repeat_value = ();
                             },
                             Err(..) => { break ; }
                         }
@@ -2722,7 +2735,7 @@ fn parse_multiLineComment(input: &str, pos: uint) ->
                                 match step_res {
                                     Ok((newpos, value)) => {
                                         repeat_pos = newpos;
-                                        repeat_value = ()
+                                        repeat_value = ();
                                     },
                                     Err(..) => { break ; }
                                 }
