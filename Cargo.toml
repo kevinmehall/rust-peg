@@ -5,5 +5,13 @@ version = "0.1.0"
 authors = [ "km@kevinmehall.net" ]
 
 [[bin]]
-
 name = "peg"
+path = "src/peg.rs"
+
+[[lib]]
+crate_type = ["dylib"]
+name = "peg_syntax_ext"
+
+[[bin]]
+name = "test_arithmetic"
+path = "examples/test_arithmetic.rs"

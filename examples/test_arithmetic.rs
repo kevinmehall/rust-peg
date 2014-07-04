@@ -1,5 +1,30 @@
-use arithmetic::{expression};
-mod arithmetic;
+#![feature(phase)]
+
+#[phase(plugin)]
+extern crate peg_syntax_ext;
+
+use arithmetic::expression;
+
+peg! arithmetic(r#"
+#[export]
+expression -> int
+	= sum
+
+sum -> int
+	= l:product "+" r:product { l+r }
+	/ product
+
+product -> int
+	= l:atom "*" r:atom { l*r }
+	/ atom
+
+atom -> int
+	= number
+	/ "(" v:sum ")" { v }
+
+number -> int
+	= [0-9]+ { from_str::<int>(match_str).unwrap() }
+"#)
 
 fn main() {
 	assert_eq!(expression("1+1"), Ok(2));
@@ -10,4 +35,5 @@ fn main() {
 	assert!(expression("(22+)+1").is_err());
 	assert!(expression("1++1").is_err());
 	assert!(expression("3)+1").is_err());
+	println!("Ok");
 }

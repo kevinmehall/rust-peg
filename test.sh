@@ -6,7 +6,3 @@ rustc --test examples/tests.rs -o tests
 ./tests
 rm tests
 
-./peg examples/arithmetic.rustpeg > examples/arithmetic.rs
-rustc examples/test_arithmetic.rs -o test_arithmetic
-./test_arithmetic
-rm test_arithmetic

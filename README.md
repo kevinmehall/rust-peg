@@ -49,6 +49,5 @@ number -> int
 ## To Do
 
   * Improve parse error reporting
-  * Make it a procedural macro instead of an independent command
   * Caching
   * Support passing user-specified objects (e.g. filename for source mapping, string interner) into action code
