@@ -3,14 +3,14 @@ set -e
 
 mkdir -p bin
 
-rustc src/peg/main.rs -g -o bin/peg
-RUST_BACKTRACE=1 bin/peg src/peg/grammar.rustpeg > src/peg/grammar_new.rs
+rustc src/peg.rs -g -o peg
+RUST_BACKTRACE=1 ./peg src/grammar.rustpeg > src/grammar_new.rs
 
-mv src/peg/grammar.rs src/peg/grammar_old.rs
-mv src/peg/grammar_new.rs src/peg/grammar.rs
+mv src/grammar.rs src/grammar_old.rs
+mv src/grammar_new.rs src/grammar.rs
 
-rustc src/peg/main.rs -o bin/peg
-bin/peg src/peg/grammar.rustpeg > src/peg/grammar_new.rs
-diff -qs src/peg/grammar.rs src/peg/grammar_new.rs
+rustc src/peg.rs -o peg
+./peg src/grammar.rustpeg > src/grammar_new.rs
+diff -qs src/grammar.rs src/grammar_new.rs
 
 

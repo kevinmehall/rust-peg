@@ -1,0 +1,9 @@
+[package]
+
+name = "peg"
+version = "0.1.0"
+authors = [ "km@kevinmehall.net" ]
+
+[[bin]]
+
+name = "peg"

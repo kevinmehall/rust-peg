@@ -8,9 +8,9 @@ use std::str;
 use std::io::{stdout,stderr};
 use std::io::fs::File;
 use std::os;
-use peg::{compile_grammar};
+use translate::{compile_grammar};
 
-mod peg;
+mod translate;
 mod grammar;
 mod rustast;
 
@@ -27,7 +27,7 @@ fn main() {
 				let ast = compile_grammar(e, &grammar);
 				let mut out = stdout();
 
-				peg::write_header(&mut out, &grammar).unwrap();
+				translate::write_header(&mut out, &grammar).unwrap();
 
 				for item in ast.items.iter() {
 					out.write_line(rustast::item_to_str(&**item).as_slice()).unwrap();

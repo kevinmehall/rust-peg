@@ -3,7 +3,7 @@
 use std::str::{CharRange};
     
 
-  use peg::*;
+  use translate::*;
   use std::num::from_str_radix;
   use std::str;
   use std::char;
