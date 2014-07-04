@@ -4,17 +4,29 @@ pub use syntax::ast;
 pub use syntax::ast::P;
 pub use syntax::codemap::DUMMY_SP;
 pub use syntax::ext::base::ExtCtxt;
-pub use syntax::ast::{Mod, Item, Expr};
+pub use syntax::ast::{Mod, Item, Expr, ViewItem};
 pub use syntax::parse::token::str_to_ident;
 pub use syntax::ext::build::AstBuilder;
 pub use syntax::print::pprust::{expr_to_str, item_to_str};
 
-pub fn module(items: Vec<P<Item>>) -> P<Mod> {
+pub fn module(view_items: Vec<ViewItem>, items: Vec<P<Item>>) -> P<Mod> {
 	P(Mod{
 		inner: DUMMY_SP,
-		view_items: Vec::new(),
+		view_items: view_items,
 		items: items,
 	})
+}
+
+pub fn parse_path(e: &str) -> ast::Path {
+	let ps = syntax::parse::new_parse_sess();
+	let mut p = syntax::parse::new_parser_from_source_str(&ps, Vec::new(), "file".to_string(), e.to_string());
+	let r = p.parse_path(syntax::parse::parser::NoTypesAllowed);
+	p.abort_if_errors();
+	r.path
+}
+
+pub fn parse_path_vec(s: &str) -> Vec<ast::Ident> {
+	s.split_str("::").map(|i| str_to_ident(i)).collect()
 }
 
 pub fn parse_expr(e: &str) -> P<ast::Expr> {

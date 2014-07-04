@@ -4,7 +4,14 @@ use rustast::AstBuilder;
 
 pub struct Grammar {
 	pub initializer: Option<String>,
+	pub imports: Vec<RustUse>,
 	pub rules: Vec<Rule>,
+}
+
+pub enum RustUse {
+	RustUseSimple(String),
+	RustUseGlob(String),
+	RustUseList(String, Vec<String>),
 }
 
 pub struct Rule {
@@ -42,6 +49,8 @@ pub enum Expr {
 }
 
 pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P<rustast::Mod> {
+	let view_items = translate_view_items(ctxt, grammar.imports.as_slice());
+	
 	let items = header_items(ctxt).move_iter()
 		.chain(grammar.rules.iter().map(|rule|{
 			compile_rule(ctxt, rule)
@@ -51,7 +60,19 @@ pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P
 		}))
 		.collect::<Vec<_>>();
 
-		rustast::module(items)
+	rustast::module(view_items, items)
+}
+
+pub fn translate_view_items(ctxt: &rustast::ExtCtxt, imports: &[RustUse]) -> Vec<rustast::ViewItem> {
+	imports.iter().map(| i |{
+		match *i {
+			RustUseSimple(ref p) => ctxt.view_use_simple(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path(p.as_slice())),
+			RustUseGlob(ref p) => ctxt.view_use_glob(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(p.as_slice())),
+			RustUseList(ref p, ref v) => ctxt.view_use_list(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(p.as_slice()),
+				v.iter().map(|s| rustast::str_to_ident(s.as_slice())).collect::<Vec<_>>().as_slice()
+			),
+		}
+	}).collect()
 }
 
 pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
