@@ -6,5 +6,6 @@ install:
   - sudo apt-get install rust-nightly cargo
 script:
   - ./bootstrap.sh
+  - git diff --exit-code # Check that src/grammar.rs is updated to match src/grammar.rustpeg
   - ./test.sh
   - cargo build
