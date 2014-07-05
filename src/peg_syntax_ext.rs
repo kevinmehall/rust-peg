@@ -10,6 +10,8 @@ use syntax::ext::base::{ExtCtxt, MacResult, MacItem, DummyResult};
 use syntax::parse;
 use syntax::parse::token;
 use rustc::plugin::Registry;
+use std::io::fs::File;
+use std::str;
 
 use rustast::{AstBuilder, DUMMY_SP};
 
@@ -25,21 +27,53 @@ pub fn plugin_registrar(reg: &mut Registry) {
                 expander: expand_peg_str,
                 span: None,
             }, None));
+
+    reg.register_syntax_extension(
+            token::intern("peg_file"),
+            syntax::ext::base::IdentTT(box syntax::ext::base::BasicIdentMacroExpander {
+                expander: expand_peg_file,
+                span: None,
+            }, None));
 }
 
 fn expand_peg_str(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult> {
     let source = match parse_arg(cx, tts.as_slice()) {
         Some(source) => source,
-        None => return DummyResult::expr(sp),
+        None => return DummyResult::any(sp),
     };
 
-    let grammar_def = grammar::grammar(source.as_slice());
+    expand_peg(cx, sp, ident, source.as_slice())
+}
+
+fn expand_peg_file(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult> {
+    let fname = match parse_arg(cx, tts.as_slice()) {
+        Some(fname) => fname,
+        None => return DummyResult::any(sp),
+    };
+
+    let path = Path::new(cx.codemap().span_to_filename(sp)).dir_path().join(fname);
+
+    let source_utf8 = match File::open(&path).read_to_end() {
+      Ok(source_utf8) => source_utf8,
+      Err(e) => {
+        cx.span_err(sp, e.to_str().as_slice());
+        return DummyResult::any(sp)
+      }
+    };
+
+    let source = str::from_utf8(source_utf8.as_slice()).unwrap();
+
+    expand_peg(cx, sp, ident, source.as_slice())
+}
+
+fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &str) -> Box<MacResult> {
+    let grammar_def = grammar::grammar(source);
 
     let grammar_def = match grammar_def {
       Ok(grammar_def) => grammar_def,
       Err(msg) => {
         cx.span_err(sp, msg.as_slice());
-        return DummyResult::expr(sp)
+        return DummyResult::any(sp)
       }
     };
 
