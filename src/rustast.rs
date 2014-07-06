@@ -50,13 +50,13 @@ pub fn with_fake_extctxt<T>(f: |&ExtCtxt| -> T) -> T {
 
 	let mut cx = syntax::ext::base::ExtCtxt::new(&ps, Vec::new(), syntax::ext::expand::ExpansionConfig {
 		deriving_hash_type_parameter: false,
-		crate_id: from_str("test").unwrap(),
+		crate_name: from_str("").unwrap(),
 	});
 
 	cx.bt_push(syntax::codemap::ExpnInfo{
 		call_site: DUMMY_SP,
 		callee: syntax::codemap::NameAndSpan {
-			name: "test".to_string(),
+			name: "".to_string(),
 			format: syntax::codemap::MacroBang,
 			span: None,
 		}
