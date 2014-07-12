@@ -34,7 +34,7 @@ fn main() {
 				out.write_line(header).unwrap();
 
 				for item in ast.items.iter() {
-					out.write_line(rustast::item_to_str(&**item).as_slice()).unwrap();
+					out.write_line(rustast::item_to_string(&**item).as_slice()).unwrap();
 				}
 			})
 		}

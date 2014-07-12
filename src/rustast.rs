@@ -7,7 +7,7 @@ pub use syntax::ext::base::ExtCtxt;
 pub use syntax::ast::{Mod, Item, Expr, ViewItem};
 pub use syntax::parse::token::str_to_ident;
 pub use syntax::ext::build::AstBuilder;
-pub use syntax::print::pprust::{expr_to_str, item_to_str};
+pub use syntax::print::pprust::{expr_to_string, item_to_string};
 
 pub fn module(view_items: Vec<ViewItem>, items: Vec<P<Item>>) -> P<Mod> {
 	P(Mod{
