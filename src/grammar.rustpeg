@@ -103,6 +103,12 @@ suffixed -> Expr
   = expression:primary question {
        OptionalExpr(box expression)
     }
+  / expression:primary starstar sep:primary {
+      Repeat(box expression, 0, Some(box sep))
+    }
+  / expression:primary plusplus sep:primary {
+      Repeat(box expression, 1, Some(box sep))
+    }
   / expression:primary star {
       Repeat(box expression, 0, None)
     }
@@ -143,7 +149,9 @@ not       = "!"  __
 dollar    = "$"  __ 
 question  = "?"  __ 
 star      = "*"  __ 
+starstar  = "**" __ 
 plus      = "+"  __ 
+plusplus  = "++" __ 
 lparen    = "("  __ 
 rparen    = ")"  __ 
 dot       = "."  __ 

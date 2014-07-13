@@ -16,6 +16,6 @@ fn test_optional() {
 
 #[test]
 fn test_list() {
-	assert_eq!(list("5,"), Ok(vec![5]));
-	assert_eq!(list("1,2,3,4,"), Ok(vec![1,2,3,4]));
+	assert_eq!(list("5"), Ok(vec![5]));
+	assert_eq!(list("1,2,3,4"), Ok(vec![1,2,3,4]));
 }

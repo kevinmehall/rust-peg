@@ -15,5 +15,4 @@ number -> int
 
 #[export]
 list -> Vec<int>
-	= (n:number "," {n})+
-
+	= number ** ","

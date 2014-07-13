@@ -1562,17 +1562,31 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                 Err(pos) => { Err(pos) },
                                 Ok((pos, expression)) => {
                                     {
-                                        let seq_res = parse_star(input, pos);
+                                        let seq_res =
+                                            parse_starstar(input, pos);
                                         match seq_res {
                                             Err(pos) => { Err(pos) },
                                             Ok((pos, _)) => {
                                                 {
-                                                    let match_str =
-                                                        input.slice(start_pos,
-                                                                    pos);
-                                                    Ok((pos,
-                                                        Repeat(box() expression,
-                                                               0, None)))
+                                                    let seq_res =
+                                                        parse_primary(input,
+                                                                      pos);
+                                                    match seq_res {
+                                                        Err(pos) => {
+                                                            Err(pos)
+                                                        },
+                                                        Ok((pos, sep)) => {
+                                                            {
+                                                                let match_str =
+                                                                    input.slice(start_pos,
+                                                                                pos);
+                                                                Ok((pos,
+                                                                    Repeat(box() expression,
+                                                                           0,
+                                                                           Some(box() sep))))
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -1594,18 +1608,32 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                         Ok((pos, expression)) => {
                                             {
                                                 let seq_res =
-                                                    parse_plus(input, pos);
+                                                    parse_plusplus(input,
+                                                                   pos);
                                                 match seq_res {
                                                     Err(pos) => { Err(pos) },
                                                     Ok((pos, _)) => {
                                                         {
-                                                            let match_str =
-                                                                input.slice(start_pos,
-                                                                            pos);
-                                                            Ok((pos,
-                                                                Repeat(box() expression,
-                                                                       1,
-                                                                       None)))
+                                                            let seq_res =
+                                                                parse_primary(input,
+                                                                              pos);
+                                                            match seq_res {
+                                                                Err(pos) => {
+                                                                    Err(pos)
+                                                                },
+                                                                Ok((pos, sep))
+                                                                => {
+                                                                    {
+                                                                        let match_str =
+                                                                            input.slice(start_pos,
+                                                                                        pos);
+                                                                        Ok((pos,
+                                                                            Repeat(box() expression,
+                                                                                   1,
+                                                                                   Some(box() sep))))
+                                                                    }
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -1616,7 +1644,95 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                             };
                         match choice_res {
                             Ok((pos, value)) => Ok((pos, value)),
-                            Err(..) => parse_primary(input, pos)
+                            Err(..) => {
+                                let choice_res =
+                                    {
+                                        let start_pos = pos;
+                                        {
+                                            let seq_res =
+                                                parse_primary(input, pos);
+                                            match seq_res {
+                                                Err(pos) => { Err(pos) },
+                                                Ok((pos, expression)) => {
+                                                    {
+                                                        let seq_res =
+                                                            parse_star(input,
+                                                                       pos);
+                                                        match seq_res {
+                                                            Err(pos) => {
+                                                                Err(pos)
+                                                            },
+                                                            Ok((pos, _)) => {
+                                                                {
+                                                                    let match_str =
+                                                                        input.slice(start_pos,
+                                                                                    pos);
+                                                                    Ok((pos,
+                                                                        Repeat(box() expression,
+                                                                               0,
+                                                                               None)))
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    };
+                                match choice_res {
+                                    Ok((pos, value)) => Ok((pos, value)),
+                                    Err(..) => {
+                                        let choice_res =
+                                            {
+                                                let start_pos = pos;
+                                                {
+                                                    let seq_res =
+                                                        parse_primary(input,
+                                                                      pos);
+                                                    match seq_res {
+                                                        Err(pos) => {
+                                                            Err(pos)
+                                                        },
+                                                        Ok((pos, expression))
+                                                        => {
+                                                            {
+                                                                let seq_res =
+                                                                    parse_plus(input,
+                                                                               pos);
+                                                                match seq_res
+                                                                    {
+                                                                    Err(pos)
+                                                                    => {
+                                                                        Err(pos)
+                                                                    },
+                                                                    Ok((pos,
+                                                                        _)) =>
+                                                                    {
+                                                                        {
+                                                                            let match_str =
+                                                                                input.slice(start_pos,
+                                                                                            pos);
+                                                                            Ok((pos,
+                                                                                Repeat(box() expression,
+                                                                                       1,
+                                                                                       None)))
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            };
+                                        match choice_res {
+                                            Ok((pos, value)) =>
+                                            Ok((pos, value)),
+                                            Err(..) =>
+                                            parse_primary(input, pos)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -2015,9 +2131,27 @@ fn parse_star(input: &str, pos: uint) -> Result<(uint, ()), uint> {
         }
     }
 }
+fn parse_starstar(input: &str, pos: uint) -> Result<(uint, ()), uint> {
+    {
+        let seq_res = slice_eq(input, pos, "**");
+        match seq_res {
+            Err(pos) => { Err(pos) },
+            Ok((pos, _)) => { parse___(input, pos) }
+        }
+    }
+}
 fn parse_plus(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "+");
+        match seq_res {
+            Err(pos) => { Err(pos) },
+            Ok((pos, _)) => { parse___(input, pos) }
+        }
+    }
+}
+fn parse_plusplus(input: &str, pos: uint) -> Result<(uint, ()), uint> {
+    {
+        let seq_res = slice_eq(input, pos, "++");
         match seq_res {
             Err(pos) => { Err(pos) },
             Ok((pos, _)) => { parse___(input, pos) }
