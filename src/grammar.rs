@@ -837,7 +837,6 @@ fn parse_rust_path(input: &str, pos: uint) -> Result<(uint, String), uint> {
                         let seq_res =
                             {
                                 let mut repeat_pos = pos;
-                                let mut repeat_value = ();
                                 loop  {
                                     let pos = repeat_pos;
                                     let step_res =
@@ -867,12 +866,11 @@ fn parse_rust_path(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                     match step_res {
                                         Ok((newpos, value)) => {
                                             repeat_pos = newpos;
-                                            repeat_value = ();
                                         },
                                         Err(..) => { break ; }
                                     }
                                 }
-                                Ok((repeat_pos, repeat_value))
+                                Ok((repeat_pos, ()))
                             };
                         match seq_res {
                             Err(pos) => { Err(pos) },
@@ -1032,89 +1030,35 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                                     {
                                                                         let seq_res =
                                                                             {
-                                                                                let seq_res =
-                                                                                    {
-                                                                                        let seq_res =
-                                                                                            parse___(input,
-                                                                                                     pos);
-                                                                                        match seq_res
-                                                                                            {
-                                                                                            Err(pos)
-                                                                                            =>
-                                                                                            {
-                                                                                                Err(pos)
-                                                                                            },
-                                                                                            Ok((pos,
-                                                                                                _))
-                                                                                            =>
-                                                                                            {
-                                                                                                {
-                                                                                                    let seq_res =
-                                                                                                        slice_eq(input,
-                                                                                                                 pos,
-                                                                                                                 ",");
-                                                                                                    match seq_res
-                                                                                                        {
-                                                                                                        Err(pos)
-                                                                                                        =>
-                                                                                                        {
-                                                                                                            Err(pos)
-                                                                                                        },
-                                                                                                        Ok((pos,
-                                                                                                            _))
-                                                                                                        =>
-                                                                                                        {
-                                                                                                            {
-                                                                                                                let seq_res =
-                                                                                                                    parse___(input,
-                                                                                                                             pos);
-                                                                                                                match seq_res
-                                                                                                                    {
-                                                                                                                    Err(pos)
-                                                                                                                    =>
-                                                                                                                    {
-                                                                                                                        Err(pos)
-                                                                                                                    },
-                                                                                                                    Ok((pos,
-                                                                                                                        _))
-                                                                                                                    =>
-                                                                                                                    {
-                                                                                                                        parse_rust_type(input,
-                                                                                                                                        pos)
-                                                                                                                    }
-                                                                                                                }
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                    };
-                                                                                match seq_res
-                                                                                    {
-                                                                                    Err(pos)
-                                                                                    =>
-                                                                                    {
-                                                                                        Err(pos)
-                                                                                    },
-                                                                                    Ok((pos,
-                                                                                        _))
-                                                                                    =>
-                                                                                    {
+                                                                                let mut repeat_pos =
+                                                                                    pos;
+                                                                                let mut repeat_value =
+                                                                                    vec!();
+                                                                                loop 
+                                                                                     {
+                                                                                    let pos =
+                                                                                        repeat_pos;
+                                                                                    let step_res =
                                                                                         {
-                                                                                            let mut repeat_pos =
-                                                                                                pos;
-                                                                                            let mut repeat_value =
-                                                                                                ();
-                                                                                            loop 
-                                                                                                 {
-                                                                                                let pos =
-                                                                                                    repeat_pos;
-                                                                                                let step_res =
+                                                                                            let seq_res =
+                                                                                                parse___(input,
+                                                                                                         pos);
+                                                                                            match seq_res
+                                                                                                {
+                                                                                                Err(pos)
+                                                                                                =>
+                                                                                                {
+                                                                                                    Err(pos)
+                                                                                                },
+                                                                                                Ok((pos,
+                                                                                                    _))
+                                                                                                =>
+                                                                                                {
                                                                                                     {
                                                                                                         let seq_res =
-                                                                                                            parse___(input,
-                                                                                                                     pos);
+                                                                                                            slice_eq(input,
+                                                                                                                     pos,
+                                                                                                                     ",");
                                                                                                         match seq_res
                                                                                                             {
                                                                                                             Err(pos)
@@ -1128,9 +1072,8 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                                                                             {
                                                                                                                 {
                                                                                                                     let seq_res =
-                                                                                                                        slice_eq(input,
-                                                                                                                                 pos,
-                                                                                                                                 ",");
+                                                                                                                        parse___(input,
+                                                                                                                                 pos);
                                                                                                                     match seq_res
                                                                                                                         {
                                                                                                                         Err(pos)
@@ -1142,57 +1085,44 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                                                                                             _))
                                                                                                                         =>
                                                                                                                         {
-                                                                                                                            {
-                                                                                                                                let seq_res =
-                                                                                                                                    parse___(input,
-                                                                                                                                             pos);
-                                                                                                                                match seq_res
-                                                                                                                                    {
-                                                                                                                                    Err(pos)
-                                                                                                                                    =>
-                                                                                                                                    {
-                                                                                                                                        Err(pos)
-                                                                                                                                    },
-                                                                                                                                    Ok((pos,
-                                                                                                                                        _))
-                                                                                                                                    =>
-                                                                                                                                    {
-                                                                                                                                        parse_rust_type(input,
-                                                                                                                                                        pos)
-                                                                                                                                    }
-                                                                                                                                }
-                                                                                                                            }
+                                                                                                                            parse_rust_type(input,
+                                                                                                                                            pos)
                                                                                                                         }
                                                                                                                     }
                                                                                                                 }
                                                                                                             }
                                                                                                         }
-                                                                                                    };
-                                                                                                match step_res
-                                                                                                    {
-                                                                                                    Ok((newpos,
-                                                                                                        value))
-                                                                                                    =>
-                                                                                                    {
-                                                                                                        repeat_pos
-                                                                                                            =
-                                                                                                            newpos;
-                                                                                                        repeat_value
-                                                                                                            =
-                                                                                                            ();
-                                                                                                    },
-                                                                                                    Err(..)
-                                                                                                    =>
-                                                                                                    {
-                                                                                                        break
-                                                                                                            ;
                                                                                                     }
                                                                                                 }
                                                                                             }
-                                                                                            Ok((repeat_pos,
-                                                                                                repeat_value))
+                                                                                        };
+                                                                                    match step_res
+                                                                                        {
+                                                                                        Ok((newpos,
+                                                                                            value))
+                                                                                        =>
+                                                                                        {
+                                                                                            repeat_pos
+                                                                                                =
+                                                                                                newpos;
+                                                                                            repeat_value.push(value);
+                                                                                        },
+                                                                                        Err(..)
+                                                                                        =>
+                                                                                        {
+                                                                                            break
+                                                                                                ;
                                                                                         }
                                                                                     }
+                                                                                }
+                                                                                if repeat_value.len()
+                                                                                       >=
+                                                                                       1u
+                                                                                   {
+                                                                                    Ok((repeat_pos,
+                                                                                        ()))
+                                                                                } else {
+                                                                                    Err(repeat_pos)
                                                                                 }
                                                                             };
                                                                         match seq_res
@@ -1641,7 +1571,8 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                         input.slice(start_pos,
                                                                     pos);
                                                     Ok((pos,
-                                                        ZeroOrMore(box() expression)))
+                                                        Repeat(box() expression,
+                                                               0, None)))
                                                 }
                                             }
                                         }
@@ -1672,7 +1603,9 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                                 input.slice(start_pos,
                                                                             pos);
                                                             Ok((pos,
-                                                                OneOrMore(box() expression)))
+                                                                Repeat(box() expression,
+                                                                       1,
+                                                                       None)))
                                                         }
                                                     }
                                                 }
@@ -1891,7 +1824,6 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                     let seq_res =
                                         {
                                             let mut repeat_pos = pos;
-                                            let mut repeat_value = ();
                                             loop  {
                                                 let pos = repeat_pos;
                                                 let step_res =
@@ -1928,12 +1860,11 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                                 match step_res {
                                                     Ok((newpos, value)) => {
                                                         repeat_pos = newpos;
-                                                        repeat_value = ();
                                                     },
                                                     Err(..) => { break ; }
                                                 }
                                             }
-                                            Ok((repeat_pos, repeat_value))
+                                            Ok((repeat_pos, ()))
                                         };
                                     match seq_res {
                                         Err(pos) => { Err(pos) },
@@ -1977,28 +1908,22 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, String), uint> {
 fn parse_nonBraceCharacters(input: &str, pos: uint) ->
  Result<(uint, ()), uint> {
     {
-        let seq_res = parse_nonBraceCharacter(input, pos);
-        match seq_res {
-            Err(pos) => { Err(pos) },
-            Ok((pos, _)) => {
-                {
-                    let mut repeat_pos = pos;
-                    let mut repeat_value = ();
-                    loop  {
-                        let pos = repeat_pos;
-                        let step_res = parse_nonBraceCharacter(input, pos);
-                        match step_res {
-                            Ok((newpos, value)) => {
-                                repeat_pos = newpos;
-                                repeat_value = ();
-                            },
-                            Err(..) => { break ; }
-                        }
-                    }
-                    Ok((repeat_pos, repeat_value))
-                }
+        let mut repeat_pos = pos;
+        let mut repeat_value = vec!();
+        loop  {
+            let pos = repeat_pos;
+            let step_res = parse_nonBraceCharacter(input, pos);
+            match step_res {
+                Ok((newpos, value)) => {
+                    repeat_pos = newpos;
+                    repeat_value.push(value);
+                },
+                Err(..) => { break ; }
             }
         }
+        if repeat_value.len() >= 1u {
+            Ok((repeat_pos, ()))
+        } else { Err(repeat_pos) }
     }
 }
 fn parse_nonBraceCharacter(input: &str, pos: uint) ->
@@ -2158,7 +2083,6 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                     let seq_res =
                                         {
                                             let mut repeat_pos = pos;
-                                            let mut repeat_value = ();
                                             loop  {
                                                 let pos = repeat_pos;
                                                 let step_res =
@@ -2192,12 +2116,11 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                                 match step_res {
                                                     Ok((newpos, value)) => {
                                                         repeat_pos = newpos;
-                                                        repeat_value = ();
                                                     },
                                                     Err(..) => { break ; }
                                                 }
                                             }
-                                            Ok((repeat_pos, repeat_value))
+                                            Ok((repeat_pos, ()))
                                         };
                                     match seq_res {
                                         Err(pos) => { Err(pos) },
@@ -3208,7 +3131,6 @@ fn parse_upperCaseLetter(input: &str, pos: uint) -> Result<(uint, ()), uint> {
 fn parse___(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let mut repeat_pos = pos;
-        let mut repeat_value = ();
         loop  {
             let pos = repeat_pos;
             let step_res =
@@ -3226,14 +3148,11 @@ fn parse___(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                     }
                 };
             match step_res {
-                Ok((newpos, value)) => {
-                    repeat_pos = newpos;
-                    repeat_value = ();
-                },
+                Ok((newpos, value)) => { repeat_pos = newpos; },
                 Err(..) => { break ; }
             }
         }
-        Ok((repeat_pos, repeat_value))
+        Ok((repeat_pos, ()))
     }
 }
 fn parse_comment(input: &str, pos: uint) -> Result<(uint, ()), uint> {
@@ -3254,7 +3173,6 @@ fn parse_singleLineComment(input: &str, pos: uint) ->
             Ok((pos, _)) => {
                 {
                     let mut repeat_pos = pos;
-                    let mut repeat_value = ();
                     loop  {
                         let pos = repeat_pos;
                         let step_res =
@@ -3274,14 +3192,11 @@ fn parse_singleLineComment(input: &str, pos: uint) ->
                                 }
                             };
                         match step_res {
-                            Ok((newpos, value)) => {
-                                repeat_pos = newpos;
-                                repeat_value = ();
-                            },
+                            Ok((newpos, value)) => { repeat_pos = newpos; },
                             Err(..) => { break ; }
                         }
                     }
-                    Ok((repeat_pos, repeat_value))
+                    Ok((repeat_pos, ()))
                 }
             }
         }
@@ -3298,7 +3213,6 @@ fn parse_multiLineComment(input: &str, pos: uint) ->
                     let seq_res =
                         {
                             let mut repeat_pos = pos;
-                            let mut repeat_value = ();
                             loop  {
                                 let pos = repeat_pos;
                                 let step_res =
@@ -3323,12 +3237,11 @@ fn parse_multiLineComment(input: &str, pos: uint) ->
                                 match step_res {
                                     Ok((newpos, value)) => {
                                         repeat_pos = newpos;
-                                        repeat_value = ();
                                     },
                                     Err(..) => { break ; }
                                 }
                             }
-                            Ok((repeat_pos, repeat_value))
+                            Ok((repeat_pos, ()))
                         };
                     match seq_res {
                         Err(pos) => { Err(pos) },

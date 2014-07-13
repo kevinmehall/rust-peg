@@ -104,10 +104,10 @@ suffixed -> Expr
        OptionalExpr(box expression)
     }
   / expression:primary star {
-      ZeroOrMore(box expression)
+      Repeat(box expression, 0, None)
     }
   / expression:primary plus {
-      OneOrMore(box expression)
+      Repeat(box expression, 1, None)
     }
   / primary
 

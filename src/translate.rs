@@ -39,9 +39,7 @@ pub enum Expr {
 	SequenceExpr(Vec<Expr>),
 	ChoiceExpr(Vec<Expr>),
 	OptionalExpr(Box<Expr>),
-	ZeroOrMore(Box<Expr>),
-	OneOrMore(Box<Expr>),
-	DelimitedExpr(Box<Expr>, Box<Expr>),
+	Repeat(Box<Expr>, /*min*/ uint, /*sep*/ Option<Box<Expr>>),
 	PosAssertExpr(Box<Expr>),
 	NegAssertExpr(Box<Expr>),
 	StringifyExpr(Box<Expr>),
@@ -168,38 +166,6 @@ fn compile_match_and_then(ctxt: &rustast::ExtCtxt, e: &Expr, value_name: Option<
 	})
 }
 
-fn compile_zero_or_more(ctxt: &rustast::ExtCtxt, e: &Expr, list_initial: Option<rustast::P<rustast::Expr>>) -> rustast::P<rustast::Expr>{
-	let (result_used, initial, push_stmt) = match list_initial {
-		Some(initial) =>
-			(true, initial, quote_expr!(ctxt, repeat_value.push(value))),
-		None =>
-			(false, quote_expr!(ctxt, ()), quote_expr!(ctxt, repeat_value = ()))
-	};
-
-	let inner = compile_expr(ctxt, e, result_used);
-
-	quote_expr!(ctxt, {
-		let mut repeat_pos = pos;
-		let mut repeat_value = $initial;
-
-		loop {
-			let pos = repeat_pos;
-			let step_res = $inner;
-			match step_res {
-				Ok((newpos, value)) => {
-					repeat_pos = newpos;
-					$push_stmt;
-				},
-				Err(..) => {
-					break;
-				}
-			}
-		}
-
-		Ok((repeat_pos, repeat_value))
-	})
-}
-
 fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
 	let (a, b) = tup;
 	if swap {
@@ -209,6 +175,7 @@ fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
 	}
 }
 
+#[allow(unused_imports)] // quote_tokens! imports things
 fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast::P<rustast::Expr> {
 	match *e {
 		AnyCharExpr => {
@@ -301,18 +268,76 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 				Err(..) => { Ok((pos, None)) },
 			})
 		}
+		
+		Repeat(box ref e, min, ref sep) => {
+			let inner = compile_expr(ctxt, e, result_used);
 
-		ZeroOrMore(ref e) => {
-			compile_zero_or_more(ctxt, *e, if result_used { Some(quote_expr!(ctxt, vec!())) } else { None })
+			let match_sep = match *sep {
+				Some(box ref sep) => {
+					let sep_inner = compile_expr(ctxt, sep, false);
+					quote_tokens!(ctxt,
+						let pos = if repeat_value.len() > 0 {
+							let sep_res = $sep_inner;
+							match sep_res {
+								Ok((newpos, _)) => { newpos },
+								Err(..) => break,
+							}
+						} else { pos };
+					)
+				}
+				None => vec!()
+			};
+
+			let result = if result_used {
+				quote_expr!(ctxt, repeat_value)
+			} else {
+				quote_expr!(ctxt, ())
+			};
+
+			let (repeat_vec, repeat_step) = if result_used || min > 0 || sep.is_some() {
+				(quote_tokens!(ctxt, let mut repeat_value = vec!();),
+				 quote_tokens!(ctxt, repeat_value.push(value);))
+			} else {
+				(vec!(), vec!())
+			};
+
+			let result_check = if min > 0 {
+				quote_expr!(ctxt,
+					if repeat_value.len() >= $min {
+						Ok((repeat_pos, $result))
+					} else {
+						Err(repeat_pos)
+					}
+				)
+			} else {
+				quote_expr!(ctxt, Ok((repeat_pos, $result)))
+			};
+
+			quote_expr!(ctxt, {
+				let mut repeat_pos = pos;
+				$repeat_vec
+
+				loop {
+					let pos = repeat_pos;
+
+					$match_sep
+
+					let step_res = $inner;
+					match step_res {
+						Ok((newpos, value)) => {
+							repeat_pos = newpos;
+							$repeat_step
+						},
+						Err(..) => {
+							break;
+						}
+					}
+				}
+
+				$result_check
+			})
 		}
 
-		OneOrMore(ref e) => {
-			compile_match_and_then(ctxt, *e, if result_used { Some("first_value") } else { None },
-				compile_zero_or_more(ctxt, *e, if result_used { Some(quote_expr!(ctxt, vec!(first_value))) } else { None })
-			)
-		}
-
-		DelimitedExpr(_, _) => fail!("not implemented"),
 		StringifyExpr(..) => fail!("not implemented"),
 
 		PosAssertExpr(ref e) => {
