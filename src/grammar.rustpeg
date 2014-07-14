@@ -30,21 +30,21 @@ rust_use -> RustUse
   = "use" __ p:rust_path __ v:(
     "::" __ "*" __
       { RustUseGlob(p.clone()) }
-    / "::" __ "{" __ first:identifier rest:("," __ i:identifier {i})* "}" __
-      { RustUseList(p.clone(), vec!(first) + rest) }
+    / "::" __ "{" __ names:(identifier ++ ("," __)) "}" __
+      { RustUseList(p.clone(), names) }
     / ""
       { RustUseSimple(p.clone()) }
   ) ";" __ { v }
 
 rust_path -> String
-  = identifier ("::" __ identifier)* { match_str.to_string() }
+  = ( identifier ++ ("::" __)) { match_str.to_string() }
   
 rust_type
   = "()" __
   / "[" rust_type "]" __
   / identifier "<" rust_type ">" __
   / identifier "::" rust_type
-  / "(" rust_type (__ "," __ rust_type )+ ")" __ 
+  / "(" rust_type ++ (__ "," __) ")" __
   / identifier ""
 
 expression -> Expr
