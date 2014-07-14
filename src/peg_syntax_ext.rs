@@ -56,7 +56,7 @@ fn expand_peg_file(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: 
     let source_utf8 = match File::open(&path).read_to_end() {
       Ok(source_utf8) => source_utf8,
       Err(e) => {
-        cx.span_err(sp, e.to_str().as_slice());
+        cx.span_err(sp, e.to_string().as_slice());
         return DummyResult::any(sp)
       }
     };
@@ -114,7 +114,7 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
     }
 
     let err = format!("expected string literal but got `{}`",
-                      pprust::expr_to_str(arg));
+                      pprust::expr_to_string(arg));
     cx.span_err(parser.span, err.as_slice());
     None
 }
