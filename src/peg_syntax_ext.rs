@@ -114,7 +114,7 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
     }
 
     let err = format!("expected string literal but got `{}`",
-                      pprust::expr_to_string(arg));
+                      pprust::expr_to_string(&*arg));
     cx.span_err(parser.span, err.as_slice());
     None
 }
