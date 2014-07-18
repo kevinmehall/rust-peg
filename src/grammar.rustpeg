@@ -1,13 +1,11 @@
 {
   use translate::*;
   use std::num::from_str_radix;
-  use std::str;
   use std::char;
 }
 
 use translate::*;
 use std::num::from_str_radix;
-use std::str;
 use std::char;
 
 #[export]
@@ -191,7 +189,7 @@ string -> String
   = string:(doubleQuotedString / singleQuotedString) __ { string }
 
 doubleQuotedString -> String
-  = '"' s:doubleQuotedCharacter* '"' { str::from_chars(s.as_slice()) }
+  = '"' s:doubleQuotedCharacter* '"' { String::from_chars(s.as_slice()) }
 
 doubleQuotedCharacter -> char
   = simpleDoubleQuotedCharacter
@@ -205,7 +203,7 @@ simpleDoubleQuotedCharacter -> char
   = !('"' / "\\" / eolChar) . { match_str.char_at(0) }
 
 singleQuotedString -> String
-  = "'" s:singleQuotedCharacter* "'" { str::from_chars(s.as_slice()) }
+  = "'" s:singleQuotedCharacter* "'" { String::from_chars(s.as_slice()) }
 
 singleQuotedCharacter -> char
   = simpleSingleQuotedCharacter

@@ -3,7 +3,6 @@
 
   use translate::*;
   use std::num::from_str_radix;
-  use std::str;
   use std::char;
 
 fn slice_eq(input: &str, pos: uint, m: &str) -> Result<(uint, ()), uint> {
@@ -2360,7 +2359,7 @@ fn parse_doubleQuotedString(input: &str, pos: uint) ->
                                                     input.slice(start_pos,
                                                                 pos);
                                                 Ok((pos,
-                                                    str::from_chars(s.as_slice())))
+                                                    String::from_chars(s.as_slice())))
                                             }
                                         }
                                     }
@@ -2503,7 +2502,7 @@ fn parse_singleQuotedString(input: &str, pos: uint) ->
                                                     input.slice(start_pos,
                                                                 pos);
                                                 Ok((pos,
-                                                    str::from_chars(s.as_slice())))
+                                                    String::from_chars(s.as_slice())))
                                             }
                                         }
                                     }
