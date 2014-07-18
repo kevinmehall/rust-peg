@@ -122,7 +122,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 fn compile_rule(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Item> {
 	let name = rustast::str_to_ident(format!("parse_{}", rule.name).as_slice());
 	let ret = rustast::parse_type(rule.ret_type.as_slice());
-	let body = compile_expr(ctxt, rule.expr, rule.ret_type.as_slice() != "()");
+	let body = compile_expr(ctxt, &*rule.expr, rule.ret_type.as_slice() != "()");
 	(quote_item!(ctxt,
 		fn $name(input: &str, pos: uint) -> Result<(uint, $ret), uint> {
 			$body
@@ -261,8 +261,8 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			}
 		}
 
-		OptionalExpr(ref e) => {
-			let optional_res = compile_expr(ctxt, *e, result_used);
+		OptionalExpr(box ref e) => {
+			let optional_res = compile_expr(ctxt, e, result_used);
 			quote_expr!(ctxt, match $optional_res {
 				Ok((newpos, value)) => { Ok((newpos, Some(value))) },
 				Err(..) => { Ok((pos, None)) },
@@ -340,8 +340,8 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 
 		StringifyExpr(..) => fail!("not implemented"),
 
-		PosAssertExpr(ref e) => {
-			let assert_res = compile_expr(ctxt, *e, false);
+		PosAssertExpr(box ref e) => {
+			let assert_res = compile_expr(ctxt, e, false);
 			quote_expr!(ctxt, {
 				let assert_res = $assert_res;
 				match assert_res {
@@ -351,8 +351,8 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			})
 		}
 
-		NegAssertExpr(ref e) => {
-			let assert_res = compile_expr(ctxt, *e, false);
+		NegAssertExpr(box ref e) => {
+			let assert_res = compile_expr(ctxt, e, false);
 			quote_expr!(ctxt, {
 				let assert_res = $assert_res;
 				match assert_res {
@@ -367,7 +367,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 				match exprs.head() {
 					Some(ref head) => {
 						let name = head.name.as_ref().map(|s| s.as_slice());
-						compile_match_and_then(ctxt, head.expr, name,
+						compile_match_and_then(ctxt, &*head.expr, name,
 							write_seq(ctxt, exprs.tail(), code)
 						)
 					}
