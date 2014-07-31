@@ -34,18 +34,18 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, Grammar), uint> {
         {
             let seq_res = parse___(input, pos);
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res =
                             match parse_action(input, pos) {
                                 Ok((newpos, value)) => {
                                     Ok((newpos, Some(value)))
-                                },
+                                }
                                 Err(..) => { Ok((pos, None)) }
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, header)) => {
                                 {
                                     let seq_res =
@@ -61,14 +61,14 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, Grammar), uint> {
                                                     Ok((newpos, value)) => {
                                                         repeat_pos = newpos;
                                                         repeat_value.push(value);
-                                                    },
+                                                    }
                                                     Err(..) => { break ; }
                                                 }
                                             }
                                             Ok((repeat_pos, repeat_value))
                                         };
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, imports)) => {
                                             {
                                                 let seq_res =
@@ -91,7 +91,7 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, Grammar), uint> {
                                                                         =
                                                                         newpos;
                                                                     repeat_value.push(value);
-                                                                },
+                                                                }
                                                                 Err(..) => {
                                                                     break ;
                                                                 }
@@ -101,7 +101,7 @@ fn parse_grammar(input: &str, pos: uint) -> Result<(uint, Grammar), uint> {
                                                             repeat_value))
                                                     };
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, rules)) => {
                                                         {
                                                             let match_str =
@@ -135,24 +135,24 @@ fn parse_rule(input: &str, pos: uint) -> Result<(uint, Rule), uint> {
         {
             let seq_res = parse_exportflag(input, pos);
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, exported)) => {
                     {
                         let seq_res = parse_identifier(input, pos);
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, name)) => {
                                 {
                                     let seq_res =
                                         parse_returntype(input, pos);
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, returns)) => {
                                             {
                                                 let seq_res =
                                                     parse_equals(input, pos);
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         {
                                                             let seq_res =
@@ -161,7 +161,7 @@ fn parse_rule(input: &str, pos: uint) -> Result<(uint, Rule), uint> {
                                                             match seq_res {
                                                                 Err(pos) => {
                                                                     Err(pos)
-                                                                },
+                                                                }
                                                                 Ok((pos,
                                                                     expression))
                                                                 => {
@@ -176,7 +176,7 @@ fn parse_rule(input: &str, pos: uint) -> Result<(uint, Rule), uint> {
                                                                                 {
                                                                                     Ok((newpos,
                                                                                         Some(value)))
-                                                                                },
+                                                                                }
                                                                                 Err(..)
                                                                                 =>
                                                                                 {
@@ -190,7 +190,7 @@ fn parse_rule(input: &str, pos: uint) -> Result<(uint, Rule), uint> {
                                                                             =>
                                                                             {
                                                                                 Err(pos)
-                                                                            },
+                                                                            }
                                                                             Ok((pos,
                                                                                 _))
                                                                             =>
@@ -237,12 +237,12 @@ fn parse_exportflag(input: &str, pos: uint) -> Result<(uint, bool), uint> {
                 {
                     let seq_res = slice_eq(input, pos, "#[export]");
                     match seq_res {
-                        Err(pos) => { Err(pos) },
+                        Err(pos) => { Err(pos) }
                         Ok((pos, _)) => {
                             {
                                 let seq_res = parse___(input, pos);
                                 match seq_res {
-                                    Err(pos) => { Err(pos) },
+                                    Err(pos) => { Err(pos) }
                                     Ok((pos, _)) => {
                                         {
                                             let match_str =
@@ -263,7 +263,7 @@ fn parse_exportflag(input: &str, pos: uint) -> Result<(uint, bool), uint> {
                 {
                     let seq_res = slice_eq(input, pos, "");
                     match seq_res {
-                        Err(pos) => { Err(pos) },
+                        Err(pos) => { Err(pos) }
                         Ok((pos, _)) => {
                             {
                                 let match_str = input.slice(start_pos, pos);
@@ -284,7 +284,7 @@ fn parse_returntype(input: &str, pos: uint) -> Result<(uint, String), uint> {
                 {
                     let seq_res = parse_returns(input, pos);
                     match seq_res {
-                        Err(pos) => { Err(pos) },
+                        Err(pos) => { Err(pos) }
                         Ok((pos, _)) => {
                             {
                                 let seq_res =
@@ -294,7 +294,7 @@ fn parse_returntype(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                             let seq_res =
                                                 parse_rust_type(input, pos);
                                             match seq_res {
-                                                Err(pos) => { Err(pos) },
+                                                Err(pos) => { Err(pos) }
                                                 Ok((pos, _)) => {
                                                     {
                                                         let match_str =
@@ -308,7 +308,7 @@ fn parse_returntype(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                         }
                                     };
                                 match seq_res {
-                                    Err(pos) => { Err(pos) },
+                                    Err(pos) => { Err(pos) }
                                     Ok((pos, tp)) => {
                                         {
                                             let match_str =
@@ -340,23 +340,23 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
         {
             let seq_res = slice_eq(input, pos, "use");
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res = parse___(input, pos);
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let seq_res = parse_rust_path(input, pos);
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, p)) => {
                                             {
                                                 let seq_res =
                                                     parse___(input, pos);
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         {
                                                             let seq_res =
@@ -376,7 +376,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                     =>
                                                                                     {
                                                                                         Err(pos)
-                                                                                    },
+                                                                                    }
                                                                                     Ok((pos,
                                                                                         _))
                                                                                     =>
@@ -391,7 +391,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                 =>
                                                                                                 {
                                                                                                     Err(pos)
-                                                                                                },
+                                                                                                }
                                                                                                 Ok((pos,
                                                                                                     _))
                                                                                                 =>
@@ -407,7 +407,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                             =>
                                                                                                             {
                                                                                                                 Err(pos)
-                                                                                                            },
+                                                                                                            }
                                                                                                             Ok((pos,
                                                                                                                 _))
                                                                                                             =>
@@ -422,7 +422,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                                         =>
                                                                                                                         {
                                                                                                                             Err(pos)
-                                                                                                                        },
+                                                                                                                        }
                                                                                                                         Ok((pos,
                                                                                                                             _))
                                                                                                                         =>
@@ -471,7 +471,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                             =>
                                                                                             {
                                                                                                 Err(pos)
-                                                                                            },
+                                                                                            }
                                                                                             Ok((pos,
                                                                                                 _))
                                                                                             =>
@@ -486,7 +486,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                         =>
                                                                                                         {
                                                                                                             Err(pos)
-                                                                                                        },
+                                                                                                        }
                                                                                                         Ok((pos,
                                                                                                             _))
                                                                                                         =>
@@ -502,7 +502,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                                     =>
                                                                                                                     {
                                                                                                                         Err(pos)
-                                                                                                                    },
+                                                                                                                    }
                                                                                                                     Ok((pos,
                                                                                                                         _))
                                                                                                                     =>
@@ -517,7 +517,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                                                 =>
                                                                                                                                 {
                                                                                                                                     Err(pos)
-                                                                                                                                },
+                                                                                                                                }
                                                                                                                                 Ok((pos,
                                                                                                                                     _))
                                                                                                                                 =>
@@ -550,7 +550,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                                                                                         =>
                                                                                                                                                                         {
                                                                                                                                                                             Err(pos)
-                                                                                                                                                                        },
+                                                                                                                                                                        }
                                                                                                                                                                         Ok((pos,
                                                                                                                                                                             _))
                                                                                                                                                                         =>
@@ -567,11 +567,11 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                                                                                 =>
                                                                                                                                                                 {
                                                                                                                                                                     newpos
-                                                                                                                                                                },
+                                                                                                                                                                }
                                                                                                                                                                 Err(..)
                                                                                                                                                                 =>
                                                                                                                                                                 break
-
+                                                                                                                                                                    ,
                                                                                                                                                             }
                                                                                                                                                         } else {
                                                                                                                                                             pos
@@ -589,7 +589,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                                                                                 =
                                                                                                                                                                 newpos;
                                                                                                                                                             repeat_value.push(value);
-                                                                                                                                                        },
+                                                                                                                                                        }
                                                                                                                                                         Err(..)
                                                                                                                                                         =>
                                                                                                                                                         {
@@ -614,7 +614,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                                                             =>
                                                                                                                                             {
                                                                                                                                                 Err(pos)
-                                                                                                                                            },
+                                                                                                                                            }
                                                                                                                                             Ok((pos,
                                                                                                                                                 names))
                                                                                                                                             =>
@@ -630,7 +630,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                                                                         =>
                                                                                                                                                         {
                                                                                                                                                             Err(pos)
-                                                                                                                                                        },
+                                                                                                                                                        }
                                                                                                                                                         Ok((pos,
                                                                                                                                                             _))
                                                                                                                                                         =>
@@ -645,7 +645,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                                                                                                     =>
                                                                                                                                                                     {
                                                                                                                                                                         Err(pos)
-                                                                                                                                                                    },
+                                                                                                                                                                    }
                                                                                                                                                                     Ok((pos,
                                                                                                                                                                         _))
                                                                                                                                                                     =>
@@ -703,7 +703,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                             =>
                                                                                             {
                                                                                                 Err(pos)
-                                                                                            },
+                                                                                            }
                                                                                             Ok((pos,
                                                                                                 _))
                                                                                             =>
@@ -726,7 +726,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                             match seq_res {
                                                                 Err(pos) => {
                                                                     Err(pos)
-                                                                },
+                                                                }
                                                                 Ok((pos, v))
                                                                 => {
                                                                     {
@@ -740,7 +740,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                             =>
                                                                             {
                                                                                 Err(pos)
-                                                                            },
+                                                                            }
                                                                             Ok((pos,
                                                                                 _))
                                                                             =>
@@ -755,7 +755,7 @@ fn parse_rust_use(input: &str, pos: uint) -> Result<(uint, RustUse), uint> {
                                                                                         =>
                                                                                         {
                                                                                             Err(pos)
-                                                                                        },
+                                                                                        }
                                                                                         Ok((pos,
                                                                                             _))
                                                                                         =>
@@ -807,15 +807,15 @@ fn parse_rust_path(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                         let seq_res =
                                             slice_eq(input, pos, "::");
                                         match seq_res {
-                                            Err(pos) => { Err(pos) },
+                                            Err(pos) => { Err(pos) }
                                             Ok((pos, _)) => {
                                                 parse___(input, pos)
                                             }
                                         }
                                     };
                                 match sep_res {
-                                    Ok((newpos, _)) => { newpos },
-                                    Err(..) => break
+                                    Ok((newpos, _)) => { newpos }
+                                    Err(..) => break ,
                                 }
                             } else { pos };
                         let step_res = parse_identifier(input, pos);
@@ -823,7 +823,7 @@ fn parse_rust_path(input: &str, pos: uint) -> Result<(uint, String), uint> {
                             Ok((newpos, value)) => {
                                 repeat_pos = newpos;
                                 repeat_value.push(value);
-                            },
+                            }
                             Err(..) => { break ; }
                         }
                     }
@@ -832,7 +832,7 @@ fn parse_rust_path(input: &str, pos: uint) -> Result<(uint, String), uint> {
                     } else { Err(repeat_pos) }
                 };
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let match_str = input.slice(start_pos, pos);
@@ -849,7 +849,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
             {
                 let seq_res = slice_eq(input, pos, "()");
                 match seq_res {
-                    Err(pos) => { Err(pos) },
+                    Err(pos) => { Err(pos) }
                     Ok((pos, _)) => { parse___(input, pos) }
                 }
             };
@@ -860,18 +860,18 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                     {
                         let seq_res = slice_eq(input, pos, "[");
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let seq_res = parse_rust_type(input, pos);
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, _)) => {
                                             {
                                                 let seq_res =
                                                     slice_eq(input, pos, "]");
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         parse___(input, pos)
                                                     }
@@ -890,13 +890,13 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                             {
                                 let seq_res = parse_identifier(input, pos);
                                 match seq_res {
-                                    Err(pos) => { Err(pos) },
+                                    Err(pos) => { Err(pos) }
                                     Ok((pos, _)) => {
                                         {
                                             let seq_res =
                                                 slice_eq(input, pos, "<");
                                             match seq_res {
-                                                Err(pos) => { Err(pos) },
+                                                Err(pos) => { Err(pos) }
                                                 Ok((pos, _)) => {
                                                     {
                                                         let seq_res =
@@ -905,7 +905,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                         match seq_res {
                                                             Err(pos) => {
                                                                 Err(pos)
-                                                            },
+                                                            }
                                                             Ok((pos, _)) => {
                                                                 {
                                                                     let seq_res =
@@ -917,7 +917,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                                         Err(pos)
                                                                         => {
                                                                             Err(pos)
-                                                                        },
+                                                                        }
                                                                         Ok((pos,
                                                                             _))
                                                                         => {
@@ -943,7 +943,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                         let seq_res =
                                             parse_identifier(input, pos);
                                         match seq_res {
-                                            Err(pos) => { Err(pos) },
+                                            Err(pos) => { Err(pos) }
                                             Ok((pos, _)) => {
                                                 {
                                                     let seq_res =
@@ -952,7 +952,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                     match seq_res {
                                                         Err(pos) => {
                                                             Err(pos)
-                                                        },
+                                                        }
                                                         Ok((pos, _)) => {
                                                             parse_rust_type(input,
                                                                             pos)
@@ -970,7 +970,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                 let seq_res =
                                                     slice_eq(input, pos, "(");
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         {
                                                             let seq_res =
@@ -998,7 +998,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                                                             =>
                                                                                             {
                                                                                                 Err(pos)
-                                                                                            },
+                                                                                            }
                                                                                             Ok((pos,
                                                                                                 _))
                                                                                             =>
@@ -1014,7 +1014,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                                                                         =>
                                                                                                         {
                                                                                                             Err(pos)
-                                                                                                        },
+                                                                                                        }
                                                                                                         Ok((pos,
                                                                                                             _))
                                                                                                         =>
@@ -1034,11 +1034,11 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                                                     =>
                                                                                     {
                                                                                         newpos
-                                                                                    },
+                                                                                    }
                                                                                     Err(..)
                                                                                     =>
                                                                                     break
-
+                                                                                        ,
                                                                                 }
                                                                             } else {
                                                                                 pos
@@ -1056,7 +1056,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                                                     =
                                                                                     newpos;
                                                                                 repeat_value.push(value);
-                                                                            },
+                                                                            }
                                                                             Err(..)
                                                                             =>
                                                                             {
@@ -1078,7 +1078,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                             match seq_res {
                                                                 Err(pos) => {
                                                                     Err(pos)
-                                                                },
+                                                                }
                                                                 Ok((pos, _))
                                                                 => {
                                                                     {
@@ -1092,7 +1092,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                                             =>
                                                                             {
                                                                                 Err(pos)
-                                                                            },
+                                                                            }
                                                                             Ok((pos,
                                                                                 _))
                                                                             =>
@@ -1116,7 +1116,7 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                     parse_identifier(input,
                                                                      pos);
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         slice_eq(input, pos,
                                                                  "")
@@ -1143,7 +1143,7 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
         {
             let seq_res = parse_sequence(input, pos);
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, head)) => {
                     {
                         let seq_res =
@@ -1159,7 +1159,7 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                 let seq_res =
                                                     parse_slash(input, pos);
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         {
                                                             let seq_res =
@@ -1168,7 +1168,7 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                             match seq_res {
                                                                 Err(pos) => {
                                                                     Err(pos)
-                                                                },
+                                                                }
                                                                 Ok((pos, s))
                                                                 => {
                                                                     {
@@ -1189,14 +1189,14 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                         Ok((newpos, value)) => {
                                             repeat_pos = newpos;
                                             repeat_value.push(value);
-                                        },
+                                        }
                                         Err(..) => { break ; }
                                     }
                                 }
                                 Ok((repeat_pos, repeat_value))
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, tail)) => {
                                 {
                                     let match_str =
@@ -1233,19 +1233,19 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                     Ok((newpos, value)) => {
                                         repeat_pos = newpos;
                                         repeat_value.push(value);
-                                    },
+                                    }
                                     Err(..) => { break ; }
                                 }
                             }
                             Ok((repeat_pos, repeat_value))
                         };
                     match seq_res {
-                        Err(pos) => { Err(pos) },
+                        Err(pos) => { Err(pos) }
                         Ok((pos, elements)) => {
                             {
                                 let seq_res = parse_action(input, pos);
                                 match seq_res {
-                                    Err(pos) => { Err(pos) },
+                                    Err(pos) => { Err(pos) }
                                     Ok((pos, code)) => {
                                         {
                                             let match_str =
@@ -1276,14 +1276,14 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                     Ok((newpos, value)) => {
                                         repeat_pos = newpos;
                                         repeat_value.push(value);
-                                    },
+                                    }
                                     Err(..) => { break ; }
                                 }
                             }
                             Ok((repeat_pos, repeat_value))
                         };
                     match seq_res {
-                        Err(pos) => { Err(pos) },
+                        Err(pos) => { Err(pos) }
                         Ok((pos, elements)) => {
                             {
                                 let match_str = input.slice(start_pos, pos);
@@ -1309,18 +1309,18 @@ fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr), uint> {
                 {
                     let seq_res = parse_identifier(input, pos);
                     match seq_res {
-                        Err(pos) => { Err(pos) },
+                        Err(pos) => { Err(pos) }
                         Ok((pos, label)) => {
                             {
                                 let seq_res = parse_colon(input, pos);
                                 match seq_res {
-                                    Err(pos) => { Err(pos) },
+                                    Err(pos) => { Err(pos) }
                                     Ok((pos, _)) => {
                                         {
                                             let seq_res =
                                                 parse_prefixed(input, pos);
                                             match seq_res {
-                                                Err(pos) => { Err(pos) },
+                                                Err(pos) => { Err(pos) }
                                                 Ok((pos, expression)) => {
                                                     {
                                                         let match_str =
@@ -1349,7 +1349,7 @@ fn parse_labeled(input: &str, pos: uint) -> Result<(uint, TaggedExpr), uint> {
                 {
                     let seq_res = parse_prefixed(input, pos);
                     match seq_res {
-                        Err(pos) => { Err(pos) },
+                        Err(pos) => { Err(pos) }
                         Ok((pos, expr)) => {
                             {
                                 let match_str = input.slice(start_pos, pos);
@@ -1372,12 +1372,12 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                 {
                     let seq_res = parse_dollar(input, pos);
                     match seq_res {
-                        Err(pos) => { Err(pos) },
+                        Err(pos) => { Err(pos) }
                         Ok((pos, _)) => {
                             {
                                 let seq_res = parse_suffixed(input, pos);
                                 match seq_res {
-                                    Err(pos) => { Err(pos) },
+                                    Err(pos) => { Err(pos) }
                                     Ok((pos, expression)) => {
                                         {
                                             let match_str =
@@ -1400,13 +1400,13 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                         {
                             let seq_res = parse_and(input, pos);
                             match seq_res {
-                                Err(pos) => { Err(pos) },
+                                Err(pos) => { Err(pos) }
                                 Ok((pos, _)) => {
                                     {
                                         let seq_res =
                                             parse_suffixed(input, pos);
                                         match seq_res {
-                                            Err(pos) => { Err(pos) },
+                                            Err(pos) => { Err(pos) }
                                             Ok((pos, expression)) => {
                                                 {
                                                     let match_str =
@@ -1431,14 +1431,14 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                 {
                                     let seq_res = parse_not(input, pos);
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, _)) => {
                                             {
                                                 let seq_res =
                                                     parse_suffixed(input,
                                                                    pos);
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, expression)) => {
                                                         {
                                                             let match_str =
@@ -1456,7 +1456,7 @@ fn parse_prefixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                             };
                         match choice_res {
                             Ok((pos, value)) => Ok((pos, value)),
-                            Err(..) => parse_suffixed(input, pos)
+                            Err(..) => parse_suffixed(input, pos),
                         }
                     }
                 }
@@ -1472,12 +1472,12 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                 {
                     let seq_res = parse_primary(input, pos);
                     match seq_res {
-                        Err(pos) => { Err(pos) },
+                        Err(pos) => { Err(pos) }
                         Ok((pos, expression)) => {
                             {
                                 let seq_res = parse_question(input, pos);
                                 match seq_res {
-                                    Err(pos) => { Err(pos) },
+                                    Err(pos) => { Err(pos) }
                                     Ok((pos, _)) => {
                                         {
                                             let match_str =
@@ -1501,13 +1501,13 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                         {
                             let seq_res = parse_primary(input, pos);
                             match seq_res {
-                                Err(pos) => { Err(pos) },
+                                Err(pos) => { Err(pos) }
                                 Ok((pos, expression)) => {
                                     {
                                         let seq_res =
                                             parse_starstar(input, pos);
                                         match seq_res {
-                                            Err(pos) => { Err(pos) },
+                                            Err(pos) => { Err(pos) }
                                             Ok((pos, _)) => {
                                                 {
                                                     let seq_res =
@@ -1516,7 +1516,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                     match seq_res {
                                                         Err(pos) => {
                                                             Err(pos)
-                                                        },
+                                                        }
                                                         Ok((pos, sep)) => {
                                                             {
                                                                 let match_str =
@@ -1546,14 +1546,14 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                 {
                                     let seq_res = parse_primary(input, pos);
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, expression)) => {
                                             {
                                                 let seq_res =
                                                     parse_plusplus(input,
                                                                    pos);
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         {
                                                             let seq_res =
@@ -1562,7 +1562,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                             match seq_res {
                                                                 Err(pos) => {
                                                                     Err(pos)
-                                                                },
+                                                                }
                                                                 Ok((pos, sep))
                                                                 => {
                                                                     {
@@ -1594,7 +1594,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                             let seq_res =
                                                 parse_primary(input, pos);
                                             match seq_res {
-                                                Err(pos) => { Err(pos) },
+                                                Err(pos) => { Err(pos) }
                                                 Ok((pos, expression)) => {
                                                     {
                                                         let seq_res =
@@ -1603,7 +1603,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                         match seq_res {
                                                             Err(pos) => {
                                                                 Err(pos)
-                                                            },
+                                                            }
                                                             Ok((pos, _)) => {
                                                                 {
                                                                     let match_str =
@@ -1634,7 +1634,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                     match seq_res {
                                                         Err(pos) => {
                                                             Err(pos)
-                                                        },
+                                                        }
                                                         Ok((pos, expression))
                                                         => {
                                                             {
@@ -1646,7 +1646,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                                     Err(pos)
                                                                     => {
                                                                         Err(pos)
-                                                                    },
+                                                                    }
                                                                     Ok((pos,
                                                                         _)) =>
                                                                     {
@@ -1670,7 +1670,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                             Ok((pos, value)) =>
                                             Ok((pos, value)),
                                             Err(..) =>
-                                            parse_primary(input, pos)
+                                            parse_primary(input, pos),
                                         }
                                     }
                                 }
@@ -1690,7 +1690,7 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                 {
                     let seq_res = parse_identifier(input, pos);
                     match seq_res {
-                        Err(pos) => { Err(pos) },
+                        Err(pos) => { Err(pos) }
                         Ok((pos, name)) => {
                             {
                                 let seq_res =
@@ -1704,13 +1704,13 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                         {
                                                             Ok((newpos,
                                                                 Some(value)))
-                                                        },
+                                                        }
                                                         Err(..) => {
                                                             Ok((pos, None))
                                                         }
                                                     };
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         {
                                                             let seq_res =
@@ -1719,7 +1719,7 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                             match seq_res {
                                                                 Err(pos) => {
                                                                     Err(pos)
-                                                                },
+                                                                }
                                                                 Ok((pos, _))
                                                                 => {
                                                                     parse_equals(input,
@@ -1732,11 +1732,11 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                             };
                                         match assert_res {
                                             Err(..) => Ok((pos, ())),
-                                            Ok(..) => Err(pos)
+                                            Ok(..) => Err(pos),
                                         }
                                     };
                                 match seq_res {
-                                    Err(pos) => { Err(pos) },
+                                    Err(pos) => { Err(pos) }
                                     Ok((pos, _)) => {
                                         {
                                             let match_str =
@@ -1768,7 +1768,7 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                             let seq_res =
                                                 parse_dot(input, pos);
                                             match seq_res {
-                                                Err(pos) => { Err(pos) },
+                                                Err(pos) => { Err(pos) }
                                                 Ok((pos, _)) => {
                                                     {
                                                         let match_str =
@@ -1788,7 +1788,7 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                             let seq_res =
                                                 parse_lparen(input, pos);
                                             match seq_res {
-                                                Err(pos) => { Err(pos) },
+                                                Err(pos) => { Err(pos) }
                                                 Ok((pos, _)) => {
                                                     {
                                                         let seq_res =
@@ -1797,7 +1797,7 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                         match seq_res {
                                                             Err(pos) => {
                                                                 Err(pos)
-                                                            },
+                                                            }
                                                             Ok((pos,
                                                                 expression))
                                                             => {
@@ -1810,7 +1810,7 @@ fn parse_primary(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                                         Err(pos)
                                                                         => {
                                                                             Err(pos)
-                                                                        },
+                                                                        }
                                                                         Ok((pos,
                                                                             _))
                                                                         => {
@@ -1846,12 +1846,12 @@ fn parse_action(input: &str, pos: uint) -> Result<(uint, String), uint> {
         {
             let seq_res = parse_braced(input, pos);
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, braced)) => {
                     {
                         let seq_res = parse___(input, pos);
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let match_str =
@@ -1872,7 +1872,7 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, String), uint> {
         {
             let seq_res = slice_eq(input, pos, "{");
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res =
@@ -1896,7 +1896,7 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                                                     Err(pos)
                                                                     => {
                                                                         Err(pos)
-                                                                    },
+                                                                    }
                                                                     Ok((pos,
                                                                         _)) =>
                                                                     {
@@ -1912,20 +1912,20 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                                             Ok((pos, value)),
                                                             Err(..) =>
                                                             parse_nonBraceCharacters(input,
-                                                                                     pos)
+                                                                                     pos),
                                                         }
                                                     };
                                                 match step_res {
                                                     Ok((newpos, value)) => {
                                                         repeat_pos = newpos;
-                                                    },
+                                                    }
                                                     Err(..) => { break ; }
                                                 }
                                             }
                                             Ok((repeat_pos, ()))
                                         };
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, _)) => {
                                             {
                                                 let match_str =
@@ -1939,12 +1939,12 @@ fn parse_braced(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                 }
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, b)) => {
                                 {
                                     let seq_res = slice_eq(input, pos, "}");
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, _)) => {
                                             {
                                                 let match_str =
@@ -1975,7 +1975,7 @@ fn parse_nonBraceCharacters(input: &str, pos: uint) ->
                 Ok((newpos, value)) => {
                     repeat_pos = newpos;
                     repeat_value.push(value);
-                },
+                }
                 Err(..) => { break ; }
             }
         }
@@ -1989,14 +1989,14 @@ fn parse_nonBraceCharacter(input: &str, pos: uint) ->
     if input.len() > pos {
         let ::std::str::CharRange { ch: ch, next: next } =
             input.char_range_at(pos);
-        match ch { '{' | '}' => Err(pos), _ => Ok((next, ())) }
+        match ch { '{' | '}' => Err(pos), _ => Ok((next, ())), }
     } else { Err(pos) }
 }
 fn parse_equals(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "=");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2005,7 +2005,7 @@ fn parse_colon(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, ":");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2014,7 +2014,7 @@ fn parse_semicolon(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, ";");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2023,7 +2023,7 @@ fn parse_slash(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "/");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2032,7 +2032,7 @@ fn parse_and(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "&");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2041,7 +2041,7 @@ fn parse_not(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "!");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2050,7 +2050,7 @@ fn parse_dollar(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "$");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2059,7 +2059,7 @@ fn parse_question(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "?");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2068,7 +2068,7 @@ fn parse_star(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "*");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2077,7 +2077,7 @@ fn parse_starstar(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "**");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2086,7 +2086,7 @@ fn parse_plus(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "+");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2095,7 +2095,7 @@ fn parse_plusplus(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "++");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2104,7 +2104,7 @@ fn parse_lparen(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "(");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2113,7 +2113,7 @@ fn parse_rparen(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, ")");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2122,7 +2122,7 @@ fn parse_dot(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, ".");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2131,7 +2131,7 @@ fn parse_returns(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     {
         let seq_res = slice_eq(input, pos, "->");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => { parse___(input, pos) }
         }
     }
@@ -2149,11 +2149,11 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                 let choice_res = parse_letter(input, pos);
                                 match choice_res {
                                     Ok((pos, value)) => Ok((pos, value)),
-                                    Err(..) => slice_eq(input, pos, "_")
+                                    Err(..) => slice_eq(input, pos, "_"),
                                 }
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let seq_res =
@@ -2184,7 +2184,7 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                                                     Err(..) =>
                                                                     slice_eq(input,
                                                                              pos,
-                                                                             "_")
+                                                                             "_"),
                                                                 }
                                                             }
                                                         }
@@ -2192,14 +2192,14 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, String), uint> {
                                                 match step_res {
                                                     Ok((newpos, value)) => {
                                                         repeat_pos = newpos;
-                                                    },
+                                                    }
                                                     Err(..) => { break ; }
                                                 }
                                             }
                                             Ok((repeat_pos, ()))
                                         };
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, _)) => {
                                             {
                                                 let match_str =
@@ -2216,12 +2216,12 @@ fn parse_identifier(input: &str, pos: uint) -> Result<(uint, String), uint> {
                     }
                 };
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, chars)) => {
                     {
                         let seq_res = parse___(input, pos);
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let match_str =
@@ -2245,27 +2245,27 @@ fn parse_literal(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                     let choice_res = parse_doubleQuotedString(input, pos);
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(..) => parse_singleQuotedString(input, pos)
+                        Err(..) => parse_singleQuotedString(input, pos),
                     }
                 };
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, value)) => {
                     {
                         let seq_res =
                             match slice_eq(input, pos, "i") {
                                 Ok((newpos, value)) => {
                                     Ok((newpos, Some(value)))
-                                },
+                                }
                                 Err(..) => { Ok((pos, None)) }
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, flags)) => {
                                 {
                                     let seq_res = parse___(input, pos);
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, _)) => {
                                             {
                                                 let match_str =
@@ -2293,16 +2293,16 @@ fn parse_string(input: &str, pos: uint) -> Result<(uint, String), uint> {
                     let choice_res = parse_doubleQuotedString(input, pos);
                     match choice_res {
                         Ok((pos, value)) => Ok((pos, value)),
-                        Err(..) => parse_singleQuotedString(input, pos)
+                        Err(..) => parse_singleQuotedString(input, pos),
                     }
                 };
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, string)) => {
                     {
                         let seq_res = parse___(input, pos);
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let match_str =
@@ -2324,7 +2324,7 @@ fn parse_doubleQuotedString(input: &str, pos: uint) ->
         {
             let seq_res = slice_eq(input, pos, "\"");
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res =
@@ -2340,19 +2340,19 @@ fn parse_doubleQuotedString(input: &str, pos: uint) ->
                                         Ok((newpos, value)) => {
                                             repeat_pos = newpos;
                                             repeat_value.push(value);
-                                        },
+                                        }
                                         Err(..) => { break ; }
                                     }
                                 }
                                 Ok((repeat_pos, repeat_value))
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, s)) => {
                                 {
                                     let seq_res = slice_eq(input, pos, "\"");
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, _)) => {
                                             {
                                                 let match_str =
@@ -2400,7 +2400,7 @@ fn parse_doubleQuotedCharacter(input: &str, pos: uint) ->
                                             Ok((pos, value)),
                                             Err(..) =>
                                             parse_eolEscapeSequence(input,
-                                                                    pos)
+                                                                    pos),
                                         }
                                     }
                                 }
@@ -2429,23 +2429,23 @@ fn parse_simpleDoubleQuotedCharacter(input: &str, pos: uint) ->
                                         slice_eq(input, pos, "\\");
                                     match choice_res {
                                         Ok((pos, value)) => Ok((pos, value)),
-                                        Err(..) => parse_eolChar(input, pos)
+                                        Err(..) => parse_eolChar(input, pos),
                                     }
                                 }
                             }
                         };
                     match assert_res {
                         Err(..) => Ok((pos, ())),
-                        Ok(..) => Err(pos)
+                        Ok(..) => Err(pos),
                     }
                 };
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res = any_char(input, pos);
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let match_str =
@@ -2467,7 +2467,7 @@ fn parse_singleQuotedString(input: &str, pos: uint) ->
         {
             let seq_res = slice_eq(input, pos, "\'");
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res =
@@ -2483,19 +2483,19 @@ fn parse_singleQuotedString(input: &str, pos: uint) ->
                                         Ok((newpos, value)) => {
                                             repeat_pos = newpos;
                                             repeat_value.push(value);
-                                        },
+                                        }
                                         Err(..) => { break ; }
                                     }
                                 }
                                 Ok((repeat_pos, repeat_value))
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, s)) => {
                                 {
                                     let seq_res = slice_eq(input, pos, "\'");
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, _)) => {
                                             {
                                                 let match_str =
@@ -2543,7 +2543,7 @@ fn parse_singleQuotedCharacter(input: &str, pos: uint) ->
                                             Ok((pos, value)),
                                             Err(..) =>
                                             parse_eolEscapeSequence(input,
-                                                                    pos)
+                                                                    pos),
                                         }
                                     }
                                 }
@@ -2572,23 +2572,23 @@ fn parse_simpleSingleQuotedCharacter(input: &str, pos: uint) ->
                                         slice_eq(input, pos, "\\");
                                     match choice_res {
                                         Ok((pos, value)) => Ok((pos, value)),
-                                        Err(..) => parse_eolChar(input, pos)
+                                        Err(..) => parse_eolChar(input, pos),
                                     }
                                 }
                             }
                         };
                     match assert_res {
                         Err(..) => Ok((pos, ())),
-                        Ok(..) => Err(pos)
+                        Ok(..) => Err(pos),
                     }
                 };
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res = any_char(input, pos);
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let match_str =
@@ -2609,18 +2609,18 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
         {
             let seq_res = slice_eq(input, pos, "[");
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res =
                             match slice_eq(input, pos, "^") {
                                 Ok((newpos, value)) => {
                                     Ok((newpos, Some(value)))
-                                },
+                                }
                                 Err(..) => { Ok((pos, None)) }
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, inverted)) => {
                                 {
                                     let seq_res =
@@ -2640,27 +2640,27 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                             Ok((pos, value)),
                                                             Err(..) =>
                                                             parse_classCharacter(input,
-                                                                                 pos)
+                                                                                 pos),
                                                         }
                                                     };
                                                 match step_res {
                                                     Ok((newpos, value)) => {
                                                         repeat_pos = newpos;
                                                         repeat_value.push(value);
-                                                    },
+                                                    }
                                                     Err(..) => { break ; }
                                                 }
                                             }
                                             Ok((repeat_pos, repeat_value))
                                         };
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, parts)) => {
                                             {
                                                 let seq_res =
                                                     slice_eq(input, pos, "]");
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         {
                                                             let seq_res =
@@ -2673,7 +2673,7 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                                     => {
                                                                         Ok((newpos,
                                                                             Some(value)))
-                                                                    },
+                                                                    }
                                                                     Err(..) =>
                                                                     {
                                                                         Ok((pos,
@@ -2683,7 +2683,7 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                             match seq_res {
                                                                 Err(pos) => {
                                                                     Err(pos)
-                                                                },
+                                                                }
                                                                 Ok((pos,
                                                                     flags)) =>
                                                                 {
@@ -2697,7 +2697,7 @@ fn parse_class(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                                             =>
                                                                             {
                                                                                 Err(pos)
-                                                                            },
+                                                                            }
                                                                             Ok((pos,
                                                                                 _))
                                                                             =>
@@ -2737,19 +2737,19 @@ fn parse_classCharacterRange(input: &str, pos: uint) ->
         {
             let seq_res = parse_bracketDelimitedCharacter(input, pos);
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, begin)) => {
                     {
                         let seq_res = slice_eq(input, pos, "-");
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let seq_res =
                                         parse_bracketDelimitedCharacter(input,
                                                                         pos);
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, end)) => {
                                             {
                                                 let match_str =
@@ -2777,7 +2777,7 @@ fn parse_classCharacter(input: &str, pos: uint) ->
         {
             let seq_res = parse_bracketDelimitedCharacter(input, pos);
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, char_)) => {
                     {
                         let match_str = input.slice(start_pos, pos);
@@ -2816,7 +2816,7 @@ fn parse_bracketDelimitedCharacter(input: &str, pos: uint) ->
                                             Ok((pos, value)),
                                             Err(..) =>
                                             parse_eolEscapeSequence(input,
-                                                                    pos)
+                                                                    pos),
                                         }
                                     }
                                 }
@@ -2845,23 +2845,23 @@ fn parse_simpleBracketDelimitedCharacter(input: &str, pos: uint) ->
                                         slice_eq(input, pos, "\\");
                                     match choice_res {
                                         Ok((pos, value)) => Ok((pos, value)),
-                                        Err(..) => parse_eolChar(input, pos)
+                                        Err(..) => parse_eolChar(input, pos),
                                     }
                                 }
                             }
                         };
                     match assert_res {
                         Err(..) => Ok((pos, ())),
-                        Ok(..) => Err(pos)
+                        Ok(..) => Err(pos),
                     }
                 };
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res = any_char(input, pos);
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let match_str =
@@ -2883,7 +2883,7 @@ fn parse_simpleEscapeSequence(input: &str, pos: uint) ->
         {
             let seq_res = slice_eq(input, pos, "\\");
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res =
@@ -2912,7 +2912,7 @@ fn parse_simpleEscapeSequence(input: &str, pos: uint) ->
                                                             Ok((pos, value)),
                                                             Err(..) =>
                                                             parse_eolChar(input,
-                                                                          pos)
+                                                                          pos),
                                                         }
                                                     }
                                                 }
@@ -2921,16 +2921,16 @@ fn parse_simpleEscapeSequence(input: &str, pos: uint) ->
                                     };
                                 match assert_res {
                                     Err(..) => Ok((pos, ())),
-                                    Ok(..) => Err(pos)
+                                    Ok(..) => Err(pos),
                                 }
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let seq_res = any_char(input, pos);
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, _)) => {
                                             {
                                                 let match_str =
@@ -2942,7 +2942,7 @@ fn parse_simpleEscapeSequence(input: &str, pos: uint) ->
                                                         'n' => '\n',
                                                         'r' => '\r',
                                                         't' => '\t',
-                                                        x => x
+                                                        x => x,
                                                     }))
                                             }
                                         }
@@ -2963,7 +2963,7 @@ fn parse_zeroEscapeSequence(input: &str, pos: uint) ->
         {
             let seq_res = slice_eq(input, pos, "\\0");
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res =
@@ -2971,11 +2971,11 @@ fn parse_zeroEscapeSequence(input: &str, pos: uint) ->
                                 let assert_res = parse_digit(input, pos);
                                 match assert_res {
                                     Err(..) => Ok((pos, ())),
-                                    Ok(..) => Err(pos)
+                                    Ok(..) => Err(pos),
                                 }
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, _)) => {
                                 {
                                     let match_str =
@@ -2997,7 +2997,7 @@ fn parse_hexEscapeSequence(input: &str, pos: uint) ->
         {
             let seq_res = slice_eq(input, pos, "\\x");
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res =
@@ -3006,14 +3006,14 @@ fn parse_hexEscapeSequence(input: &str, pos: uint) ->
                                 {
                                     let seq_res = parse_hexDigit(input, pos);
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, _)) => {
                                             {
                                                 let seq_res =
                                                     parse_hexDigit(input,
                                                                    pos);
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         {
                                                             let match_str =
@@ -3031,7 +3031,7 @@ fn parse_hexEscapeSequence(input: &str, pos: uint) ->
                                 }
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, value)) => {
                                 {
                                     let match_str =
@@ -3055,7 +3055,7 @@ fn parse_unicodeEscapeSequence(input: &str, pos: uint) ->
         {
             let seq_res = slice_eq(input, pos, "\\u");
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res =
@@ -3064,14 +3064,14 @@ fn parse_unicodeEscapeSequence(input: &str, pos: uint) ->
                                 {
                                     let seq_res = parse_hexDigit(input, pos);
                                     match seq_res {
-                                        Err(pos) => { Err(pos) },
+                                        Err(pos) => { Err(pos) }
                                         Ok((pos, _)) => {
                                             {
                                                 let seq_res =
                                                     parse_hexDigit(input,
                                                                    pos);
                                                 match seq_res {
-                                                    Err(pos) => { Err(pos) },
+                                                    Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         {
                                                             let seq_res =
@@ -3080,7 +3080,7 @@ fn parse_unicodeEscapeSequence(input: &str, pos: uint) ->
                                                             match seq_res {
                                                                 Err(pos) => {
                                                                     Err(pos)
-                                                                },
+                                                                }
                                                                 Ok((pos, _))
                                                                 => {
                                                                     {
@@ -3093,7 +3093,7 @@ fn parse_unicodeEscapeSequence(input: &str, pos: uint) ->
                                                                             =>
                                                                             {
                                                                                 Err(pos)
-                                                                            },
+                                                                            }
                                                                             Ok((pos,
                                                                                 _))
                                                                             =>
@@ -3120,7 +3120,7 @@ fn parse_unicodeEscapeSequence(input: &str, pos: uint) ->
                                 }
                             };
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, value)) => {
                                 {
                                     let match_str =
@@ -3144,12 +3144,12 @@ fn parse_eolEscapeSequence(input: &str, pos: uint) ->
         {
             let seq_res = slice_eq(input, pos, "\\");
             match seq_res {
-                Err(pos) => { Err(pos) },
+                Err(pos) => { Err(pos) }
                 Ok((pos, _)) => {
                     {
                         let seq_res = parse_eol(input, pos);
                         match seq_res {
-                            Err(pos) => { Err(pos) },
+                            Err(pos) => { Err(pos) }
                             Ok((pos, eol)) => {
                                 {
                                     let match_str =
@@ -3168,7 +3168,7 @@ fn parse_digit(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let ::std::str::CharRange { ch: ch, next: next } =
             input.char_range_at(pos);
-        match ch { '0' ..'9' => Ok((next, ())), _ => Err(pos) }
+        match ch { '0' ..'9' => Ok((next, ())), _ => Err(pos), }
     } else { Err(pos) }
 }
 fn parse_hexDigit(input: &str, pos: uint) -> Result<(uint, ()), uint> {
@@ -3177,7 +3177,7 @@ fn parse_hexDigit(input: &str, pos: uint) -> Result<(uint, ()), uint> {
             input.char_range_at(pos);
         match ch {
             '0' ..'9' | 'a' ..'f' | 'A' ..'F' => Ok((next, ())),
-            _ => Err(pos)
+            _ => Err(pos),
         }
     } else { Err(pos) }
 }
@@ -3186,7 +3186,7 @@ fn parse_letter(input: &str, pos: uint) -> Result<(uint, ()), uint> {
         let choice_res = parse_lowerCaseLetter(input, pos);
         match choice_res {
             Ok((pos, value)) => Ok((pos, value)),
-            Err(..) => parse_upperCaseLetter(input, pos)
+            Err(..) => parse_upperCaseLetter(input, pos),
         }
     }
 }
@@ -3194,14 +3194,14 @@ fn parse_lowerCaseLetter(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let ::std::str::CharRange { ch: ch, next: next } =
             input.char_range_at(pos);
-        match ch { 'a' ..'z' => Ok((next, ())), _ => Err(pos) }
+        match ch { 'a' ..'z' => Ok((next, ())), _ => Err(pos), }
     } else { Err(pos) }
 }
 fn parse_upperCaseLetter(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let ::std::str::CharRange { ch: ch, next: next } =
             input.char_range_at(pos);
-        match ch { 'A' ..'Z' => Ok((next, ())), _ => Err(pos) }
+        match ch { 'A' ..'Z' => Ok((next, ())), _ => Err(pos), }
     } else { Err(pos) }
 }
 fn parse___(input: &str, pos: uint) -> Result<(uint, ()), uint> {
@@ -3218,13 +3218,13 @@ fn parse___(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                             let choice_res = parse_eol(input, pos);
                             match choice_res {
                                 Ok((pos, value)) => Ok((pos, value)),
-                                Err(..) => parse_comment(input, pos)
+                                Err(..) => parse_comment(input, pos),
                             }
                         }
                     }
                 };
             match step_res {
-                Ok((newpos, value)) => { repeat_pos = newpos; },
+                Ok((newpos, value)) => { repeat_pos = newpos; }
                 Err(..) => { break ; }
             }
         }
@@ -3236,7 +3236,7 @@ fn parse_comment(input: &str, pos: uint) -> Result<(uint, ()), uint> {
         let choice_res = parse_singleLineComment(input, pos);
         match choice_res {
             Ok((pos, value)) => Ok((pos, value)),
-            Err(..) => parse_multiLineComment(input, pos)
+            Err(..) => parse_multiLineComment(input, pos),
         }
     }
 }
@@ -3245,7 +3245,7 @@ fn parse_singleLineComment(input: &str, pos: uint) ->
     {
         let seq_res = slice_eq(input, pos, "//");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => {
                 {
                     let mut repeat_pos = pos;
@@ -3259,16 +3259,16 @@ fn parse_singleLineComment(input: &str, pos: uint) ->
                                             parse_eolChar(input, pos);
                                         match assert_res {
                                             Err(..) => Ok((pos, ())),
-                                            Ok(..) => Err(pos)
+                                            Ok(..) => Err(pos),
                                         }
                                     };
                                 match seq_res {
-                                    Err(pos) => { Err(pos) },
+                                    Err(pos) => { Err(pos) }
                                     Ok((pos, _)) => { any_char(input, pos) }
                                 }
                             };
                         match step_res {
-                            Ok((newpos, value)) => { repeat_pos = newpos; },
+                            Ok((newpos, value)) => { repeat_pos = newpos; }
                             Err(..) => { break ; }
                         }
                     }
@@ -3283,7 +3283,7 @@ fn parse_multiLineComment(input: &str, pos: uint) ->
     {
         let seq_res = slice_eq(input, pos, "/*");
         match seq_res {
-            Err(pos) => { Err(pos) },
+            Err(pos) => { Err(pos) }
             Ok((pos, _)) => {
                 {
                     let seq_res =
@@ -3300,11 +3300,11 @@ fn parse_multiLineComment(input: &str, pos: uint) ->
                                                              "*/");
                                                 match assert_res {
                                                     Err(..) => Ok((pos, ())),
-                                                    Ok(..) => Err(pos)
+                                                    Ok(..) => Err(pos),
                                                 }
                                             };
                                         match seq_res {
-                                            Err(pos) => { Err(pos) },
+                                            Err(pos) => { Err(pos) }
                                             Ok((pos, _)) => {
                                                 any_char(input, pos)
                                             }
@@ -3313,14 +3313,14 @@ fn parse_multiLineComment(input: &str, pos: uint) ->
                                 match step_res {
                                     Ok((newpos, value)) => {
                                         repeat_pos = newpos;
-                                    },
+                                    }
                                     Err(..) => { break ; }
                                 }
                             }
                             Ok((repeat_pos, ()))
                         };
                     match seq_res {
-                        Err(pos) => { Err(pos) },
+                        Err(pos) => { Err(pos) }
                         Ok((pos, _)) => { slice_eq(input, pos, "*/") }
                     }
                 }
@@ -3346,7 +3346,7 @@ fn parse_eol(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                     slice_eq(input, pos, "\u2028");
                                 match choice_res {
                                     Ok((pos, value)) => Ok((pos, value)),
-                                    Err(..) => slice_eq(input, pos, "\u2029")
+                                    Err(..) => slice_eq(input, pos, "\u2029"),
                                 }
                             }
                         }
@@ -3362,7 +3362,7 @@ fn parse_eolChar(input: &str, pos: uint) -> Result<(uint, ()), uint> {
             input.char_range_at(pos);
         match ch {
             '\n' | '\r' | '\u2028' | '\u2029' => Ok((next, ())),
-            _ => Err(pos)
+            _ => Err(pos),
         }
     } else { Err(pos) }
 }
@@ -3373,7 +3373,7 @@ fn parse_whitespace(input: &str, pos: uint) -> Result<(uint, ()), uint> {
         match ch {
             ' ' | '\t' | '\xa0' | '\ufeff' | '\u1680' | '\u180e' | '\u2000'
             ..'\u200a' | '\u202f' | '\u205f' | '\u3000' => Ok((next, ())),
-            _ => Err(pos)
+            _ => Err(pos),
         }
     } else { Err(pos) }
 }
@@ -3386,7 +3386,7 @@ pub fn grammar(input: &str) -> Result<Grammar, String> {
                 Err(format!("Expected end of input at {}" , pos_to_line
                             ( input , pos )))
             }
-        },
-        Err(pos) => Err(format!("Error at {}" , pos_to_line ( input , pos )))
+        }
+        Err(pos) => Err(format!("Error at {}" , pos_to_line ( input , pos ))),
     }
 }
