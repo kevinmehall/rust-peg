@@ -24,6 +24,8 @@ rule_name -> type
   * `expression?` - Match one or zero repetitions of `expression`. Returns an `Option`
   * `&expression` - Match only if `expression` matches at this position, without consuming any characters
   * `!expression` - Match only if `expression` does not match at this position, without consuming any characters
+  * `expression ** delim` - Match zero or more repetitions of `expression` delimited with `delim` and return the results as a `Vec`
+  * `expression ++ delim` - Match one or more repetitions of `expression` delimited with `delim` and return the results as a `Vec`
   * `e1 / e2 / e3` - Try to match e1. If the match succeeds, return its result, otherwise try e2, and so on.
   * `e1 e2 e3` - Match expressions in sequence
 `a:e1 b:e2 c:e3 { rust }` - Match e1, e2, e3 in sequence. If they match successfully, run the Rust code in the action and return its result. The variables before the colons in the preceding sequence are bound to the results of the corresponding expressions
