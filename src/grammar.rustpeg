@@ -52,7 +52,7 @@ choice -> Expr
   = head:sequence tail:(slash s:sequence {s})* {
       if tail.len() > 0 {
         let mut list = tail;
-        list.unshift(head);
+        list.insert(0, head);
         ChoiceExpr(list)
       } else {
         head
