@@ -1204,7 +1204,7 @@ fn parse_choice(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                     Ok((pos,
                                         if tail.len() > 0 {
                                             let mut list = tail;
-                                            list.unshift(head);
+                                            list.insert(0, head);
                                             ChoiceExpr(list)
                                         } else { head }))
                                 }
