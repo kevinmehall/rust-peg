@@ -80,7 +80,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 		fn slice_eq(input: &str, pos: uint, m: &str) -> Result<(uint, ()), uint> {
 			#![inline]
 	    let l = m.len();
-	    if input.len() >= pos + l && input.slice(pos, pos+l) == m {
+	    if input.len() >= pos + l && input.as_bytes().slice(pos, pos+l) == m.as_bytes() {
 	        Ok((pos+l, ()))
 	    } else {
 	        Err(pos)
