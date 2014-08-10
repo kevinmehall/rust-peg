@@ -16,3 +16,7 @@ number -> int
 #[export]
 list -> Vec<int>
 	= number ** ","
+
+#[export]
+boundaries -> String
+	= "foo" { match_str.to_string() }

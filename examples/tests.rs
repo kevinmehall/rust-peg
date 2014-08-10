@@ -1,4 +1,4 @@
-use test_grammar::{consonants, options, list};
+use test_grammar::{consonants, options, list, boundaries};
 mod test_grammar;
 
 #[test]
@@ -18,4 +18,12 @@ fn test_optional() {
 fn test_list() {
 	assert_eq!(list("5"), Ok(vec![5]));
 	assert_eq!(list("1,2,3,4"), Ok(vec![1,2,3,4]));
+}
+
+#[test]
+// before we were testing string matches using .slice(), which
+// threw an ugly fail!() when we compared unequal character
+// boundaries.. this popped up while parsing unicode
+fn test_boundaries() {
+	assert!(boundaries("f↙↙↙↙").is_err());
 }
