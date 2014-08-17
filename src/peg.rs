@@ -13,6 +13,7 @@ use translate::{compile_grammar};
 mod translate;
 mod grammar;
 mod rustast;
+mod fake_extctxt;
 
 fn main() {
 	let args = os::args();
@@ -22,7 +23,7 @@ fn main() {
 
 	match grammar_def {
 		Ok(grammar) => {
-			rustast::with_fake_extctxt(|e| {
+			fake_extctxt::with_fake_extctxt(|e| {
 
 				let ast = compile_grammar(e, &grammar);
 				let mut out = stdout();

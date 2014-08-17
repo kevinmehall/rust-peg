@@ -44,23 +44,3 @@ pub fn parse_type(e: &str) -> P<ast::Ty> {
 	p.abort_if_errors();
 	r
 }
-
-pub fn with_fake_extctxt<T>(f: |&ExtCtxt| -> T) -> T {
-	let ps = syntax::parse::new_parse_sess();
-
-	let mut cx = syntax::ext::base::ExtCtxt::new(&ps, Vec::new(), syntax::ext::expand::ExpansionConfig {
-		deriving_hash_type_parameter: false,
-		crate_name: from_str("").unwrap(),
-	});
-
-	cx.bt_push(syntax::codemap::ExpnInfo{
-		call_site: DUMMY_SP,
-		callee: syntax::codemap::NameAndSpan {
-			name: "".to_string(),
-			format: syntax::codemap::MacroBang,
-			span: None,
-		}
-	});
-
-	f(&cx)
-}

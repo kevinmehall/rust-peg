@@ -7,6 +7,7 @@
 
 fn slice_eq(input: &str, pos: uint, m: &str) -> Result<(uint, ()), uint> {
     #![inline]
+    #![allow(dead_code)]
     let l = m.len();
     if input.len() >= pos + l &&
            input.as_bytes().slice(pos, pos + l) == m.as_bytes() {
@@ -15,6 +16,7 @@ fn slice_eq(input: &str, pos: uint, m: &str) -> Result<(uint, ()), uint> {
 }
 fn any_char(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     #![inline]
+    #![allow(dead_code)]
     if input.len() > pos {
         Ok((input.char_range_at(pos).next, ()))
     } else { Err(pos) }

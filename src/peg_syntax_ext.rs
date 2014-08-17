@@ -9,6 +9,7 @@ use syntax::codemap;
 use syntax::ext::base::{ExtCtxt, MacResult, MacItem, DummyResult};
 use syntax::parse;
 use syntax::parse::token;
+use syntax::fold::Folder;
 use rustc::plugin::Registry;
 use std::io::fs::File;
 use std::str;
@@ -95,7 +96,7 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
                                                 Vec::from_slice(tts));
     // The `expand_expr` method is called so that any macro calls in the
     // parsed expression are expanded.
-    let arg = cx.expand_expr(parser.parse_expr());
+    let arg = cx.expander().fold_expr(parser.parse_expr());
     match arg.node {
         ast::ExprLit(spanned) => {
             match spanned.node {

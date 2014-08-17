@@ -1,7 +1,3 @@
-{
-struct Foo { bar: int }
-}
-
 #[export]
 consonants
 	= ([a-z]![aeiou])+

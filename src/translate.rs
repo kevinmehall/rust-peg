@@ -48,7 +48,7 @@ pub enum Expr {
 
 pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P<rustast::Mod> {
 	let view_items = translate_view_items(ctxt, grammar.imports.as_slice());
-	
+
 	let items = header_items(ctxt).move_iter()
 		.chain(grammar.rules.iter().map(|rule|{
 			compile_rule(ctxt, rule)
@@ -79,6 +79,8 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	items.push(quote_item!(ctxt,
 		fn slice_eq(input: &str, pos: uint, m: &str) -> Result<(uint, ()), uint> {
 			#![inline]
+			#![allow(dead_code)]
+
 	    let l = m.len();
 	    if input.len() >= pos + l && input.as_bytes().slice(pos, pos+l) == m.as_bytes() {
 	        Ok((pos+l, ()))
@@ -91,6 +93,8 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	items.push(quote_item!(ctxt,
 		fn any_char(input: &str, pos: uint) -> Result<(uint, ()), uint> {
 			#![inline]
+			#![allow(dead_code)]
+
 			if input.len() > pos {
 					Ok((input.char_range_at(pos).next, ()))
 			} else {
@@ -268,7 +272,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 				Err(..) => { Ok((pos, None)) },
 			})
 		}
-		
+
 		Repeat(box ref e, min, ref sep) => {
 			let inner = compile_expr(ctxt, e, result_used);
 
