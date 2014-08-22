@@ -18,7 +18,7 @@ rule -> Rule
       Rule{ name: name, expr: box expression, ret_type: returns, exported: exported }
     }
 
-    exportflag -> bool = "#[export]" __ {true} / "" {false}
+    exportflag -> bool = ("#[export]"/"#[pub]") __ {true} / "" {false}
 
 returntype -> String
   = returns tp:(rust_type {match_str.trim().to_string()}) { tp }

@@ -238,7 +238,15 @@ fn parse_exportflag(input: &str, pos: uint) -> Result<(uint, bool), uint> {
             {
                 let start_pos = pos;
                 {
-                    let seq_res = slice_eq(input, pos, "#[export]");
+                    let seq_res =
+                        {
+                            let choice_res =
+                                slice_eq(input, pos, "#[export]");
+                            match choice_res {
+                                Ok((pos, value)) => Ok((pos, value)),
+                                Err(..) => slice_eq(input, pos, "#[pub]"),
+                            }
+                        };
                     match seq_res {
                         Err(pos) => { Err(pos) }
                         Ok((pos, _)) => {

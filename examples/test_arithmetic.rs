@@ -6,7 +6,7 @@ extern crate peg_syntax_ext;
 use arithmetic::expression;
 
 peg! arithmetic(r#"
-#[export]
+#[pub]
 expression -> int
 	= sum
 
