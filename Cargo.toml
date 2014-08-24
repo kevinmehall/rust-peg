@@ -8,7 +8,7 @@ authors = [ "km@kevinmehall.net" ]
 name = "peg"
 path = "src/peg.rs"
 
-[[lib]]
+[lib]
 crate_type = ["dylib"]
 name = "peg_syntax_ext"
 
