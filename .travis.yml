@@ -1,9 +1,5 @@
-before_install:
-  - yes | sudo add-apt-repository ppa:hansjorg/rust
-  - yes | sudo add-apt-repository ppa:cmrx64/cargo
-  - sudo apt-get update
-install:
-  - sudo apt-get install rust-nightly cargo
+language: rust
+
 script:
   - ./bootstrap.sh
   - git diff --exit-code # Check that src/grammar.rs is updated to match src/grammar.rustpeg
