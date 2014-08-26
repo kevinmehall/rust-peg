@@ -35,8 +35,8 @@ Match actions can extract data from the match using these variables:
   * **match_str** - the matched string, as a `&str` slice. Examples:
 
 ```
-name -> ~str
-  = [a-zA-Z0-9_]+ { match_str.to_owned() }
+name -> String
+  = [a-zA-Z0-9_]+ { match_str.to_string() }
 ```
 
 ```
