@@ -1,4 +1,4 @@
-use test_grammar::{consonants, options, list, boundaries};
+use test_grammar::{consonants, options, list, boundaries, borrowed};
 mod test_grammar;
 
 #[test]
@@ -26,4 +26,9 @@ fn test_list() {
 // boundaries.. this popped up while parsing unicode
 fn test_boundaries() {
 	assert!(boundaries("f↙↙↙↙").is_err());
+}
+
+#[test]
+fn test_borrowed() {
+	assert_eq!(borrowed("abcd"), Ok("abcd"));
 }

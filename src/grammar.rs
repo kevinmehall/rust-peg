@@ -899,50 +899,11 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                     Err(..) => {
                         let choice_res =
                             {
-                                let seq_res = parse_identifier(input, pos);
+                                let seq_res = slice_eq(input, pos, "&");
                                 match seq_res {
                                     Err(pos) => { Err(pos) }
                                     Ok((pos, _)) => {
-                                        {
-                                            let seq_res =
-                                                slice_eq(input, pos, "<");
-                                            match seq_res {
-                                                Err(pos) => { Err(pos) }
-                                                Ok((pos, _)) => {
-                                                    {
-                                                        let seq_res =
-                                                            parse_rust_type(input,
-                                                                            pos);
-                                                        match seq_res {
-                                                            Err(pos) => {
-                                                                Err(pos)
-                                                            }
-                                                            Ok((pos, _)) => {
-                                                                {
-                                                                    let seq_res =
-                                                                        slice_eq(input,
-                                                                                 pos,
-                                                                                 ">");
-                                                                    match seq_res
-                                                                        {
-                                                                        Err(pos)
-                                                                        => {
-                                                                            Err(pos)
-                                                                        }
-                                                                        Ok((pos,
-                                                                            _))
-                                                                        => {
-                                                                            parse___(input,
-                                                                                     pos)
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        parse_rust_type(input, pos)
                                     }
                                 }
                             };
@@ -959,14 +920,49 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                                 {
                                                     let seq_res =
                                                         slice_eq(input, pos,
-                                                                 "::");
+                                                                 "<");
                                                     match seq_res {
                                                         Err(pos) => {
                                                             Err(pos)
                                                         }
                                                         Ok((pos, _)) => {
-                                                            parse_rust_type(input,
-                                                                            pos)
+                                                            {
+                                                                let seq_res =
+                                                                    parse_rust_type(input,
+                                                                                    pos);
+                                                                match seq_res
+                                                                    {
+                                                                    Err(pos)
+                                                                    => {
+                                                                        Err(pos)
+                                                                    }
+                                                                    Ok((pos,
+                                                                        _)) =>
+                                                                    {
+                                                                        {
+                                                                            let seq_res =
+                                                                                slice_eq(input,
+                                                                                         pos,
+                                                                                         ">");
+                                                                            match seq_res
+                                                                                {
+                                                                                Err(pos)
+                                                                                =>
+                                                                                {
+                                                                                    Err(pos)
+                                                                                }
+                                                                                Ok((pos,
+                                                                                    _))
+                                                                                =>
+                                                                                {
+                                                                                    parse___(input,
+                                                                                             pos)
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -979,140 +975,24 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                         let choice_res =
                                             {
                                                 let seq_res =
-                                                    slice_eq(input, pos, "(");
+                                                    parse_identifier(input,
+                                                                     pos);
                                                 match seq_res {
                                                     Err(pos) => { Err(pos) }
                                                     Ok((pos, _)) => {
                                                         {
                                                             let seq_res =
-                                                                {
-                                                                    let mut repeat_pos =
-                                                                        pos;
-                                                                    let mut repeat_value =
-                                                                        vec!();
-                                                                    loop  {
-                                                                        let pos =
-                                                                            repeat_pos;
-                                                                        let pos =
-                                                                            if repeat_value.len()
-                                                                                   >
-                                                                                   0
-                                                                               {
-                                                                                let sep_res =
-                                                                                    {
-                                                                                        let seq_res =
-                                                                                            parse___(input,
-                                                                                                     pos);
-                                                                                        match seq_res
-                                                                                            {
-                                                                                            Err(pos)
-                                                                                            =>
-                                                                                            {
-                                                                                                Err(pos)
-                                                                                            }
-                                                                                            Ok((pos,
-                                                                                                _))
-                                                                                            =>
-                                                                                            {
-                                                                                                {
-                                                                                                    let seq_res =
-                                                                                                        slice_eq(input,
-                                                                                                                 pos,
-                                                                                                                 ",");
-                                                                                                    match seq_res
-                                                                                                        {
-                                                                                                        Err(pos)
-                                                                                                        =>
-                                                                                                        {
-                                                                                                            Err(pos)
-                                                                                                        }
-                                                                                                        Ok((pos,
-                                                                                                            _))
-                                                                                                        =>
-                                                                                                        {
-                                                                                                            parse___(input,
-                                                                                                                     pos)
-                                                                                                        }
-                                                                                                    }
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                    };
-                                                                                match sep_res
-                                                                                    {
-                                                                                    Ok((newpos,
-                                                                                        _))
-                                                                                    =>
-                                                                                    {
-                                                                                        newpos
-                                                                                    }
-                                                                                    Err(..)
-                                                                                    =>
-                                                                                    break
-                                                                                        ,
-                                                                                }
-                                                                            } else {
-                                                                                pos
-                                                                            };
-                                                                        let step_res =
-                                                                            parse_rust_type(input,
-                                                                                            pos);
-                                                                        match step_res
-                                                                            {
-                                                                            Ok((newpos,
-                                                                                value))
-                                                                            =>
-                                                                            {
-                                                                                repeat_pos
-                                                                                    =
-                                                                                    newpos;
-                                                                                repeat_value.push(value);
-                                                                            }
-                                                                            Err(..)
-                                                                            =>
-                                                                            {
-                                                                                break
-                                                                                    ;
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                    if repeat_value.len()
-                                                                           >=
-                                                                           1u
-                                                                       {
-                                                                        Ok((repeat_pos,
-                                                                            ()))
-                                                                    } else {
-                                                                        Err(repeat_pos)
-                                                                    }
-                                                                };
+                                                                slice_eq(input,
+                                                                         pos,
+                                                                         "::");
                                                             match seq_res {
                                                                 Err(pos) => {
                                                                     Err(pos)
                                                                 }
                                                                 Ok((pos, _))
                                                                 => {
-                                                                    {
-                                                                        let seq_res =
-                                                                            slice_eq(input,
-                                                                                     pos,
-                                                                                     ")");
-                                                                        match seq_res
-                                                                            {
-                                                                            Err(pos)
-                                                                            =>
-                                                                            {
-                                                                                Err(pos)
-                                                                            }
-                                                                            Ok((pos,
-                                                                                _))
-                                                                            =>
-                                                                            {
-                                                                                parse___(input,
-                                                                                         pos)
-                                                                            }
-                                                                        }
-                                                                    }
+                                                                    parse_rust_type(input,
+                                                                                    pos)
                                                                 }
                                                             }
                                                         }
@@ -1123,14 +1003,174 @@ fn parse_rust_type(input: &str, pos: uint) -> Result<(uint, ()), uint> {
                                             Ok((pos, value)) =>
                                             Ok((pos, value)),
                                             Err(..) => {
-                                                let seq_res =
-                                                    parse_identifier(input,
-                                                                     pos);
-                                                match seq_res {
-                                                    Err(pos) => { Err(pos) }
-                                                    Ok((pos, _)) => {
-                                                        slice_eq(input, pos,
-                                                                 "")
+                                                let choice_res =
+                                                    {
+                                                        let seq_res =
+                                                            slice_eq(input,
+                                                                     pos,
+                                                                     "(");
+                                                        match seq_res {
+                                                            Err(pos) => {
+                                                                Err(pos)
+                                                            }
+                                                            Ok((pos, _)) => {
+                                                                {
+                                                                    let seq_res =
+                                                                        {
+                                                                            let mut repeat_pos =
+                                                                                pos;
+                                                                            let mut repeat_value =
+                                                                                vec!();
+                                                                            loop 
+                                                                                 {
+                                                                                let pos =
+                                                                                    repeat_pos;
+                                                                                let pos =
+                                                                                    if repeat_value.len()
+                                                                                           >
+                                                                                           0
+                                                                                       {
+                                                                                        let sep_res =
+                                                                                            {
+                                                                                                let seq_res =
+                                                                                                    parse___(input,
+                                                                                                             pos);
+                                                                                                match seq_res
+                                                                                                    {
+                                                                                                    Err(pos)
+                                                                                                    =>
+                                                                                                    {
+                                                                                                        Err(pos)
+                                                                                                    }
+                                                                                                    Ok((pos,
+                                                                                                        _))
+                                                                                                    =>
+                                                                                                    {
+                                                                                                        {
+                                                                                                            let seq_res =
+                                                                                                                slice_eq(input,
+                                                                                                                         pos,
+                                                                                                                         ",");
+                                                                                                            match seq_res
+                                                                                                                {
+                                                                                                                Err(pos)
+                                                                                                                =>
+                                                                                                                {
+                                                                                                                    Err(pos)
+                                                                                                                }
+                                                                                                                Ok((pos,
+                                                                                                                    _))
+                                                                                                                =>
+                                                                                                                {
+                                                                                                                    parse___(input,
+                                                                                                                             pos)
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            };
+                                                                                        match sep_res
+                                                                                            {
+                                                                                            Ok((newpos,
+                                                                                                _))
+                                                                                            =>
+                                                                                            {
+                                                                                                newpos
+                                                                                            }
+                                                                                            Err(..)
+                                                                                            =>
+                                                                                            break
+                                                                                                ,
+                                                                                        }
+                                                                                    } else {
+                                                                                        pos
+                                                                                    };
+                                                                                let step_res =
+                                                                                    parse_rust_type(input,
+                                                                                                    pos);
+                                                                                match step_res
+                                                                                    {
+                                                                                    Ok((newpos,
+                                                                                        value))
+                                                                                    =>
+                                                                                    {
+                                                                                        repeat_pos
+                                                                                            =
+                                                                                            newpos;
+                                                                                        repeat_value.push(value);
+                                                                                    }
+                                                                                    Err(..)
+                                                                                    =>
+                                                                                    {
+                                                                                        break
+                                                                                            ;
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                            if repeat_value.len()
+                                                                                   >=
+                                                                                   1u
+                                                                               {
+                                                                                Ok((repeat_pos,
+                                                                                    ()))
+                                                                            } else {
+                                                                                Err(repeat_pos)
+                                                                            }
+                                                                        };
+                                                                    match seq_res
+                                                                        {
+                                                                        Err(pos)
+                                                                        => {
+                                                                            Err(pos)
+                                                                        }
+                                                                        Ok((pos,
+                                                                            _))
+                                                                        => {
+                                                                            {
+                                                                                let seq_res =
+                                                                                    slice_eq(input,
+                                                                                             pos,
+                                                                                             ")");
+                                                                                match seq_res
+                                                                                    {
+                                                                                    Err(pos)
+                                                                                    =>
+                                                                                    {
+                                                                                        Err(pos)
+                                                                                    }
+                                                                                    Ok((pos,
+                                                                                        _))
+                                                                                    =>
+                                                                                    {
+                                                                                        parse___(input,
+                                                                                                 pos)
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    };
+                                                match choice_res {
+                                                    Ok((pos, value)) =>
+                                                    Ok((pos, value)),
+                                                    Err(..) => {
+                                                        let seq_res =
+                                                            parse_identifier(input,
+                                                                             pos);
+                                                        match seq_res {
+                                                            Err(pos) => {
+                                                                Err(pos)
+                                                            }
+                                                            Ok((pos, _)) => {
+                                                                slice_eq(input,
+                                                                         pos,
+                                                                         "")
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
