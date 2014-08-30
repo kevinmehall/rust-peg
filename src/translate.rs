@@ -219,8 +219,8 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			})
 		}
 
-		RuleExpr(ref ruleName) => {
-			let func = rustast::str_to_ident(format!("parse_{}", *ruleName).as_slice());
+		RuleExpr(ref rule_name) => {
+			let func = rustast::str_to_ident(format!("parse_{}", *rule_name).as_slice());
 			quote_expr!(ctxt, $func(input, pos))
 		}
 

@@ -82,8 +82,8 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
 
     // #![allow(non_snake_case_functions, unused_variable)]
     let attr = cx.attribute(DUMMY_SP, cx.meta_list(DUMMY_SP, token::InternedString::new("allow"), vec!(
-        cx.meta_word(DUMMY_SP, token::InternedString::new("non_snake_case_functions")),
-        cx.meta_word(DUMMY_SP, token::InternedString::new("unused_variable")),
+        cx.meta_word(DUMMY_SP, token::InternedString::new("non_snake_case")),
+        cx.meta_word(DUMMY_SP, token::InternedString::new("unused")),
     )));
 
     MacItem::new(cx.item_mod(sp, sp, ident, vec!(attr), ast.view_items.clone(), ast.items.clone()))
