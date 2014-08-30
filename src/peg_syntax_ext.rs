@@ -37,7 +37,7 @@ pub fn plugin_registrar(reg: &mut Registry) {
             }, None));
 }
 
-fn expand_peg_str(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult> {
+fn expand_peg_str(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult + 'static> {
     let source = match parse_arg(cx, tts.as_slice()) {
         Some(source) => source,
         None => return DummyResult::any(sp),
@@ -46,7 +46,7 @@ fn expand_peg_str(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: V
     expand_peg(cx, sp, ident, source.as_slice())
 }
 
-fn expand_peg_file(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult> {
+fn expand_peg_file(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult + 'static> {
     let fname = match parse_arg(cx, tts.as_slice()) {
         Some(fname) => fname,
         None => return DummyResult::any(sp),
@@ -67,7 +67,7 @@ fn expand_peg_file(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: 
     expand_peg(cx, sp, ident, source.as_slice())
 }
 
-fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &str) -> Box<MacResult> {
+fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &str) -> Box<MacResult + 'static> {
     let grammar_def = grammar::grammar(source);
 
     let grammar_def = match grammar_def {
