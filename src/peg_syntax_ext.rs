@@ -24,20 +24,14 @@ mod rustast;
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_syntax_extension(
             token::intern("peg"),
-            syntax::ext::base::IdentTT(box syntax::ext::base::BasicIdentMacroExpander {
-                expander: expand_peg_str,
-                span: None,
-            }, None));
+            syntax::ext::base::IdentTT(box expand_peg_str, None));
 
     reg.register_syntax_extension(
             token::intern("peg_file"),
-            syntax::ext::base::IdentTT(box syntax::ext::base::BasicIdentMacroExpander {
-                expander: expand_peg_file,
-                span: None,
-            }, None));
+            syntax::ext::base::IdentTT(box expand_peg_file, None));
 }
 
-fn expand_peg_str(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult + 'static> {
+fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult + 's> {
     let source = match parse_arg(cx, tts.as_slice()) {
         Some(source) => source,
         None => return DummyResult::any(sp),
@@ -46,7 +40,7 @@ fn expand_peg_str(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: V
     expand_peg(cx, sp, ident, source.as_slice())
 }
 
-fn expand_peg_file(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult + 'static> {
+fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult + 's> {
     let fname = match parse_arg(cx, tts.as_slice()) {
         Some(fname) => fname,
         None => return DummyResult::any(sp),
