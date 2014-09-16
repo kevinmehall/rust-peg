@@ -9,7 +9,7 @@ name = "peg"
 path = "src/peg.rs"
 
 [lib]
-crate_type = ["dylib"]
+plugin = true
 name = "peg_syntax_ext"
 
 [[bin]]
