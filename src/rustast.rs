@@ -1,7 +1,7 @@
 extern crate syntax;
 
 pub use syntax::ast;
-pub use syntax::ast::P;
+pub use syntax::ptr::P;
 pub use syntax::codemap::DUMMY_SP;
 pub use syntax::ext::base::ExtCtxt;
 pub use syntax::ast::{Mod, Item, Expr, ViewItem};

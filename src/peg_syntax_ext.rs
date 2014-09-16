@@ -92,7 +92,7 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
     // parsed expression are expanded.
     let arg = cx.expander().fold_expr(parser.parse_expr());
     match arg.node {
-        ast::ExprLit(spanned) => {
+        ast::ExprLit(ref spanned) => {
             match spanned.node {
                 ast::LitStr(ref n, _) => {
                     if !parser.eat(&token::EOF) {
