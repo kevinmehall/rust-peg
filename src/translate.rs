@@ -82,6 +82,20 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
+		struct ParseState {
+			max_err_pos: uint,
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
+		impl ParseState {
+			fn new() -> ParseState {
+				ParseState{ max_err_pos: 0 }
+			}
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
 		fn slice_eq(input: &str, pos: uint, m: &str) -> ParseResult<()> {
 			#![inline]
 			#![allow(dead_code)]
@@ -135,7 +149,7 @@ fn compile_rule(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Ite
 	let ret = rustast::parse_type(rule.ret_type.as_slice());
 	let body = compile_expr(ctxt, &*rule.expr, rule.ret_type.as_slice() != "()");
 	(quote_item!(ctxt,
-		fn $name(input: &str, pos: uint) -> ParseResult<$ret> {
+		fn $name(input: &str, state: &mut ParseState, pos: uint) -> ParseResult<$ret> {
 			$body
 		}
 	)).unwrap()
@@ -147,7 +161,8 @@ fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rusta
 	let parse_fn = rustast::str_to_ident(format!("parse_{}", rule.name).as_slice());
 	(quote_item!(ctxt,
 		pub fn $name(input: &str) -> Result<$ret, String> {
-			match $parse_fn(input, 0) {
+			let mut state = ParseState::new();
+			match $parse_fn(input, &mut state, 0) {
 				Matched(pos, value) => {
 					if pos == input.len() {
 						Ok(value)
@@ -228,7 +243,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 
 		RuleExpr(ref rule_name) => {
 			let func = rustast::str_to_ident(format!("parse_{}", *rule_name).as_slice());
-			quote_expr!(ctxt, $func(input, pos))
+			quote_expr!(ctxt, $func(input, state, pos))
 		}
 
 		SequenceExpr(ref exprs) => {
