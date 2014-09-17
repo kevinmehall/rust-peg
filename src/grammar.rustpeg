@@ -34,7 +34,7 @@ rust_path -> String
 rust_type
   = "()" __
   / "[" rust_type "]" __
-  / "&" rust_type
+  / "&" ("'" identifier)? rust_type
   / identifier "<" rust_type ++ (__ "," __) ">" __
   / identifier "::" rust_type
   / "(" rust_type ++ (__ "," __) ")" __
@@ -142,21 +142,21 @@ nonBraceCharacters
 nonBraceCharacter
   = [^{}]
 
-equals    = "="  __ 
-colon     = ":"  __ 
-semicolon = ";"  __ 
-slash     = "/"  __ 
-and       = "&"  __ 
-not       = "!"  __ 
-dollar    = "$"  __ 
-question  = "?"  __ 
-star      = "*"  __ 
-starstar  = "**" __ 
-plus      = "+"  __ 
-plusplus  = "++" __ 
-lparen    = "("  __ 
-rparen    = ")"  __ 
-dot       = "."  __ 
+equals    = "="  __
+colon     = ":"  __
+semicolon = ";"  __
+slash     = "/"  __
+and       = "&"  __
+not       = "!"  __
+dollar    = "$"  __
+question  = "?"  __
+star      = "*"  __
+starstar  = "**" __
+plus      = "+"  __
+plusplus  = "++" __
+lparen    = "("  __
+rparen    = ")"  __
+dot       = "."  __
 returns   = "->" __
 lbrace    = "{"  __
 rbrace    = "}"  __

@@ -149,7 +149,7 @@ fn compile_rule(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Ite
 	let ret = rustast::parse_type(rule.ret_type.as_slice());
 	let body = compile_expr(ctxt, &*rule.expr, rule.ret_type.as_slice() != "()");
 	(quote_item!(ctxt,
-		fn $name(input: &str, state: &mut ParseState, pos: uint) -> ParseResult<$ret> {
+		fn $name<'input>(input: &'input str, state: &mut ParseState, pos: uint) -> ParseResult<$ret> {
 			$body
 		}
 	)).unwrap()
@@ -160,7 +160,7 @@ fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rusta
 	let ret = rustast::parse_type(rule.ret_type.as_slice());
 	let parse_fn = rustast::str_to_ident(format!("parse_{}", rule.name).as_slice());
 	(quote_item!(ctxt,
-		pub fn $name(input: &str) -> Result<$ret, String> {
+		pub fn $name<'input>(input: &'input str) -> Result<$ret, String> {
 			let mut state = ParseState::new();
 			match $parse_fn(input, &mut state, 0) {
 				Matched(pos, value) => {

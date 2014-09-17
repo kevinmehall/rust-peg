@@ -39,11 +39,11 @@ boundaries -> String
 	= "foo" { match_str.to_string() }
 
 #[export]
-borrowed -> &str
+borrowed -> &'input str
 	= [a-z]+ { match_str }
 
 #[export]
-block -> &str
+block -> &'input str
 	= [a-z]+ {
 		let result = match_str;
 		result
