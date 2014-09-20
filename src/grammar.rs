@@ -6,25 +6,40 @@ use std::char;
 enum ParseResult<T> { Matched(uint, T), Failed, }
 struct ParseState {
     max_err_pos: uint,
+    expected: ::std::collections::HashSet<&'static str>,
 }
 impl ParseState {
-    fn new() -> ParseState { ParseState{max_err_pos: 0,} }
+    fn new() -> ParseState {
+        ParseState{max_err_pos: 0,
+                   expected: ::std::collections::HashSet::new(),}
+    }
+    fn mark_failure(&mut self, pos: uint, expected: &'static str) ->
+     ParseResult<()> {
+        if pos > self.max_err_pos {
+            self.max_err_pos = pos;
+            self.expected.clear();
+        }
+        if pos == self.max_err_pos { self.expected.insert(expected); }
+        Failed
+    }
 }
-fn slice_eq(input: &str, pos: uint, m: &str) -> ParseResult<()> {
+fn slice_eq(input: &str, state: &mut ParseState, pos: uint, m: &'static str)
+ -> ParseResult<()> {
     #![inline]
     #![allow(dead_code)]
     let l = m.len();
     if input.len() >= pos + l &&
            input.as_bytes().slice(pos, pos + l) == m.as_bytes() {
         Matched(pos + l, ())
-    } else { Failed }
+    } else { state.mark_failure(pos, m) }
 }
-fn any_char(input: &str, pos: uint) -> ParseResult<()> {
+fn any_char(input: &str, state: &mut ParseState, pos: uint) ->
+ ParseResult<()> {
     #![inline]
     #![allow(dead_code)]
     if input.len() > pos {
         Matched(input.char_range_at(pos).next, ())
-    } else { Failed }
+    } else { state.mark_failure(pos, "<character>") }
 }
 fn pos_to_line(input: &str, pos: uint) -> (uint, uint) {
     let mut remaining = pos;
@@ -228,10 +243,11 @@ fn parse_exportflag<'input>(input: &'input str, state: &mut ParseState,
                     let seq_res =
                         {
                             let choice_res =
-                                slice_eq(input, pos, "#[export]");
+                                slice_eq(input, state, pos, "#[export]");
                             match choice_res {
                                 Matched(pos, value) => Matched(pos, value),
-                                Failed => slice_eq(input, pos, "#[pub]"),
+                                Failed =>
+                                slice_eq(input, state, pos, "#[pub]"),
                             }
                         };
                     match seq_res {
@@ -259,7 +275,7 @@ fn parse_exportflag<'input>(input: &'input str, state: &mut ParseState,
             Failed => {
                 let start_pos = pos;
                 {
-                    let seq_res = slice_eq(input, pos, "");
+                    let seq_res = slice_eq(input, state, pos, "");
                     match seq_res {
                         Matched(pos, _) => {
                             {
@@ -341,7 +357,7 @@ fn parse_rust_use<'input>(input: &'input str, state: &mut ParseState,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, pos, "use");
+            let seq_res = slice_eq(input, state, pos, "use");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -369,6 +385,7 @@ fn parse_rust_use<'input>(input: &'input str, state: &mut ParseState,
                                                                             {
                                                                                 let seq_res =
                                                                                     slice_eq(input,
+                                                                                             state,
                                                                                              pos,
                                                                                              "::");
                                                                                 match seq_res
@@ -391,6 +408,7 @@ fn parse_rust_use<'input>(input: &'input str, state: &mut ParseState,
                                                                                                     {
                                                                                                         let seq_res =
                                                                                                             slice_eq(input,
+                                                                                                                     state,
                                                                                                                      pos,
                                                                                                                      "*");
                                                                                                         match seq_res
@@ -460,6 +478,7 @@ fn parse_rust_use<'input>(input: &'input str, state: &mut ParseState,
                                                                                     {
                                                                                         let seq_res =
                                                                                             slice_eq(input,
+                                                                                                     state,
                                                                                                      pos,
                                                                                                      "::");
                                                                                         match seq_res
@@ -482,6 +501,7 @@ fn parse_rust_use<'input>(input: &'input str, state: &mut ParseState,
                                                                                                             {
                                                                                                                 let seq_res =
                                                                                                                     slice_eq(input,
+                                                                                                                             state,
                                                                                                                              pos,
                                                                                                                              "{");
                                                                                                                 match seq_res
@@ -521,6 +541,7 @@ fn parse_rust_use<'input>(input: &'input str, state: &mut ParseState,
                                                                                                                                                                 {
                                                                                                                                                                     let seq_res =
                                                                                                                                                                         slice_eq(input,
+                                                                                                                                                                                 state,
                                                                                                                                                                                  pos,
                                                                                                                                                                                  ",");
                                                                                                                                                                     match seq_res
@@ -596,6 +617,7 @@ fn parse_rust_use<'input>(input: &'input str, state: &mut ParseState,
                                                                                                                                                 {
                                                                                                                                                     let seq_res =
                                                                                                                                                         slice_eq(input,
+                                                                                                                                                                 state,
                                                                                                                                                                  pos,
                                                                                                                                                                  "}");
                                                                                                                                                     match seq_res
@@ -683,6 +705,7 @@ fn parse_rust_use<'input>(input: &'input str, state: &mut ParseState,
                                                                                     {
                                                                                         let seq_res =
                                                                                             slice_eq(input,
+                                                                                                     state,
                                                                                                      pos,
                                                                                                      "");
                                                                                         match seq_res
@@ -718,6 +741,7 @@ fn parse_rust_use<'input>(input: &'input str, state: &mut ParseState,
                                                                     {
                                                                         let seq_res =
                                                                             slice_eq(input,
+                                                                                     state,
                                                                                      pos,
                                                                                      ";");
                                                                         match seq_res
@@ -797,7 +821,7 @@ fn parse_rust_path<'input>(input: &'input str, state: &mut ParseState,
                                 let sep_res =
                                     {
                                         let seq_res =
-                                            slice_eq(input, pos, "::");
+                                            slice_eq(input, state, pos, "::");
                                         match seq_res {
                                             Matched(pos, _) => {
                                                 parse___(input, state, pos)
@@ -840,7 +864,7 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
     {
         let choice_res =
             {
-                let seq_res = slice_eq(input, pos, "()");
+                let seq_res = slice_eq(input, state, pos, "()");
                 match seq_res {
                     Matched(pos, _) => { parse___(input, state, pos) }
                     Failed => Failed,
@@ -851,7 +875,7 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
             Failed => {
                 let choice_res =
                     {
-                        let seq_res = slice_eq(input, pos, "[");
+                        let seq_res = slice_eq(input, state, pos, "[");
                         match seq_res {
                             Matched(pos, _) => {
                                 {
@@ -861,7 +885,8 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                         Matched(pos, _) => {
                                             {
                                                 let seq_res =
-                                                    slice_eq(input, pos, "]");
+                                                    slice_eq(input, state,
+                                                             pos, "]");
                                                 match seq_res {
                                                     Matched(pos, _) => {
                                                         parse___(input, state,
@@ -883,7 +908,8 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                     Failed => {
                         let choice_res =
                             {
-                                let seq_res = slice_eq(input, pos, "&");
+                                let seq_res =
+                                    slice_eq(input, state, pos, "&");
                                 match seq_res {
                                     Matched(pos, _) => {
                                         {
@@ -891,6 +917,7 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                                 match {
                                                           let seq_res =
                                                               slice_eq(input,
+                                                                       state,
                                                                        pos,
                                                                        "\'");
                                                           match seq_res {
@@ -938,8 +965,8 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                             Matched(pos, _) => {
                                                 {
                                                     let seq_res =
-                                                        slice_eq(input, pos,
-                                                                 "<");
+                                                        slice_eq(input, state,
+                                                                 pos, "<");
                                                     match seq_res {
                                                         Matched(pos, _) => {
                                                             {
@@ -973,6 +1000,7 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                                                                                     {
                                                                                                         let seq_res =
                                                                                                             slice_eq(input,
+                                                                                                                     state,
                                                                                                                      pos,
                                                                                                                      ",");
                                                                                                         match seq_res
@@ -1053,6 +1081,7 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                                                         {
                                                                             let seq_res =
                                                                                 slice_eq(input,
+                                                                                         state,
                                                                                          pos,
                                                                                          ">");
                                                                             match seq_res
@@ -1098,6 +1127,7 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                                         {
                                                             let seq_res =
                                                                 slice_eq(input,
+                                                                         state,
                                                                          pos,
                                                                          "::");
                                                             match seq_res {
@@ -1124,6 +1154,7 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                                     {
                                                         let seq_res =
                                                             slice_eq(input,
+                                                                     state,
                                                                      pos,
                                                                      "(");
                                                         match seq_res {
@@ -1160,6 +1191,7 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                                                                                         {
                                                                                                             let seq_res =
                                                                                                                 slice_eq(input,
+                                                                                                                         state,
                                                                                                                          pos,
                                                                                                                          ",");
                                                                                                             match seq_res
@@ -1240,6 +1272,7 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                                                             {
                                                                                 let seq_res =
                                                                                     slice_eq(input,
+                                                                                             state,
                                                                                              pos,
                                                                                              ")");
                                                                                 match seq_res
@@ -1279,6 +1312,7 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                                             Matched(pos, _) =>
                                                             {
                                                                 slice_eq(input,
+                                                                         state,
                                                                          pos,
                                                                          "")
                                                             }
@@ -2453,7 +2487,7 @@ fn parse_braced<'input>(input: &'input str, state: &mut ParseState, pos: uint)
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, pos, "{");
+            let seq_res = slice_eq(input, state, pos, "{");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -2473,6 +2507,7 @@ fn parse_braced<'input>(input: &'input str, state: &mut ParseState, pos: uint)
                                                     match seq_res {
                                                         Matched(pos, _) => {
                                                             slice_eq(input,
+                                                                     state,
                                                                      pos, "")
                                                         }
                                                         Failed => Failed,
@@ -2499,7 +2534,8 @@ fn parse_braced<'input>(input: &'input str, state: &mut ParseState, pos: uint)
                         match seq_res {
                             Matched(pos, _) => {
                                 {
-                                    let seq_res = slice_eq(input, pos, "}");
+                                    let seq_res =
+                                        slice_eq(input, state, pos, "}");
                                     match seq_res {
                                         Matched(pos, _) => {
                                             {
@@ -2551,13 +2587,16 @@ fn parse_nonBraceCharacter<'input>(input: &'input str, state: &mut ParseState,
                                    pos: uint) -> ParseResult<()> {
     if input.len() > pos {
         let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
-        match ch { '{' | '}' => Failed, _ => Matched(next, ()), }
-    } else { Failed }
+        match ch {
+            '{' | '}' => state.mark_failure(pos, "[{}]"),
+            _ => Matched(next, ()),
+        }
+    } else { state.mark_failure(pos, "[{}]") }
 }
 fn parse_equals<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "=");
+        let seq_res = slice_eq(input, state, pos, "=");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2567,7 +2606,7 @@ fn parse_equals<'input>(input: &'input str, state: &mut ParseState, pos: uint)
 fn parse_colon<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, ":");
+        let seq_res = slice_eq(input, state, pos, ":");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2577,7 +2616,7 @@ fn parse_colon<'input>(input: &'input str, state: &mut ParseState, pos: uint)
 fn parse_semicolon<'input>(input: &'input str, state: &mut ParseState,
                            pos: uint) -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, ";");
+        let seq_res = slice_eq(input, state, pos, ";");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2587,7 +2626,7 @@ fn parse_semicolon<'input>(input: &'input str, state: &mut ParseState,
 fn parse_slash<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "/");
+        let seq_res = slice_eq(input, state, pos, "/");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2597,7 +2636,7 @@ fn parse_slash<'input>(input: &'input str, state: &mut ParseState, pos: uint)
 fn parse_and<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
  ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "&");
+        let seq_res = slice_eq(input, state, pos, "&");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2607,7 +2646,7 @@ fn parse_and<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
 fn parse_not<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
  ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "!");
+        let seq_res = slice_eq(input, state, pos, "!");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2617,7 +2656,7 @@ fn parse_not<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
 fn parse_dollar<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "$");
+        let seq_res = slice_eq(input, state, pos, "$");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2627,7 +2666,7 @@ fn parse_dollar<'input>(input: &'input str, state: &mut ParseState, pos: uint)
 fn parse_question<'input>(input: &'input str, state: &mut ParseState,
                           pos: uint) -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "?");
+        let seq_res = slice_eq(input, state, pos, "?");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2637,7 +2676,7 @@ fn parse_question<'input>(input: &'input str, state: &mut ParseState,
 fn parse_star<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "*");
+        let seq_res = slice_eq(input, state, pos, "*");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2647,7 +2686,7 @@ fn parse_star<'input>(input: &'input str, state: &mut ParseState, pos: uint)
 fn parse_starstar<'input>(input: &'input str, state: &mut ParseState,
                           pos: uint) -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "**");
+        let seq_res = slice_eq(input, state, pos, "**");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2657,7 +2696,7 @@ fn parse_starstar<'input>(input: &'input str, state: &mut ParseState,
 fn parse_plus<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "+");
+        let seq_res = slice_eq(input, state, pos, "+");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2667,7 +2706,7 @@ fn parse_plus<'input>(input: &'input str, state: &mut ParseState, pos: uint)
 fn parse_plusplus<'input>(input: &'input str, state: &mut ParseState,
                           pos: uint) -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "++");
+        let seq_res = slice_eq(input, state, pos, "++");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2677,7 +2716,7 @@ fn parse_plusplus<'input>(input: &'input str, state: &mut ParseState,
 fn parse_lparen<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "(");
+        let seq_res = slice_eq(input, state, pos, "(");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2687,7 +2726,7 @@ fn parse_lparen<'input>(input: &'input str, state: &mut ParseState, pos: uint)
 fn parse_rparen<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, ")");
+        let seq_res = slice_eq(input, state, pos, ")");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2697,7 +2736,7 @@ fn parse_rparen<'input>(input: &'input str, state: &mut ParseState, pos: uint)
 fn parse_dot<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
  ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, ".");
+        let seq_res = slice_eq(input, state, pos, ".");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2707,7 +2746,7 @@ fn parse_dot<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
 fn parse_returns<'input>(input: &'input str, state: &mut ParseState,
                          pos: uint) -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "->");
+        let seq_res = slice_eq(input, state, pos, "->");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2717,7 +2756,7 @@ fn parse_returns<'input>(input: &'input str, state: &mut ParseState,
 fn parse_lbrace<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "{");
+        let seq_res = slice_eq(input, state, pos, "{");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2727,7 +2766,7 @@ fn parse_lbrace<'input>(input: &'input str, state: &mut ParseState, pos: uint)
 fn parse_rbrace<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "}");
+        let seq_res = slice_eq(input, state, pos, "}");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2737,7 +2776,7 @@ fn parse_rbrace<'input>(input: &'input str, state: &mut ParseState, pos: uint)
 fn parse_comma<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, ",");
+        let seq_res = slice_eq(input, state, pos, ",");
         match seq_res {
             Matched(pos, _) => { parse___(input, state, pos) }
             Failed => Failed,
@@ -2767,9 +2806,13 @@ fn parse_integer<'input>(input: &'input str, state: &mut ParseState,
                                             match ch {
                                                 '0' ...'9' =>
                                                 Matched(next, ()),
-                                                _ => Failed,
+                                                _ =>
+                                                state.mark_failure(pos,
+                                                                   "[0-9]"),
                                             }
-                                        } else { Failed };
+                                        } else {
+                                            state.mark_failure(pos, "[0-9]")
+                                        };
                                     match step_res {
                                         Matched(newpos, value) => {
                                             repeat_pos = newpos;
@@ -2834,7 +2877,8 @@ fn parse_identifier<'input>(input: &'input str, state: &mut ParseState,
                                 match choice_res {
                                     Matched(pos, value) =>
                                     Matched(pos, value),
-                                    Failed => slice_eq(input, pos, "_"),
+                                    Failed =>
+                                    slice_eq(input, state, pos, "_"),
                                 }
                             };
                         match seq_res {
@@ -2870,6 +2914,7 @@ fn parse_identifier<'input>(input: &'input str, state: &mut ParseState,
                                                                             value),
                                                                     Failed =>
                                                                     slice_eq(input,
+                                                                             state,
                                                                              pos,
                                                                              "_"),
                                                                 }
@@ -2945,7 +2990,7 @@ fn parse_literal<'input>(input: &'input str, state: &mut ParseState,
                 Matched(pos, value) => {
                     {
                         let seq_res =
-                            match slice_eq(input, pos, "i") {
+                            match slice_eq(input, state, pos, "i") {
                                 Matched(newpos, value) => {
                                     Matched(newpos, Some(value))
                                 }
@@ -3021,7 +3066,7 @@ fn parse_doubleQuotedString<'input>(input: &'input str,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, pos, "\"");
+            let seq_res = slice_eq(input, state, pos, "\"");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -3048,7 +3093,8 @@ fn parse_doubleQuotedString<'input>(input: &'input str,
                         match seq_res {
                             Matched(pos, s) => {
                                 {
-                                    let seq_res = slice_eq(input, pos, "\"");
+                                    let seq_res =
+                                        slice_eq(input, state, pos, "\"");
                                     match seq_res {
                                         Matched(pos, _) => {
                                             {
@@ -3141,12 +3187,13 @@ fn parse_simpleDoubleQuotedCharacter<'input>(input: &'input str,
                 {
                     let assert_res =
                         {
-                            let choice_res = slice_eq(input, pos, "\"");
+                            let choice_res =
+                                slice_eq(input, state, pos, "\"");
                             match choice_res {
                                 Matched(pos, value) => Matched(pos, value),
                                 Failed => {
                                     let choice_res =
-                                        slice_eq(input, pos, "\\");
+                                        slice_eq(input, state, pos, "\\");
                                     match choice_res {
                                         Matched(pos, value) =>
                                         Matched(pos, value),
@@ -3164,7 +3211,7 @@ fn parse_simpleDoubleQuotedCharacter<'input>(input: &'input str,
             match seq_res {
                 Matched(pos, _) => {
                     {
-                        let seq_res = any_char(input, pos);
+                        let seq_res = any_char(input, state, pos);
                         match seq_res {
                             Matched(pos, _) => {
                                 {
@@ -3188,7 +3235,7 @@ fn parse_singleQuotedString<'input>(input: &'input str,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, pos, "\'");
+            let seq_res = slice_eq(input, state, pos, "\'");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -3215,7 +3262,8 @@ fn parse_singleQuotedString<'input>(input: &'input str,
                         match seq_res {
                             Matched(pos, s) => {
                                 {
-                                    let seq_res = slice_eq(input, pos, "\'");
+                                    let seq_res =
+                                        slice_eq(input, state, pos, "\'");
                                     match seq_res {
                                         Matched(pos, _) => {
                                             {
@@ -3308,12 +3356,13 @@ fn parse_simpleSingleQuotedCharacter<'input>(input: &'input str,
                 {
                     let assert_res =
                         {
-                            let choice_res = slice_eq(input, pos, "\'");
+                            let choice_res =
+                                slice_eq(input, state, pos, "\'");
                             match choice_res {
                                 Matched(pos, value) => Matched(pos, value),
                                 Failed => {
                                     let choice_res =
-                                        slice_eq(input, pos, "\\");
+                                        slice_eq(input, state, pos, "\\");
                                     match choice_res {
                                         Matched(pos, value) =>
                                         Matched(pos, value),
@@ -3331,7 +3380,7 @@ fn parse_simpleSingleQuotedCharacter<'input>(input: &'input str,
             match seq_res {
                 Matched(pos, _) => {
                     {
-                        let seq_res = any_char(input, pos);
+                        let seq_res = any_char(input, state, pos);
                         match seq_res {
                             Matched(pos, _) => {
                                 {
@@ -3354,12 +3403,12 @@ fn parse_class<'input>(input: &'input str, state: &mut ParseState, pos: uint)
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, pos, "[");
+            let seq_res = slice_eq(input, state, pos, "[");
             match seq_res {
                 Matched(pos, _) => {
                     {
                         let seq_res =
-                            match slice_eq(input, pos, "^") {
+                            match slice_eq(input, state, pos, "^") {
                                 Matched(newpos, value) => {
                                     Matched(newpos, Some(value))
                                 }
@@ -3406,12 +3455,14 @@ fn parse_class<'input>(input: &'input str, state: &mut ParseState, pos: uint)
                                         Matched(pos, parts) => {
                                             {
                                                 let seq_res =
-                                                    slice_eq(input, pos, "]");
+                                                    slice_eq(input, state,
+                                                             pos, "]");
                                                 match seq_res {
                                                     Matched(pos, _) => {
                                                         {
                                                             let seq_res =
                                                                 match slice_eq(input,
+                                                                               state,
                                                                                pos,
                                                                                "i")
                                                                     {
@@ -3491,7 +3542,7 @@ fn parse_classCharacterRange<'input>(input: &'input str,
             match seq_res {
                 Matched(pos, begin) => {
                     {
-                        let seq_res = slice_eq(input, pos, "-");
+                        let seq_res = slice_eq(input, state, pos, "-");
                         match seq_res {
                             Matched(pos, _) => {
                                 {
@@ -3615,12 +3666,12 @@ fn parse_simpleBracketDelimitedCharacter<'input>(input: &'input str,
                 {
                     let assert_res =
                         {
-                            let choice_res = slice_eq(input, pos, "]");
+                            let choice_res = slice_eq(input, state, pos, "]");
                             match choice_res {
                                 Matched(pos, value) => Matched(pos, value),
                                 Failed => {
                                     let choice_res =
-                                        slice_eq(input, pos, "\\");
+                                        slice_eq(input, state, pos, "\\");
                                     match choice_res {
                                         Matched(pos, value) =>
                                         Matched(pos, value),
@@ -3638,7 +3689,7 @@ fn parse_simpleBracketDelimitedCharacter<'input>(input: &'input str,
             match seq_res {
                 Matched(pos, _) => {
                     {
-                        let seq_res = any_char(input, pos);
+                        let seq_res = any_char(input, state, pos);
                         match seq_res {
                             Matched(pos, _) => {
                                 {
@@ -3662,7 +3713,7 @@ fn parse_simpleEscapeSequence<'input>(input: &'input str,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, pos, "\\");
+            let seq_res = slice_eq(input, state, pos, "\\");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -3677,13 +3728,15 @@ fn parse_simpleEscapeSequence<'input>(input: &'input str,
                                             Matched(pos, value),
                                             Failed => {
                                                 let choice_res =
-                                                    slice_eq(input, pos, "x");
+                                                    slice_eq(input, state,
+                                                             pos, "x");
                                                 match choice_res {
                                                     Matched(pos, value) =>
                                                     Matched(pos, value),
                                                     Failed => {
                                                         let choice_res =
                                                             slice_eq(input,
+                                                                     state,
                                                                      pos,
                                                                      "u");
                                                         match choice_res {
@@ -3694,6 +3747,7 @@ fn parse_simpleEscapeSequence<'input>(input: &'input str,
                                                             Failed => {
                                                                 let choice_res =
                                                                     slice_eq(input,
+                                                                             state,
                                                                              pos,
                                                                              "U");
                                                                 match choice_res
@@ -3723,7 +3777,7 @@ fn parse_simpleEscapeSequence<'input>(input: &'input str,
                         match seq_res {
                             Matched(pos, _) => {
                                 {
-                                    let seq_res = any_char(input, pos);
+                                    let seq_res = any_char(input, state, pos);
                                     match seq_res {
                                         Matched(pos, _) => {
                                             {
@@ -3761,7 +3815,7 @@ fn parse_zeroEscapeSequence<'input>(input: &'input str,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, pos, "\\0");
+            let seq_res = slice_eq(input, state, pos, "\\0");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -3797,7 +3851,7 @@ fn parse_hex2EscapeSequence<'input>(input: &'input str,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, pos, "\\x");
+            let seq_res = slice_eq(input, state, pos, "\\x");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -3863,7 +3917,7 @@ fn parse_hex4EscapeSequence<'input>(input: &'input str,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, pos, "\\u");
+            let seq_res = slice_eq(input, state, pos, "\\u");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -3960,7 +4014,7 @@ fn parse_hex8EscapeSequence<'input>(input: &'input str,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, pos, "\\U");
+            let seq_res = slice_eq(input, state, pos, "\\U");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -4124,7 +4178,7 @@ fn parse_eolEscapeSequence<'input>(input: &'input str, state: &mut ParseState,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, pos, "\\");
+            let seq_res = slice_eq(input, state, pos, "\\");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -4150,8 +4204,11 @@ fn parse_digit<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
     if input.len() > pos {
         let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
-        match ch { '0' ...'9' => Matched(next, ()), _ => Failed, }
-    } else { Failed }
+        match ch {
+            '0' ...'9' => Matched(next, ()),
+            _ => state.mark_failure(pos, "[0-9]"),
+        }
+    } else { state.mark_failure(pos, "[0-9]") }
 }
 fn parse_hexDigit<'input>(input: &'input str, state: &mut ParseState,
                           pos: uint) -> ParseResult<()> {
@@ -4159,9 +4216,9 @@ fn parse_hexDigit<'input>(input: &'input str, state: &mut ParseState,
         let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
         match ch {
             '0' ...'9' | 'a' ...'f' | 'A' ...'F' => Matched(next, ()),
-            _ => Failed,
+            _ => state.mark_failure(pos, "[0-9a-fA-F]"),
         }
-    } else { Failed }
+    } else { state.mark_failure(pos, "[0-9a-fA-F]") }
 }
 fn parse_letter<'input>(input: &'input str, state: &mut ParseState, pos: uint)
  -> ParseResult<()> {
@@ -4177,15 +4234,21 @@ fn parse_lowerCaseLetter<'input>(input: &'input str, state: &mut ParseState,
                                  pos: uint) -> ParseResult<()> {
     if input.len() > pos {
         let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
-        match ch { 'a' ...'z' => Matched(next, ()), _ => Failed, }
-    } else { Failed }
+        match ch {
+            'a' ...'z' => Matched(next, ()),
+            _ => state.mark_failure(pos, "[a-z]"),
+        }
+    } else { state.mark_failure(pos, "[a-z]") }
 }
 fn parse_upperCaseLetter<'input>(input: &'input str, state: &mut ParseState,
                                  pos: uint) -> ParseResult<()> {
     if input.len() > pos {
         let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
-        match ch { 'A' ...'Z' => Matched(next, ()), _ => Failed, }
-    } else { Failed }
+        match ch {
+            'A' ...'Z' => Matched(next, ()),
+            _ => state.mark_failure(pos, "[A-Z]"),
+        }
+    } else { state.mark_failure(pos, "[A-Z]") }
 }
 fn parse___<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
  ParseResult<()> {
@@ -4228,7 +4291,7 @@ fn parse_comment<'input>(input: &'input str, state: &mut ParseState,
 fn parse_singleLineComment<'input>(input: &'input str, state: &mut ParseState,
                                    pos: uint) -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "//");
+        let seq_res = slice_eq(input, state, pos, "//");
         match seq_res {
             Matched(pos, _) => {
                 {
@@ -4248,7 +4311,7 @@ fn parse_singleLineComment<'input>(input: &'input str, state: &mut ParseState,
                                     };
                                 match seq_res {
                                     Matched(pos, _) => {
-                                        any_char(input, pos)
+                                        any_char(input, state, pos)
                                     }
                                     Failed => Failed,
                                 }
@@ -4268,7 +4331,7 @@ fn parse_singleLineComment<'input>(input: &'input str, state: &mut ParseState,
 fn parse_multiLineComment<'input>(input: &'input str, state: &mut ParseState,
                                   pos: uint) -> ParseResult<()> {
     {
-        let seq_res = slice_eq(input, pos, "/*");
+        let seq_res = slice_eq(input, state, pos, "/*");
         match seq_res {
             Matched(pos, _) => {
                 {
@@ -4282,8 +4345,8 @@ fn parse_multiLineComment<'input>(input: &'input str, state: &mut ParseState,
                                         let seq_res =
                                             {
                                                 let assert_res =
-                                                    slice_eq(input, pos,
-                                                             "*/");
+                                                    slice_eq(input, state,
+                                                             pos, "*/");
                                                 match assert_res {
                                                     Failed =>
                                                     Matched(pos, ()),
@@ -4292,7 +4355,7 @@ fn parse_multiLineComment<'input>(input: &'input str, state: &mut ParseState,
                                             };
                                         match seq_res {
                                             Matched(pos, _) => {
-                                                any_char(input, pos)
+                                                any_char(input, state, pos)
                                             }
                                             Failed => Failed,
                                         }
@@ -4307,7 +4370,9 @@ fn parse_multiLineComment<'input>(input: &'input str, state: &mut ParseState,
                             Matched(repeat_pos, ())
                         };
                     match seq_res {
-                        Matched(pos, _) => { slice_eq(input, pos, "*/") }
+                        Matched(pos, _) => {
+                            slice_eq(input, state, pos, "*/")
+                        }
                         Failed => Failed,
                     }
                 }
@@ -4319,24 +4384,25 @@ fn parse_multiLineComment<'input>(input: &'input str, state: &mut ParseState,
 fn parse_eol<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
  ParseResult<()> {
     {
-        let choice_res = slice_eq(input, pos, "\n");
+        let choice_res = slice_eq(input, state, pos, "\n");
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
             Failed => {
-                let choice_res = slice_eq(input, pos, "\r\n");
+                let choice_res = slice_eq(input, state, pos, "\r\n");
                 match choice_res {
                     Matched(pos, value) => Matched(pos, value),
                     Failed => {
-                        let choice_res = slice_eq(input, pos, "\r");
+                        let choice_res = slice_eq(input, state, pos, "\r");
                         match choice_res {
                             Matched(pos, value) => Matched(pos, value),
                             Failed => {
                                 let choice_res =
-                                    slice_eq(input, pos, "\u2028");
+                                    slice_eq(input, state, pos, "\u2028");
                                 match choice_res {
                                     Matched(pos, value) =>
                                     Matched(pos, value),
-                                    Failed => slice_eq(input, pos, "\u2029"),
+                                    Failed =>
+                                    slice_eq(input, state, pos, "\u2029"),
                                 }
                             }
                         }
@@ -4352,9 +4418,9 @@ fn parse_eolChar<'input>(input: &'input str, state: &mut ParseState,
         let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
         match ch {
             '\n' | '\r' | '\u2028' | '\u2029' => Matched(next, ()),
-            _ => Failed,
+            _ => state.mark_failure(pos, "[\n\r\u2028\u2029]"),
         }
-    } else { Failed }
+    } else { state.mark_failure(pos, "[\n\r\u2028\u2029]") }
 }
 fn parse_whitespace<'input>(input: &'input str, state: &mut ParseState,
                             pos: uint) -> ParseResult<()> {
@@ -4363,21 +4429,22 @@ fn parse_whitespace<'input>(input: &'input str, state: &mut ParseState,
         match ch {
             ' ' | '\t' | '\xa0' | '\ufeff' | '\u1680' | '\u180e' | '\u2000'
             ...'\u200a' | '\u202f' | '\u205f' | '\u3000' => Matched(next, ()),
-            _ => Failed,
+            _ =>
+            state.mark_failure(pos,
+                               "[ \t\xa0\ufeff\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]"),
         }
-    } else { Failed }
+    } else {
+        state.mark_failure(pos,
+                           "[ \t\xa0\ufeff\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]")
+    }
 }
 pub fn grammar<'input>(input: &'input str) -> Result<Grammar, String> {
     let mut state = ParseState::new();
     match parse_grammar(input, &mut state, 0) {
-        Matched(pos, value) => {
-            if pos == input.len() {
-                Ok(value)
-            } else {
-                Err(format!("Expected end of input at {}" , pos_to_line (
-                            input , pos )))
-            }
-        }
-        Failed => Err(format!("Error at ?")),
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
     }
+    let expected = state.expected.to_string().escape_default();
+    Err(format!("Error at {}: Expected {}" , pos_to_line (
+                input , state . max_err_pos ) , expected))
 }
