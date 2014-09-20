@@ -49,7 +49,7 @@ pub enum Expr {
 pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P<rustast::Mod> {
 	let view_items = translate_view_items(ctxt, grammar.imports.as_slice());
 
-	let items = header_items(ctxt).move_iter()
+	let items = header_items(ctxt).into_iter()
 		.chain(grammar.rules.iter().map(|rule|{
 			compile_rule(ctxt, rule)
 		}))

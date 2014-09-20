@@ -68,7 +68,7 @@ sequence -> Expr
       if elements.len() != 1 {
           SequenceExpr(elements)
       } else {
-          elements.move_iter().next().unwrap()
+          elements.into_iter().next().unwrap()
       }
     }
 

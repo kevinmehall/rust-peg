@@ -1342,7 +1342,7 @@ fn parse_sequence(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                     if elements.len() != 1 {
                                         SequenceExpr(elements)
                                     } else {
-                                        elements.move_iter().next().unwrap()
+                                        elements.into_iter().next().unwrap()
                                     }))
                             }
                         }
