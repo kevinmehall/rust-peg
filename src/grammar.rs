@@ -3219,7 +3219,7 @@ fn parse_digit(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let ::std::str::CharRange { ch: ch, next: next } =
             input.char_range_at(pos);
-        match ch { '0' ..'9' => Ok((next, ())), _ => Err(pos), }
+        match ch { '0' ...'9' => Ok((next, ())), _ => Err(pos), }
     } else { Err(pos) }
 }
 fn parse_hexDigit(input: &str, pos: uint) -> Result<(uint, ()), uint> {
@@ -3227,7 +3227,7 @@ fn parse_hexDigit(input: &str, pos: uint) -> Result<(uint, ()), uint> {
         let ::std::str::CharRange { ch: ch, next: next } =
             input.char_range_at(pos);
         match ch {
-            '0' ..'9' | 'a' ..'f' | 'A' ..'F' => Ok((next, ())),
+            '0' ...'9' | 'a' ...'f' | 'A' ...'F' => Ok((next, ())),
             _ => Err(pos),
         }
     } else { Err(pos) }
@@ -3245,14 +3245,14 @@ fn parse_lowerCaseLetter(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let ::std::str::CharRange { ch: ch, next: next } =
             input.char_range_at(pos);
-        match ch { 'a' ..'z' => Ok((next, ())), _ => Err(pos), }
+        match ch { 'a' ...'z' => Ok((next, ())), _ => Err(pos), }
     } else { Err(pos) }
 }
 fn parse_upperCaseLetter(input: &str, pos: uint) -> Result<(uint, ()), uint> {
     if input.len() > pos {
         let ::std::str::CharRange { ch: ch, next: next } =
             input.char_range_at(pos);
-        match ch { 'A' ..'Z' => Ok((next, ())), _ => Err(pos), }
+        match ch { 'A' ...'Z' => Ok((next, ())), _ => Err(pos), }
     } else { Err(pos) }
 }
 fn parse___(input: &str, pos: uint) -> Result<(uint, ()), uint> {
@@ -3423,7 +3423,7 @@ fn parse_whitespace(input: &str, pos: uint) -> Result<(uint, ()), uint> {
             input.char_range_at(pos);
         match ch {
             ' ' | '\t' | '\xa0' | '\ufeff' | '\u1680' | '\u180e' | '\u2000'
-            ..'\u200a' | '\u202f' | '\u205f' | '\u3000' => Ok((next, ())),
+            ...'\u200a' | '\u202f' | '\u205f' | '\u3000' => Ok((next, ())),
             _ => Err(pos),
         }
     } else { Err(pos) }
