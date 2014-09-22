@@ -6,7 +6,7 @@ extern crate syntax;
 
 use syntax::ast;
 use syntax::codemap;
-use syntax::ext::base::{ExtCtxt, MacResult, MacItem, DummyResult};
+use syntax::ext::base::{ExtCtxt, MacResult, MacItems, DummyResult};
 use syntax::parse;
 use syntax::parse::token;
 use syntax::fold::Folder;
@@ -80,7 +80,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
         cx.meta_word(DUMMY_SP, token::InternedString::new("unused")),
     )));
 
-    MacItem::new(cx.item_mod(sp, sp, ident, vec!(attr), ast.view_items.clone(), ast.items.clone()))
+    MacItems::new(Some(cx.item_mod(sp, sp, ident, vec!(attr), ast.view_items.clone(), ast.items.clone())).into_iter())
 }
 
 fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
