@@ -87,7 +87,7 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
     use syntax::print::pprust;
 
     let mut parser = parse::new_parser_from_tts(cx.parse_sess(), cx.cfg(),
-                                                Vec::from_slice(tts));
+                                                tts.to_vec());
     // The `expand_expr` method is called so that any macro calls in the
     // parsed expression are expanded.
     let arg = cx.expander().fold_expr(parser.parse_expr());
