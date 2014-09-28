@@ -42,7 +42,6 @@ pub enum Expr {
 	Repeat(Box<Expr>, /*min*/ uint, /*sep*/ Option<Box<Expr>>),
 	PosAssertExpr(Box<Expr>),
 	NegAssertExpr(Box<Expr>),
-	StringifyExpr(Box<Expr>),
 	ActionExpr(Vec<TaggedExpr>, String),
 }
 
@@ -341,8 +340,6 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 				$result_check
 			})
 		}
-
-		StringifyExpr(..) => fail!("not implemented"),
 
 		PosAssertExpr(box ref e) => {
 			let assert_res = compile_expr(ctxt, e, false);
