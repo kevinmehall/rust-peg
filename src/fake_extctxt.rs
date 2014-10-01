@@ -7,8 +7,9 @@ pub fn with_fake_extctxt<T>(f: |&ExtCtxt| -> T) -> T {
   let ps = syntax::parse::new_parse_sess();
 
   let mut cx = syntax::ext::base::ExtCtxt::new(&ps, Vec::new(), syntax::ext::expand::ExpansionConfig {
-    deriving_hash_type_parameter: false,
     crate_name: from_str("").unwrap(),
+    deriving_hash_type_parameter: false,
+    enable_quotes: true,
   });
 
   cx.bt_push(syntax::codemap::ExpnInfo{
