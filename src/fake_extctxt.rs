@@ -6,11 +6,9 @@ use syntax::ext::base::ExtCtxt;
 pub fn with_fake_extctxt<T>(f: |&ExtCtxt| -> T) -> T {
   let ps = syntax::parse::new_parse_sess();
 
-  let mut cx = syntax::ext::base::ExtCtxt::new(&ps, Vec::new(), syntax::ext::expand::ExpansionConfig {
-    crate_name: from_str("").unwrap(),
-    deriving_hash_type_parameter: false,
-    enable_quotes: true,
-  });
+  let mut cx = syntax::ext::base::ExtCtxt::new(&ps, Vec::new(),
+    syntax::ext::expand::ExpansionConfig::default("rust-peg".to_string())
+  );
 
   cx.bt_push(syntax::codemap::ExpnInfo{
     call_site: DUMMY_SP,
