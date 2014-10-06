@@ -1,5 +1,4 @@
 #![feature(globs)]
-#![feature(managed_boxes)]
 #![feature(quote)]
 
 extern crate syntax;
