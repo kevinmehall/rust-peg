@@ -39,8 +39,8 @@ fn main() {
   assert_eq!(
     match node {
       Text(_) => fail!(),
-      Element(name, _) => name
-    }, "div".to_string());
+      Element(ref name, _) => name.as_slice()
+    }, "div");
 
   let child = match node {
     Element(_, ref children) => children.index(&0),
