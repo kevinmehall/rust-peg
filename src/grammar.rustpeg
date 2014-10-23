@@ -114,6 +114,15 @@ suffixed -> Expr
   / expression:primary plus {
       Repeat(box expression, 1, None, None)
     }
+  / expression:primary lbrace n:integer rbrace {
+      Repeat(box expression, n, Some(n), None)
+    }
+  / expression:primary lbrace min:integer comma max:integer? rbrace {
+      Repeat(box expression, min, max, None)
+    }
+  / expression:primary lbrace comma max:integer? rbrace {
+      Repeat(box expression, 0, max, None)
+    }
   / primary
 
 primary -> Expr
@@ -155,6 +164,12 @@ lparen    = "("  __
 rparen    = ")"  __ 
 dot       = "."  __ 
 returns   = "->" __
+lbrace    = "{"  __
+rbrace    = "}"  __
+comma     = ","  __
+
+integer -> uint
+  = i:([0-9]+ { from_str::<uint>(match_str).unwrap() }) __ { i }
 
 /*
  * Modeled after ECMA-262, 5th ed., 7.6, but much simplified:

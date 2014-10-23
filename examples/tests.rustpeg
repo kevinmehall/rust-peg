@@ -13,6 +13,25 @@ number -> int
 list -> Vec<int>
 	= number ** ","
 
+digit -> int
+	= [0-9] { from_str::<int>(match_str).unwrap() }
+
+#[export]
+repeat_n -> Vec<int>
+	= digit{4}
+
+#[export]
+repeat_min -> Vec<int>
+	= digit{2,}
+
+#[export]
+repeat_max -> Vec<int>
+	= digit{,2}
+
+#[export]
+repeat_min_max -> Vec<int>
+	= digit{2,3}
+
 #[export]
 boundaries -> String
 	= "foo" { match_str.to_string() }
