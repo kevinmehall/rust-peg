@@ -21,15 +21,16 @@ fn any_char(input: &str, pos: uint) -> Result<(uint, ()), uint> {
         Ok((input.char_range_at(pos).next, ()))
     } else { Err(pos) }
 }
-fn pos_to_line(input: &str, pos: uint) -> uint {
-    let mut remaining = pos as int;
+fn pos_to_line(input: &str, pos: uint) -> (uint, uint) {
+    let mut remaining = pos;
     let mut lineno: uint = 1;
     for line in input.lines() {
-        remaining -= (line.len() as int) + 1;
-        if remaining <= 0 { return lineno; }
+        let line_length = line.len() + 1;
+        if remaining < line_length { return (lineno, remaining + 1); }
+        remaining -= line_length;
         lineno += 1;
     }
-    return lineno;
+    return (lineno, remaining + 1);
 }
 fn parse_grammar(input: &str, pos: uint) -> Result<(uint, Grammar), uint> {
     {

@@ -104,17 +104,18 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 
 
 	items.push(quote_item!(ctxt,
-		fn pos_to_line(input: &str, pos: uint) -> uint {
-			let mut remaining = pos as int;
+		fn pos_to_line(input: &str, pos: uint) -> (uint, uint) {
+			let mut remaining = pos;
 			let mut lineno: uint = 1;
 			for line in input.lines() {
-				remaining -= (line.len() as int) + 1;
-				if remaining <= 0 {
-					return lineno;
+				let line_length = line.len() + 1;
+				if remaining < line_length {
+					return (lineno, remaining + 1);
 				}
-				lineno+=1;
+				remaining -= line_length;
+				lineno += 1;
 			}
-			return lineno;
+			return (lineno, remaining + 1);
 		}
 	).unwrap());
 
