@@ -373,10 +373,10 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 						)
 					}
 					None => {
-						let code_expr = rustast::parse_expr(code);
+						let code_block = rustast::parse_block(code);
 						quote_expr!(ctxt, {
 							let match_str = input.slice(start_pos, pos);
-							Ok((pos, $code_expr))
+							Ok((pos, $code_block))
 						})
 					}
 				}

@@ -29,10 +29,10 @@ pub fn parse_path_vec(s: &str) -> Vec<ast::Ident> {
 	s.split_str("::").map(|i| str_to_ident(i)).collect()
 }
 
-pub fn parse_expr(e: &str) -> P<ast::Expr> {
+pub fn parse_block(e: &str) -> P<ast::Block> {
 	let ps = syntax::parse::new_parse_sess();
 	let mut p = syntax::parse::new_parser_from_source_str(&ps, Vec::new(), "file".to_string(), e.to_string());
-	let r = p.parse_expr();
+	let r = p.parse_block();
 	p.abort_if_errors();
 	r
 }

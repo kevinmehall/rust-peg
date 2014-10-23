@@ -131,7 +131,7 @@ action -> String
   = braced:braced __ { braced }
 
 braced -> String
-  = "{" b:(((braced "") / nonBraceCharacters)* {match_str.to_string()}) "}" {b}
+  = "{" (((braced "") / nonBraceCharacters)*) "}" {match_str.to_string()}
 
 nonBraceCharacters
   = nonBraceCharacter+

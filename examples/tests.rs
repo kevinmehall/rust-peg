@@ -1,4 +1,4 @@
-use test_grammar::{consonants, options, list, boundaries, borrowed};
+use test_grammar::{consonants, options, list, boundaries, borrowed, block};
 mod test_grammar;
 
 #[test]
@@ -31,4 +31,9 @@ fn test_boundaries() {
 #[test]
 fn test_borrowed() {
 	assert_eq!(borrowed("abcd"), Ok("abcd"));
+}
+
+#[test]
+fn test_block() {
+	assert_eq!(block("foo"), Ok("foo"));
 }
