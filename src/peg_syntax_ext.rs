@@ -58,6 +58,8 @@ fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident
 
     let source = str::from_utf8(source_utf8.as_slice()).unwrap();
 
+    cx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
+
     expand_peg(cx, sp, ident, source.as_slice())
 }
 
