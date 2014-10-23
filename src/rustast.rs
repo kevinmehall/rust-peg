@@ -8,6 +8,7 @@ pub use syntax::ast::{Mod, Item, Expr, ViewItem};
 pub use syntax::parse::token::str_to_ident;
 pub use syntax::ext::build::AstBuilder;
 pub use syntax::print::pprust::{expr_to_string, item_to_string};
+use syntax::print::pprust::to_string;
 
 pub fn module(view_items: Vec<ViewItem>, items: Vec<P<Item>>) -> P<Mod> {
 	P(Mod{
@@ -43,4 +44,9 @@ pub fn parse_type(e: &str) -> P<ast::Ty> {
 	let r = p.parse_ty(false);
 	p.abort_if_errors();
 	r
+}
+
+// FIXME: https://github.com/rust-lang/rust/pull/18256
+pub fn view_item_to_string(i: &ast::ViewItem) -> String {
+    to_string(|s| s.print_view_item(i))
 }

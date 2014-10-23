@@ -3,7 +3,6 @@ use rustast::DUMMY_SP;
 use rustast::AstBuilder;
 
 pub struct Grammar {
-	pub initializer: Option<String>,
 	pub imports: Vec<RustUse>,
 	pub rules: Vec<Rule>,
 }
