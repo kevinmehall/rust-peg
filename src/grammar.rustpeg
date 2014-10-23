@@ -196,8 +196,9 @@ doubleQuotedCharacter -> char
   = simpleDoubleQuotedCharacter
   / simpleEscapeSequence
   / zeroEscapeSequence
-  / hexEscapeSequence
-  / unicodeEscapeSequence
+  / hex2EscapeSequence
+  / hex4EscapeSequence
+  / hex8EscapeSequence
   / eolEscapeSequence
 
 simpleDoubleQuotedCharacter -> char
@@ -210,8 +211,9 @@ singleQuotedCharacter -> char
   = simpleSingleQuotedCharacter
   / simpleEscapeSequence
   / zeroEscapeSequence
-  / hexEscapeSequence
-  / unicodeEscapeSequence
+  / hex2EscapeSequence
+  / hex4EscapeSequence
+  / hex8EscapeSequence
   / eolEscapeSequence
 
 simpleSingleQuotedCharacter -> char
@@ -237,15 +239,16 @@ bracketDelimitedCharacter -> char
   = simpleBracketDelimitedCharacter
   / simpleEscapeSequence
   / zeroEscapeSequence
-  / hexEscapeSequence
-  / unicodeEscapeSequence
+  / hex2EscapeSequence
+  / hex4EscapeSequence
+  / hex8EscapeSequence
   / eolEscapeSequence
 
 simpleBracketDelimitedCharacter -> char
   = !("]" / "\\" / eolChar) . { match_str.char_at(0) }
 
 simpleEscapeSequence -> char
-  = "\\" !(digit / "x" / "u" / eolChar) . {
+  = "\\" !(digit / "x" / "u" / "U" / eolChar) . {
       match match_str.char_at(1) {
         //'b' => '\b',
         //'f' => '\f',
@@ -260,13 +263,18 @@ simpleEscapeSequence -> char
 zeroEscapeSequence -> char
   = "\\0" !digit { 0u8 as char }
 
-hexEscapeSequence -> char
+hex2EscapeSequence -> char
   = "\\x" value:(hexDigit hexDigit { from_str_radix::<int>(match_str, 16) }) {
       char::from_u32(value.unwrap() as u32).unwrap()
     }
 
-unicodeEscapeSequence -> char
+hex4EscapeSequence -> char
   = "\\u" value:(hexDigit hexDigit hexDigit hexDigit { from_str_radix::<int>(match_str, 16)}) {
+      char::from_u32(value.unwrap() as u32).unwrap()
+    }
+
+hex8EscapeSequence -> char
+  = "\\U" value:(hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit { from_str_radix::<int>(match_str, 16)}) {
       char::from_u32(value.unwrap() as u32).unwrap()
     }
 

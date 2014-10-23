@@ -2439,19 +2439,28 @@ fn parse_doubleQuotedCharacter(input: &str, pos: uint) ->
                             Ok((pos, value)) => Ok((pos, value)),
                             Err(..) => {
                                 let choice_res =
-                                    parse_hexEscapeSequence(input, pos);
+                                    parse_hex2EscapeSequence(input, pos);
                                 match choice_res {
                                     Ok((pos, value)) => Ok((pos, value)),
                                     Err(..) => {
                                         let choice_res =
-                                            parse_unicodeEscapeSequence(input,
-                                                                        pos);
+                                            parse_hex4EscapeSequence(input,
+                                                                     pos);
                                         match choice_res {
                                             Ok((pos, value)) =>
                                             Ok((pos, value)),
-                                            Err(..) =>
-                                            parse_eolEscapeSequence(input,
-                                                                    pos),
+                                            Err(..) => {
+                                                let choice_res =
+                                                    parse_hex8EscapeSequence(input,
+                                                                             pos);
+                                                match choice_res {
+                                                    Ok((pos, value)) =>
+                                                    Ok((pos, value)),
+                                                    Err(..) =>
+                                                    parse_eolEscapeSequence(input,
+                                                                            pos),
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -2582,19 +2591,28 @@ fn parse_singleQuotedCharacter(input: &str, pos: uint) ->
                             Ok((pos, value)) => Ok((pos, value)),
                             Err(..) => {
                                 let choice_res =
-                                    parse_hexEscapeSequence(input, pos);
+                                    parse_hex2EscapeSequence(input, pos);
                                 match choice_res {
                                     Ok((pos, value)) => Ok((pos, value)),
                                     Err(..) => {
                                         let choice_res =
-                                            parse_unicodeEscapeSequence(input,
-                                                                        pos);
+                                            parse_hex4EscapeSequence(input,
+                                                                     pos);
                                         match choice_res {
                                             Ok((pos, value)) =>
                                             Ok((pos, value)),
-                                            Err(..) =>
-                                            parse_eolEscapeSequence(input,
-                                                                    pos),
+                                            Err(..) => {
+                                                let choice_res =
+                                                    parse_hex8EscapeSequence(input,
+                                                                             pos);
+                                                match choice_res {
+                                                    Ok((pos, value)) =>
+                                                    Ok((pos, value)),
+                                                    Err(..) =>
+                                                    parse_eolEscapeSequence(input,
+                                                                            pos),
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -2855,19 +2873,28 @@ fn parse_bracketDelimitedCharacter(input: &str, pos: uint) ->
                             Ok((pos, value)) => Ok((pos, value)),
                             Err(..) => {
                                 let choice_res =
-                                    parse_hexEscapeSequence(input, pos);
+                                    parse_hex2EscapeSequence(input, pos);
                                 match choice_res {
                                     Ok((pos, value)) => Ok((pos, value)),
                                     Err(..) => {
                                         let choice_res =
-                                            parse_unicodeEscapeSequence(input,
-                                                                        pos);
+                                            parse_hex4EscapeSequence(input,
+                                                                     pos);
                                         match choice_res {
                                             Ok((pos, value)) =>
                                             Ok((pos, value)),
-                                            Err(..) =>
-                                            parse_eolEscapeSequence(input,
-                                                                    pos),
+                                            Err(..) => {
+                                                let choice_res =
+                                                    parse_hex8EscapeSequence(input,
+                                                                             pos);
+                                                match choice_res {
+                                                    Ok((pos, value)) =>
+                                                    Ok((pos, value)),
+                                                    Err(..) =>
+                                                    parse_eolEscapeSequence(input,
+                                                                            pos),
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -2961,9 +2988,23 @@ fn parse_simpleEscapeSequence(input: &str, pos: uint) ->
                                                             Ok((pos, value))
                                                             =>
                                                             Ok((pos, value)),
-                                                            Err(..) =>
-                                                            parse_eolChar(input,
-                                                                          pos),
+                                                            Err(..) => {
+                                                                let choice_res =
+                                                                    slice_eq(input,
+                                                                             pos,
+                                                                             "U");
+                                                                match choice_res
+                                                                    {
+                                                                    Ok((pos,
+                                                                        value))
+                                                                    =>
+                                                                    Ok((pos,
+                                                                        value)),
+                                                                    Err(..) =>
+                                                                    parse_eolChar(input,
+                                                                                  pos),
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -3041,7 +3082,7 @@ fn parse_zeroEscapeSequence(input: &str, pos: uint) ->
         }
     }
 }
-fn parse_hexEscapeSequence(input: &str, pos: uint) ->
+fn parse_hex2EscapeSequence(input: &str, pos: uint) ->
  Result<(uint, char), uint> {
     {
         let start_pos = pos;
@@ -3099,7 +3140,7 @@ fn parse_hexEscapeSequence(input: &str, pos: uint) ->
         }
     }
 }
-fn parse_unicodeEscapeSequence(input: &str, pos: uint) ->
+fn parse_hex4EscapeSequence(input: &str, pos: uint) ->
  Result<(uint, char), uint> {
     {
         let start_pos = pos;
@@ -3156,6 +3197,167 @@ fn parse_unicodeEscapeSequence(input: &str, pos: uint) ->
                                                                                     Ok((pos,
                                                                                         from_str_radix::<int>(match_str,
                                                                                                               16)))
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            };
+                        match seq_res {
+                            Err(pos) => { Err(pos) }
+                            Ok((pos, value)) => {
+                                {
+                                    let match_str =
+                                        input.slice(start_pos, pos);
+                                    Ok((pos,
+                                        char::from_u32(value.unwrap() as
+                                                           u32).unwrap()))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+fn parse_hex8EscapeSequence(input: &str, pos: uint) ->
+ Result<(uint, char), uint> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, pos, "\\U");
+            match seq_res {
+                Err(pos) => { Err(pos) }
+                Ok((pos, _)) => {
+                    {
+                        let seq_res =
+                            {
+                                let start_pos = pos;
+                                {
+                                    let seq_res = parse_hexDigit(input, pos);
+                                    match seq_res {
+                                        Err(pos) => { Err(pos) }
+                                        Ok((pos, _)) => {
+                                            {
+                                                let seq_res =
+                                                    parse_hexDigit(input,
+                                                                   pos);
+                                                match seq_res {
+                                                    Err(pos) => { Err(pos) }
+                                                    Ok((pos, _)) => {
+                                                        {
+                                                            let seq_res =
+                                                                parse_hexDigit(input,
+                                                                               pos);
+                                                            match seq_res {
+                                                                Err(pos) => {
+                                                                    Err(pos)
+                                                                }
+                                                                Ok((pos, _))
+                                                                => {
+                                                                    {
+                                                                        let seq_res =
+                                                                            parse_hexDigit(input,
+                                                                                           pos);
+                                                                        match seq_res
+                                                                            {
+                                                                            Err(pos)
+                                                                            =>
+                                                                            {
+                                                                                Err(pos)
+                                                                            }
+                                                                            Ok((pos,
+                                                                                _))
+                                                                            =>
+                                                                            {
+                                                                                {
+                                                                                    let seq_res =
+                                                                                        parse_hexDigit(input,
+                                                                                                       pos);
+                                                                                    match seq_res
+                                                                                        {
+                                                                                        Err(pos)
+                                                                                        =>
+                                                                                        {
+                                                                                            Err(pos)
+                                                                                        }
+                                                                                        Ok((pos,
+                                                                                            _))
+                                                                                        =>
+                                                                                        {
+                                                                                            {
+                                                                                                let seq_res =
+                                                                                                    parse_hexDigit(input,
+                                                                                                                   pos);
+                                                                                                match seq_res
+                                                                                                    {
+                                                                                                    Err(pos)
+                                                                                                    =>
+                                                                                                    {
+                                                                                                        Err(pos)
+                                                                                                    }
+                                                                                                    Ok((pos,
+                                                                                                        _))
+                                                                                                    =>
+                                                                                                    {
+                                                                                                        {
+                                                                                                            let seq_res =
+                                                                                                                parse_hexDigit(input,
+                                                                                                                               pos);
+                                                                                                            match seq_res
+                                                                                                                {
+                                                                                                                Err(pos)
+                                                                                                                =>
+                                                                                                                {
+                                                                                                                    Err(pos)
+                                                                                                                }
+                                                                                                                Ok((pos,
+                                                                                                                    _))
+                                                                                                                =>
+                                                                                                                {
+                                                                                                                    {
+                                                                                                                        let seq_res =
+                                                                                                                            parse_hexDigit(input,
+                                                                                                                                           pos);
+                                                                                                                        match seq_res
+                                                                                                                            {
+                                                                                                                            Err(pos)
+                                                                                                                            =>
+                                                                                                                            {
+                                                                                                                                Err(pos)
+                                                                                                                            }
+                                                                                                                            Ok((pos,
+                                                                                                                                _))
+                                                                                                                            =>
+                                                                                                                            {
+                                                                                                                                {
+                                                                                                                                    let match_str =
+                                                                                                                                        input.slice(start_pos,
+                                                                                                                                                    pos);
+                                                                                                                                    Ok((pos,
+                                                                                                                                        from_str_radix::<int>(match_str,
+                                                                                                                                                              16)))
+                                                                                                                                }
+                                                                                                                            }
+                                                                                                                        }
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
                                                                                 }
                                                                             }
                                                                         }
