@@ -3388,8 +3388,10 @@ fn parse_hex8EscapeSequence(input: &str, pos: uint) ->
                                                                                                                                         input.slice(start_pos,
                                                                                                                                                     pos);
                                                                                                                                     Ok((pos,
-                                                                                                                                        from_str_radix::<int>(match_str,
-                                                                                                                                                              16)))
+                                                                                                                                        {
+                                                                                                                                            from_str_radix::<int>(match_str,
+                                                                                                                                                                  16)
+                                                                                                                                        }))
                                                                                                                                 }
                                                                                                                             }
                                                                                                                         }
@@ -3423,8 +3425,10 @@ fn parse_hex8EscapeSequence(input: &str, pos: uint) ->
                                     let match_str =
                                         input.slice(start_pos, pos);
                                     Ok((pos,
-                                        char::from_u32(value.unwrap() as
-                                                           u32).unwrap()))
+                                        {
+                                            char::from_u32(value.unwrap() as
+                                                               u32).unwrap()
+                                        }))
                                 }
                             }
                         }
