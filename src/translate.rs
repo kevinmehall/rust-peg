@@ -39,7 +39,7 @@ pub enum Expr {
 	SequenceExpr(Vec<Expr>),
 	ChoiceExpr(Vec<Expr>),
 	OptionalExpr(Box<Expr>),
-	Repeat(Box<Expr>, /*min*/ uint, /*sep*/ Option<Box<Expr>>),
+	Repeat(Box<Expr>, /*min*/ uint, /*max*/ Option<uint>, /*sep*/ Option<Box<Expr>>),
 	PosAssertExpr(Box<Expr>),
 	NegAssertExpr(Box<Expr>),
 	ActionExpr(Vec<TaggedExpr>, String),
@@ -272,7 +272,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			})
 		}
 
-		Repeat(box ref e, min, ref sep) => {
+		Repeat(box ref e, min, max, ref sep) => {
 			let inner = compile_expr(ctxt, e, result_used);
 
 			let match_sep = match *sep {
@@ -297,11 +297,19 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 				quote_expr!(ctxt, ())
 			};
 
-			let (repeat_vec, repeat_step) = if result_used || min > 0 || sep.is_some() {
+			let (repeat_vec, repeat_step) =
+			if result_used || min > 0 || max.is_some() || sep.is_some() {
 				(quote_tokens!(ctxt, let mut repeat_value = vec!();),
 				 quote_tokens!(ctxt, repeat_value.push(value);))
 			} else {
 				(vec!(), vec!())
+			};
+
+			let max_check = match max {
+				None => vec!(),
+				Some(max) => quote_tokens!(ctxt,
+					if repeat_value.len() >= $max { break }
+				)
 			};
 
 			let result_check = if min > 0 {
@@ -324,6 +332,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 					let pos = repeat_pos;
 
 					$match_sep
+					$max_check
 
 					let step_res = $inner;
 					match step_res {

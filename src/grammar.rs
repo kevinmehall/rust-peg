@@ -1576,6 +1576,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                                 Ok((pos,
                                                                     Repeat(box() expression,
                                                                            0,
+                                                                           None,
                                                                            Some(box() sep))))
                                                             }
                                                         }
@@ -1623,6 +1624,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                                         Ok((pos,
                                                                             Repeat(box() expression,
                                                                                    1,
+                                                                                   None,
                                                                                    Some(box() sep))))
                                                                     }
                                                                 }
@@ -1663,6 +1665,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                                     Ok((pos,
                                                                         Repeat(box() expression,
                                                                                0,
+                                                                               None,
                                                                                None)))
                                                                 }
                                                             }
@@ -1708,6 +1711,7 @@ fn parse_suffixed(input: &str, pos: uint) -> Result<(uint, Expr), uint> {
                                                                             Ok((pos,
                                                                                 Repeat(box() expression,
                                                                                        1,
+                                                                                       None,
                                                                                        None)))
                                                                         }
                                                                     }

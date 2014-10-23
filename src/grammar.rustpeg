@@ -103,16 +103,16 @@ suffixed -> Expr
        OptionalExpr(box expression)
     }
   / expression:primary starstar sep:primary {
-      Repeat(box expression, 0, Some(box sep))
+      Repeat(box expression, 0, None, Some(box sep))
     }
   / expression:primary plusplus sep:primary {
-      Repeat(box expression, 1, Some(box sep))
+      Repeat(box expression, 1, None, Some(box sep))
     }
   / expression:primary star {
-      Repeat(box expression, 0, None)
+      Repeat(box expression, 0, None, None)
     }
   / expression:primary plus {
-      Repeat(box expression, 1, None)
+      Repeat(box expression, 1, None, None)
     }
   / primary
 
