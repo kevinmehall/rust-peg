@@ -20,3 +20,10 @@ boundaries -> String
 #[export]
 borrowed -> &str
 	= [a-z]+ { match_str }
+
+#[export]
+block -> &str
+	= [a-z]+ {
+		let result = match_str;
+		result
+	}
