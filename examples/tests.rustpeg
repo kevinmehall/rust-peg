@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[export]
 consonants
 	= ([a-z]![aeiou])+
@@ -46,3 +48,16 @@ block -> &str
 		let result = match_str;
 		result
 	}
+
+#[export]
+keyvals -> HashMap<int, int>
+    = kvs:keyval ++ "\n" {
+        let mut rv = HashMap::new();
+        for &(k, v) in kvs.iter() {
+           rv.insert(k, v);
+        };
+        rv
+    }
+
+keyval -> (int, int)
+    = k:number ":" + v:number { (k, v) }

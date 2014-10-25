@@ -1,5 +1,6 @@
 #![feature(globs)]
 use test_grammar::*;
+use std::collections::HashMap;
 mod test_grammar;
 
 #[test]
@@ -60,4 +61,12 @@ fn test_borrowed() {
 #[test]
 fn test_block() {
 	assert_eq!(block("foo"), Ok("foo"));
+}
+
+#[test]
+fn test_keyval() {
+    let mut expected = HashMap::new();
+    expected.insert(1, 3);
+    expected.insert(2, 4);
+    assert_eq!(keyvals("1:3\n2:4"), Ok(expected));
 }
