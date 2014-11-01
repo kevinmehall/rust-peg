@@ -97,7 +97,7 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
         ast::ExprLit(ref spanned) => {
             match spanned.node {
                 ast::LitStr(ref n, _) => {
-                    if !parser.eat(&token::EOF) {
+                    if !parser.eat(&token::Eof) {
                         cx.span_err(parser.span,
                                     "expected only one string literal");
                         return None
