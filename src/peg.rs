@@ -4,7 +4,7 @@
 extern crate syntax;
 
 use std::str;
-use std::io::{stdout,stderr};
+use std::io::{stdin,stdout,stderr};
 use std::io::fs::File;
 use std::os;
 use translate::{compile_grammar};
@@ -14,9 +14,29 @@ mod grammar;
 mod rustast;
 mod fake_extctxt;
 
+fn print_usage(prog: &str) {
+	println!("Usage: {} [file]", prog)
+}
+
 fn main() {
 	let args = os::args();
-	let source_utf8 = File::open(&Path::new(args[1].as_slice())).read_to_end().unwrap();
+
+	let source_utf8;
+	match args.len() {
+		2 => {
+			if args[1].as_slice() == "-h" {
+				print_usage(args[0].as_slice());
+				return;
+			}
+			source_utf8 = File::open(&Path::new(args[1].as_slice())).read_to_end().unwrap();
+		}
+		1 => source_utf8 = stdin().read_to_end().unwrap(),
+		_ => {
+			print_usage(args[0].as_slice());
+			return;
+		}
+	}
+
 	let source = str::from_utf8(source_utf8.as_slice()).unwrap();
 	let grammar_def = grammar::grammar(source);
 
