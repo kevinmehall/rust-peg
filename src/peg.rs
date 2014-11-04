@@ -21,21 +21,13 @@ fn print_usage(prog: &str) {
 fn main() {
 	let args = os::args();
 
-	let source_utf8;
-	match args.len() {
-		2 => {
-			if args[1].as_slice() == "-h" {
-				print_usage(args[0].as_slice());
-				return;
-			}
-			source_utf8 = File::open(&Path::new(args[1].as_slice())).read_to_end().unwrap();
-		}
-		1 => source_utf8 = stdin().read_to_end().unwrap(),
-		_ => {
-			print_usage(args[0].as_slice());
-			return;
-		}
-	}
+	let source_utf8 = match args.as_slice() {
+		[ref progname, ref arg] if arg.as_slice() == "-h" => return print_usage(progname.as_slice()),
+		[_, ref fname] => File::open(&Path::new(fname.as_slice())).read_to_end().unwrap(),
+		[_] => stdin().read_to_end().unwrap(),
+		[ref progname, ..] => return print_usage(progname.as_slice()),
+		_ => panic!("No program name argument")
+	};
 
 	let source = str::from_utf8(source_utf8.as_slice()).unwrap();
 	let grammar_def = grammar::grammar(source);
