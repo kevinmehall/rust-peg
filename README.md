@@ -9,10 +9,12 @@ Run `peg input_file.rustpeg` to compile a grammar and generate Rust code on stdo
 ## Grammar Syntax
 
 ```
-#[export]
+#[pub]
 rule_name -> type
    = expression
 ```
+
+If a rule is marked with `#[pub]`, the generated module has a public function that begins parsing at that rule.
 
   * `.` - match any single character
   * `"literal"` - match a literal string
