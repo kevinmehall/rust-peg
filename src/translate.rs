@@ -75,28 +75,62 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	let mut items = Vec::new();
 
 	items.push(quote_item!(ctxt,
-		fn slice_eq(input: &str, pos: uint, m: &str) -> Result<(uint, ()), uint> {
+		enum ParseResult<T> {
+			Matched(uint, T),
+			Failed,
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
+		struct ParseState {
+			max_err_pos: uint,
+			expected: ::std::collections::HashSet<&'static str>,
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
+		impl ParseState {
+			fn new() -> ParseState {
+				ParseState{ max_err_pos: 0, expected: ::std::collections::HashSet::new() }
+			}
+			fn mark_failure(&mut self, pos: uint, expected: &'static str) -> ParseResult<()> {
+				if pos > self.max_err_pos {
+					self.max_err_pos = pos;
+					self.expected.clear();
+				}
+
+				if pos == self.max_err_pos {
+					self.expected.insert(expected);
+				}
+
+				Failed
+			}
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
+		fn slice_eq(input: &str, state: &mut ParseState, pos: uint, m: &'static str) -> ParseResult<()> {
 			#![inline]
 			#![allow(dead_code)]
 
 	    let l = m.len();
 	    if input.len() >= pos + l && input.as_bytes().slice(pos, pos+l) == m.as_bytes() {
-	        Ok((pos+l, ()))
+	      Matched(pos+l, ())
 	    } else {
-	        Err(pos)
+	      state.mark_failure(pos, m)
 	    }
 		}
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
-		fn any_char(input: &str, pos: uint) -> Result<(uint, ()), uint> {
+		fn any_char(input: &str, state: &mut ParseState, pos: uint) -> ParseResult<()> {
 			#![inline]
 			#![allow(dead_code)]
 
 			if input.len() > pos {
-					Ok((input.char_range_at(pos).next, ()))
+				Matched(input.char_range_at(pos).next, ())
 			} else {
-					Err(pos)
+				state.mark_failure(pos, "<character>")
 			}
 		}
 	).unwrap());
@@ -127,7 +161,7 @@ fn compile_rule(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Ite
 	let ret = rustast::parse_type(rule.ret_type.as_slice());
 	let body = compile_expr(ctxt, &*rule.expr, rule.ret_type.as_slice() != "()");
 	(quote_item!(ctxt,
-		fn $name(input: &str, pos: uint) -> Result<(uint, $ret), uint> {
+		fn $name<'input>(input: &'input str, state: &mut ParseState, pos: uint) -> ParseResult<$ret> {
 			$body
 		}
 	)).unwrap()
@@ -138,17 +172,18 @@ fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rusta
 	let ret = rustast::parse_type(rule.ret_type.as_slice());
 	let parse_fn = rustast::str_to_ident(format!("parse_{}", rule.name).as_slice());
 	(quote_item!(ctxt,
-		pub fn $name(input: &str) -> Result<$ret, String> {
-			match $parse_fn(input, 0) {
-				Ok((pos, value)) => {
+		pub fn $name<'input>(input: &'input str) -> Result<$ret, String> {
+			let mut state = ParseState::new();
+			match $parse_fn(input, &mut state, 0) {
+				Matched(pos, value) => {
 					if pos == input.len() {
-						Ok(value)
-					} else {
-						Err(format!("Expected end of input at {}", pos_to_line(input, pos)))
+						return Ok(value)
 					}
 				}
-				Err(pos) => Err(format!("Error at {}", pos_to_line(input, pos)))
+				_ => {}
 			}
+			let expected = state.expected.to_string().escape_default();
+			Err(format!("Error at {}: Expected {}", pos_to_line(input, state.max_err_pos), expected))
 		}
 	)).unwrap()
 }
@@ -163,8 +198,8 @@ fn compile_match_and_then(ctxt: &rustast::ExtCtxt, e: &Expr, value_name: Option<
 	quote_expr!(ctxt, {
 		let seq_res = $seq_res;
 		match seq_res {
-			Err(pos) => { Err(pos) }
-			Ok((pos, $name_pat)) => { $then }
+			Matched(pos, $name_pat) => { $then }
+			Failed => Failed,
 		}
 	})
 }
@@ -178,22 +213,39 @@ fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
 	}
 }
 
+fn format_char_set(cases: &[CharSetCase]) -> String {
+	let mut r = "[".into_string();
+
+	for &CharSetCase{start, end} in cases.iter() {
+		r.push(start);
+		if start != end {
+			r.push('-');
+			r.push(end);
+		}
+	}
+	r.push(']');
+	r
+}
+
 #[allow(unused_imports)] // quote_tokens! imports things
 fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast::P<rustast::Expr> {
 	match *e {
 		AnyCharExpr => {
-			quote_expr!(ctxt, any_char(input, pos))
+			quote_expr!(ctxt, any_char(input, state, pos))
 		}
 
 		LiteralExpr(ref s) => {
 			let sl = s.as_slice();
-			quote_expr!(ctxt, slice_eq(input, pos, $sl))
+			quote_expr!(ctxt, slice_eq(input, state, pos, $sl))
 		}
 
 		CharSetExpr(invert, ref cases) => {
+			let expected_set = format_char_set(cases.as_slice());
+			let expected_str = expected_set.as_slice();
+
 			let (in_set, not_in_set) = cond_swap(invert, (
-				quote_expr!(ctxt, Ok((next, ()))),
-				quote_expr!(ctxt, Err(pos)),
+				quote_expr!(ctxt, Matched(next, ())),
+				quote_expr!(ctxt, state.mark_failure(pos, $expected_str)),
 			));
 
 			let m = ctxt.expr_match(DUMMY_SP, quote_expr!(ctxt, ch), vec!(
@@ -214,13 +266,13 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 				let ::std::str::CharRange {ch, next} = input.char_range_at(pos);
 				$m
 			} else {
-				Err(pos)
+				state.mark_failure(pos, $expected_str)
 			})
 		}
 
 		RuleExpr(ref rule_name) => {
 			let func = rustast::str_to_ident(format!("parse_{}", *rule_name).as_slice());
-			quote_expr!(ctxt, $func(input, pos))
+			quote_expr!(ctxt, $func(input, state, pos))
 		}
 
 		SequenceExpr(ref exprs) => {
@@ -235,7 +287,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			if exprs.len() > 0 {
 				write_seq(ctxt, exprs.as_slice())
 			} else {
-				quote_expr!(ctxt, Ok((pos, ())))
+				quote_expr!(ctxt, Matched(pos, ()))
 			}
 		}
 
@@ -250,8 +302,8 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 					quote_expr!(ctxt, {
 						let choice_res = $choice_res;
 						match choice_res {
-							Ok((pos, value)) => Ok((pos, value)),
-							Err(..) => $next
+							Matched(pos, value) => Matched(pos, value),
+							Failed => $next
 						}
 					})
 				}
@@ -260,15 +312,15 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			if exprs.len() > 0 {
 				write_choice(ctxt, exprs.as_slice(), result_used)
 			} else {
-				quote_expr!(ctxt, Ok((pos, ())))
+				quote_expr!(ctxt, Matched(pos, ()))
 			}
 		}
 
 		OptionalExpr(box ref e) => {
 			let optional_res = compile_expr(ctxt, e, result_used);
 			quote_expr!(ctxt, match $optional_res {
-				Ok((newpos, value)) => { Ok((newpos, Some(value))) },
-				Err(..) => { Ok((pos, None)) },
+				Matched(newpos, value) => { Matched(newpos, Some(value)) },
+				Failed => { Matched(pos, None) },
 			})
 		}
 
@@ -282,8 +334,8 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 						let pos = if repeat_value.len() > 0 {
 							let sep_res = $sep_inner;
 							match sep_res {
-								Ok((newpos, _)) => { newpos },
-								Err(..) => break,
+								Matched(newpos, _) => { newpos },
+								Failed => break,
 							}
 						} else { pos };
 					)
@@ -315,13 +367,13 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			let result_check = if min > 0 {
 				quote_expr!(ctxt,
 					if repeat_value.len() >= $min {
-						Ok((repeat_pos, $result))
+						Matched(repeat_pos, $result)
 					} else {
-						Err(repeat_pos)
+						Failed
 					}
 				)
 			} else {
-				quote_expr!(ctxt, Ok((repeat_pos, $result)))
+				quote_expr!(ctxt, Matched(repeat_pos, $result))
 			};
 
 			quote_expr!(ctxt, {
@@ -336,11 +388,11 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 
 					let step_res = $inner;
 					match step_res {
-						Ok((newpos, value)) => {
+						Matched(newpos, value) => {
 							repeat_pos = newpos;
 							$repeat_step
 						},
-						Err(..) => {
+						Failed => {
 							break;
 						}
 					}
@@ -355,8 +407,8 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			quote_expr!(ctxt, {
 				let assert_res = $assert_res;
 				match assert_res {
-					Ok(..) => Ok((pos, ())),
-					Err(..) => Err(pos)
+					Matched(..) => Matched(pos, ()),
+					Failed => Failed,
 				}
 			})
 		}
@@ -366,8 +418,8 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			quote_expr!(ctxt, {
 				let assert_res = $assert_res;
 				match assert_res {
-					Err(..) => Ok((pos, ())),
-					Ok(..) => Err(pos)
+					Failed => Matched(pos, ()),
+					Matched(..) => Failed,
 				}
 			})
 		}
@@ -385,7 +437,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 						let code_block = rustast::parse_block(code);
 						quote_expr!(ctxt, {
 							let match_str = input.slice(start_pos, pos);
-							Ok((pos, $code_block))
+							Matched(pos, $code_block)
 						})
 					}
 				}
