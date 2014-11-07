@@ -4427,15 +4427,15 @@ fn parse_whitespace<'input>(input: &'input str, state: &mut ParseState,
     if input.len() > pos {
         let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
         match ch {
-            ' ' | '\t' | '\xa0' | '\ufeff' | '\u1680' | '\u180e' | '\u2000'
+            ' ' | '\t' | '\u00a0' | '\ufeff' | '\u1680' | '\u180e' | '\u2000'
             ...'\u200a' | '\u202f' | '\u205f' | '\u3000' => Matched(next, ()),
             _ =>
             state.mark_failure(pos,
-                               "[ \t\xa0\ufeff\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]"),
+                               "[ \t\u00a0\ufeff\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]"),
         }
     } else {
         state.mark_failure(pos,
-                           "[ \t\xa0\ufeff\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]")
+                           "[ \t\u00a0\ufeff\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]")
     }
 }
 pub fn grammar<'input>(input: &'input str) -> Result<Grammar, String> {
