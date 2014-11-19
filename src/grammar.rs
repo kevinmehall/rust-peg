@@ -3,6 +3,7 @@
 use translate::*;
 use std::num::from_str_radix;
 use std::char;
+use self::ParseResult::*;
 enum ParseResult<T> { Matched(uint, T), Failed, }
 struct ParseState {
     max_err_pos: uint,
@@ -13,8 +14,8 @@ impl ParseState {
         ParseState{max_err_pos: 0,
                    expected: ::std::collections::HashSet::new(),}
     }
-    fn mark_failure(&mut self, pos: uint, expected: &'static str) ->
-     ParseResult<()> {
+    fn mark_failure(&mut self, pos: uint, expected: &'static str)
+     -> ParseResult<()> {
         if pos > self.max_err_pos {
             self.max_err_pos = pos;
             self.expected.clear();
@@ -33,8 +34,8 @@ fn slice_eq(input: &str, state: &mut ParseState, pos: uint, m: &'static str)
         Matched(pos + l, ())
     } else { state.mark_failure(pos, m) }
 }
-fn any_char(input: &str, state: &mut ParseState, pos: uint) ->
- ParseResult<()> {
+fn any_char(input: &str, state: &mut ParseState, pos: uint)
+ -> ParseResult<()> {
     #![inline]
     #![allow(dead_code)]
     if input.len() > pos {
@@ -2562,8 +2563,8 @@ fn parse_braced<'input>(input: &'input str, state: &mut ParseState, pos: uint)
     }
 }
 fn parse_nonBraceCharacters<'input>(input: &'input str,
-                                    state: &mut ParseState, pos: uint) ->
- ParseResult<()> {
+                                    state: &mut ParseState, pos: uint)
+ -> ParseResult<()> {
     {
         let mut repeat_pos = pos;
         let mut repeat_value = vec!();
@@ -2633,8 +2634,8 @@ fn parse_slash<'input>(input: &'input str, state: &mut ParseState, pos: uint)
         }
     }
 }
-fn parse_and<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
- ParseResult<()> {
+fn parse_and<'input>(input: &'input str, state: &mut ParseState, pos: uint)
+ -> ParseResult<()> {
     {
         let seq_res = slice_eq(input, state, pos, "&");
         match seq_res {
@@ -2643,8 +2644,8 @@ fn parse_and<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
         }
     }
 }
-fn parse_not<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
- ParseResult<()> {
+fn parse_not<'input>(input: &'input str, state: &mut ParseState, pos: uint)
+ -> ParseResult<()> {
     {
         let seq_res = slice_eq(input, state, pos, "!");
         match seq_res {
@@ -2733,8 +2734,8 @@ fn parse_rparen<'input>(input: &'input str, state: &mut ParseState, pos: uint)
         }
     }
 }
-fn parse_dot<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
- ParseResult<()> {
+fn parse_dot<'input>(input: &'input str, state: &mut ParseState, pos: uint)
+ -> ParseResult<()> {
     {
         let seq_res = slice_eq(input, state, pos, ".");
         match seq_res {
@@ -3061,8 +3062,8 @@ fn parse_string<'input>(input: &'input str, state: &mut ParseState, pos: uint)
     }
 }
 fn parse_doubleQuotedString<'input>(input: &'input str,
-                                    state: &mut ParseState, pos: uint) ->
- ParseResult<String> {
+                                    state: &mut ParseState, pos: uint)
+ -> ParseResult<String> {
     {
         let start_pos = pos;
         {
@@ -3121,8 +3122,8 @@ fn parse_doubleQuotedString<'input>(input: &'input str,
     }
 }
 fn parse_doubleQuotedCharacter<'input>(input: &'input str,
-                                       state: &mut ParseState, pos: uint) ->
- ParseResult<char> {
+                                       state: &mut ParseState, pos: uint)
+ -> ParseResult<char> {
     {
         let choice_res = parse_simpleDoubleQuotedCharacter(input, state, pos);
         match choice_res {
@@ -3230,8 +3231,8 @@ fn parse_simpleDoubleQuotedCharacter<'input>(input: &'input str,
     }
 }
 fn parse_singleQuotedString<'input>(input: &'input str,
-                                    state: &mut ParseState, pos: uint) ->
- ParseResult<String> {
+                                    state: &mut ParseState, pos: uint)
+ -> ParseResult<String> {
     {
         let start_pos = pos;
         {
@@ -3290,8 +3291,8 @@ fn parse_singleQuotedString<'input>(input: &'input str,
     }
 }
 fn parse_singleQuotedCharacter<'input>(input: &'input str,
-                                       state: &mut ParseState, pos: uint) ->
- ParseResult<char> {
+                                       state: &mut ParseState, pos: uint)
+ -> ParseResult<char> {
     {
         let choice_res = parse_simpleSingleQuotedCharacter(input, state, pos);
         match choice_res {
@@ -3533,8 +3534,8 @@ fn parse_class<'input>(input: &'input str, state: &mut ParseState, pos: uint)
     }
 }
 fn parse_classCharacterRange<'input>(input: &'input str,
-                                     state: &mut ParseState, pos: uint) ->
- ParseResult<CharSetCase> {
+                                     state: &mut ParseState, pos: uint)
+ -> ParseResult<CharSetCase> {
     {
         let start_pos = pos;
         {
@@ -3657,8 +3658,8 @@ fn parse_bracketDelimitedCharacter<'input>(input: &'input str,
 }
 fn parse_simpleBracketDelimitedCharacter<'input>(input: &'input str,
                                                  state: &mut ParseState,
-                                                 pos: uint) ->
- ParseResult<char> {
+                                                 pos: uint)
+ -> ParseResult<char> {
     {
         let start_pos = pos;
         {
@@ -3708,8 +3709,8 @@ fn parse_simpleBracketDelimitedCharacter<'input>(input: &'input str,
     }
 }
 fn parse_simpleEscapeSequence<'input>(input: &'input str,
-                                      state: &mut ParseState, pos: uint) ->
- ParseResult<char> {
+                                      state: &mut ParseState, pos: uint)
+ -> ParseResult<char> {
     {
         let start_pos = pos;
         {
@@ -3810,8 +3811,8 @@ fn parse_simpleEscapeSequence<'input>(input: &'input str,
     }
 }
 fn parse_zeroEscapeSequence<'input>(input: &'input str,
-                                    state: &mut ParseState, pos: uint) ->
- ParseResult<char> {
+                                    state: &mut ParseState, pos: uint)
+ -> ParseResult<char> {
     {
         let start_pos = pos;
         {
@@ -3846,8 +3847,8 @@ fn parse_zeroEscapeSequence<'input>(input: &'input str,
     }
 }
 fn parse_hex2EscapeSequence<'input>(input: &'input str,
-                                    state: &mut ParseState, pos: uint) ->
- ParseResult<char> {
+                                    state: &mut ParseState, pos: uint)
+ -> ParseResult<char> {
     {
         let start_pos = pos;
         {
@@ -3912,8 +3913,8 @@ fn parse_hex2EscapeSequence<'input>(input: &'input str,
     }
 }
 fn parse_hex4EscapeSequence<'input>(input: &'input str,
-                                    state: &mut ParseState, pos: uint) ->
- ParseResult<char> {
+                                    state: &mut ParseState, pos: uint)
+ -> ParseResult<char> {
     {
         let start_pos = pos;
         {
@@ -4009,8 +4010,8 @@ fn parse_hex4EscapeSequence<'input>(input: &'input str,
     }
 }
 fn parse_hex8EscapeSequence<'input>(input: &'input str,
-                                    state: &mut ParseState, pos: uint) ->
- ParseResult<char> {
+                                    state: &mut ParseState, pos: uint)
+ -> ParseResult<char> {
     {
         let start_pos = pos;
         {
@@ -4250,8 +4251,8 @@ fn parse_upperCaseLetter<'input>(input: &'input str, state: &mut ParseState,
         }
     } else { state.mark_failure(pos, "[A-Z]") }
 }
-fn parse___<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
- ParseResult<()> {
+fn parse___<'input>(input: &'input str, state: &mut ParseState, pos: uint)
+ -> ParseResult<()> {
     {
         let mut repeat_pos = pos;
         loop  {
@@ -4381,8 +4382,8 @@ fn parse_multiLineComment<'input>(input: &'input str, state: &mut ParseState,
         }
     }
 }
-fn parse_eol<'input>(input: &'input str, state: &mut ParseState, pos: uint) ->
- ParseResult<()> {
+fn parse_eol<'input>(input: &'input str, state: &mut ParseState, pos: uint)
+ -> ParseResult<()> {
     {
         let choice_res = slice_eq(input, state, pos, "\n");
         match choice_res {
