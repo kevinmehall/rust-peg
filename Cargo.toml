@@ -2,7 +2,12 @@
 
 name = "peg"
 version = "0.1.0"
-authors = [ "km@kevinmehall.net" ]
+authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
+license = "MIT"
+repository = "https://github.com/kevinmehall/rust-peg"
+description = """
+A parser generator built on the Parsing Expression Grammar (PEG) formalism.
+"""
 
 [[bin]]
 name = "peg"
