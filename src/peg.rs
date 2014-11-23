@@ -53,7 +53,8 @@ fn main() {
 		}
 
 		Err(msg) => {
-			(writeln!(&mut stderr() as &mut Writer, "Error parsing language specification: {}", msg)).unwrap();
+			let mut e = stderr();
+			(writeln!(&mut e, "Error parsing language specification: {}", msg)).unwrap();
 			os::set_exit_status(1);
 		}
 	}
