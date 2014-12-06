@@ -35,7 +35,7 @@ rust_type
   = "()" __
   / "[" rust_type "]" __
   / "&" ("'" identifier)? rust_type
-  / identifier "<" rust_type ++ (__ "," __) ">" __
+  / identifier "<" (("'" identifier "") / rust_type) ** (__ "," __) ">" __
   / identifier "::" rust_type
   / "(" rust_type ++ (__ "," __) ")" __
   / identifier ""

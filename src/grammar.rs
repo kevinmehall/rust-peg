@@ -1042,9 +1042,61 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                                                                     pos
                                                                                 };
                                                                             let step_res =
-                                                                                parse_rust_type(input,
-                                                                                                state,
-                                                                                                pos);
+                                                                                {
+                                                                                    let choice_res =
+                                                                                        {
+                                                                                            let seq_res =
+                                                                                                slice_eq(input,
+                                                                                                         state,
+                                                                                                         pos,
+                                                                                                         "\'");
+                                                                                            match seq_res
+                                                                                                {
+                                                                                                Matched(pos,
+                                                                                                        _)
+                                                                                                =>
+                                                                                                {
+                                                                                                    {
+                                                                                                        let seq_res =
+                                                                                                            parse_identifier(input,
+                                                                                                                             state,
+                                                                                                                             pos);
+                                                                                                        match seq_res
+                                                                                                            {
+                                                                                                            Matched(pos,
+                                                                                                                    _)
+                                                                                                            =>
+                                                                                                            {
+                                                                                                                slice_eq(input,
+                                                                                                                         state,
+                                                                                                                         pos,
+                                                                                                                         "")
+                                                                                                            }
+                                                                                                            Failed
+                                                                                                            =>
+                                                                                                            Failed,
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                                Failed
+                                                                                                =>
+                                                                                                Failed,
+                                                                                            }
+                                                                                        };
+                                                                                    match choice_res
+                                                                                        {
+                                                                                        Matched(pos,
+                                                                                                value)
+                                                                                        =>
+                                                                                        Matched(pos,
+                                                                                                value),
+                                                                                        Failed
+                                                                                        =>
+                                                                                        parse_rust_type(input,
+                                                                                                        state,
+                                                                                                        pos),
+                                                                                    }
+                                                                                };
                                                                             match step_res
                                                                                 {
                                                                                 Matched(newpos,
@@ -1064,15 +1116,8 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                                                                 }
                                                                             }
                                                                         }
-                                                                        if repeat_value.len()
-                                                                               >=
-                                                                               1u
-                                                                           {
-                                                                            Matched(repeat_pos,
-                                                                                    ())
-                                                                        } else {
-                                                                            Failed
-                                                                        }
+                                                                        Matched(repeat_pos,
+                                                                                ())
                                                                     };
                                                                 match seq_res
                                                                     {

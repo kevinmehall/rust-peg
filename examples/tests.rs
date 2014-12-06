@@ -59,6 +59,12 @@ fn test_borrowed() {
 }
 
 #[test]
+fn test_lifetime_parameter() {
+	assert_eq!(&*lifetime_parameter("abcd").unwrap(), "abcd");
+	assert_eq!(&*lifetime_parameter("COW").unwrap(), "cow");
+}
+
+#[test]
 fn test_block() {
 	assert_eq!(block("foo"), Ok("foo"));
 }
