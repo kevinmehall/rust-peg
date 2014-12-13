@@ -206,6 +206,7 @@ doubleQuotedCharacter -> char
   / simpleEscapeSequence
   / zeroEscapeSequence
   / hex2EscapeSequence
+  / unicodeEscapeSequence
   / hex4EscapeSequence
   / hex8EscapeSequence
   / eolEscapeSequence
@@ -221,6 +222,7 @@ singleQuotedCharacter -> char
   / simpleEscapeSequence
   / zeroEscapeSequence
   / hex2EscapeSequence
+  / unicodeEscapeSequence
   / hex4EscapeSequence
   / hex8EscapeSequence
   / eolEscapeSequence
@@ -249,6 +251,7 @@ bracketDelimitedCharacter -> char
   / simpleEscapeSequence
   / zeroEscapeSequence
   / hex2EscapeSequence
+  / unicodeEscapeSequence
   / hex4EscapeSequence
   / hex8EscapeSequence
   / eolEscapeSequence
@@ -277,11 +280,18 @@ hex2EscapeSequence -> char
       char::from_u32(value.unwrap() as u32).unwrap()
     }
 
+unicodeEscapeSequence -> char
+  = "\\u{" value:(hexDigit+ { from_str_radix::<int>(match_str, 16)}) "}" {
+      char::from_u32(value.unwrap() as u32).unwrap()
+    }
+
+// Deprecated in Rust, will be removed.
 hex4EscapeSequence -> char
   = "\\u" value:(hexDigit hexDigit hexDigit hexDigit { from_str_radix::<int>(match_str, 16)}) {
       char::from_u32(value.unwrap() as u32).unwrap()
     }
 
+// Deprecated in Rust, will be removed.
 hex8EscapeSequence -> char
   = "\\U" value:(hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit { from_str_radix::<int>(match_str, 16)}) {
       char::from_u32(value.unwrap() as u32).unwrap()
@@ -324,12 +334,12 @@ eol
   = "\n"
   / "\r\n"
   / "\r"
-  / "\u2028"
-  / "\u2029"
+  / "\u{2028}"
+  / "\u{2029}"
 
 eolChar
   = [\n\r\u2028\u2029]
 
 /* Modeled after ECMA-262, 5th ed., 7.2. */
 whitespace
-  = [ \t\u00A0\uFEFF\u1680\u180E\u2000-\u200A\u202F\u205F\u3000] // \v\f removed
+  = [ \t\u{00A0}\u{FEFF}\u{1680}\u{180E}\u{2000}-\u{200A}\u{202F}\u{205F}\u{3000}] // \v\f removed
