@@ -49,7 +49,8 @@ pub enum Expr {
 
 pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P<rustast::Mod> {
     let mut imports = grammar.imports.clone();
-    imports.push(RustUseGlob("self::ParseResult".to_string()));
+    imports.push(RustUseList("self::ParseResult".to_string(),
+                             vec!("Matched".to_string(), "Failed".to_string())));
 	let view_items = translate_view_items(ctxt, imports.as_slice());
 
 	let items = header_items(ctxt).into_iter()

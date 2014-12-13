@@ -3,7 +3,7 @@
 use translate::*;
 use std::num::from_str_radix;
 use std::char;
-use self::ParseResult::*;
+use self::ParseResult::{Matched, Failed};
 enum ParseResult<T> { Matched(uint, T), Failed, }
 struct ParseState {
     max_err_pos: uint,
@@ -3192,24 +3192,36 @@ fn parse_doubleQuotedCharacter<'input>(input: &'input str,
                                     Matched(pos, value),
                                     Failed => {
                                         let choice_res =
-                                            parse_hex4EscapeSequence(input,
-                                                                     state,
-                                                                     pos);
+                                            parse_unicodeEscapeSequence(input,
+                                                                        state,
+                                                                        pos);
                                         match choice_res {
                                             Matched(pos, value) =>
                                             Matched(pos, value),
                                             Failed => {
                                                 let choice_res =
-                                                    parse_hex8EscapeSequence(input,
+                                                    parse_hex4EscapeSequence(input,
                                                                              state,
                                                                              pos);
                                                 match choice_res {
                                                     Matched(pos, value) =>
                                                     Matched(pos, value),
-                                                    Failed =>
-                                                    parse_eolEscapeSequence(input,
-                                                                            state,
-                                                                            pos),
+                                                    Failed => {
+                                                        let choice_res =
+                                                            parse_hex8EscapeSequence(input,
+                                                                                     state,
+                                                                                     pos);
+                                                        match choice_res {
+                                                            Matched(pos,
+                                                                    value) =>
+                                                            Matched(pos,
+                                                                    value),
+                                                            Failed =>
+                                                            parse_eolEscapeSequence(input,
+                                                                                    state,
+                                                                                    pos),
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -3361,24 +3373,36 @@ fn parse_singleQuotedCharacter<'input>(input: &'input str,
                                     Matched(pos, value),
                                     Failed => {
                                         let choice_res =
-                                            parse_hex4EscapeSequence(input,
-                                                                     state,
-                                                                     pos);
+                                            parse_unicodeEscapeSequence(input,
+                                                                        state,
+                                                                        pos);
                                         match choice_res {
                                             Matched(pos, value) =>
                                             Matched(pos, value),
                                             Failed => {
                                                 let choice_res =
-                                                    parse_hex8EscapeSequence(input,
+                                                    parse_hex4EscapeSequence(input,
                                                                              state,
                                                                              pos);
                                                 match choice_res {
                                                     Matched(pos, value) =>
                                                     Matched(pos, value),
-                                                    Failed =>
-                                                    parse_eolEscapeSequence(input,
-                                                                            state,
-                                                                            pos),
+                                                    Failed => {
+                                                        let choice_res =
+                                                            parse_hex8EscapeSequence(input,
+                                                                                     state,
+                                                                                     pos);
+                                                        match choice_res {
+                                                            Matched(pos,
+                                                                    value) =>
+                                                            Matched(pos,
+                                                                    value),
+                                                            Failed =>
+                                                            parse_eolEscapeSequence(input,
+                                                                                    state,
+                                                                                    pos),
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -3670,24 +3694,36 @@ fn parse_bracketDelimitedCharacter<'input>(input: &'input str,
                                     Matched(pos, value),
                                     Failed => {
                                         let choice_res =
-                                            parse_hex4EscapeSequence(input,
-                                                                     state,
-                                                                     pos);
+                                            parse_unicodeEscapeSequence(input,
+                                                                        state,
+                                                                        pos);
                                         match choice_res {
                                             Matched(pos, value) =>
                                             Matched(pos, value),
                                             Failed => {
                                                 let choice_res =
-                                                    parse_hex8EscapeSequence(input,
+                                                    parse_hex4EscapeSequence(input,
                                                                              state,
                                                                              pos);
                                                 match choice_res {
                                                     Matched(pos, value) =>
                                                     Matched(pos, value),
-                                                    Failed =>
-                                                    parse_eolEscapeSequence(input,
-                                                                            state,
-                                                                            pos),
+                                                    Failed => {
+                                                        let choice_res =
+                                                            parse_hex8EscapeSequence(input,
+                                                                                     state,
+                                                                                     pos);
+                                                        match choice_res {
+                                                            Matched(pos,
+                                                                    value) =>
+                                                            Matched(pos,
+                                                                    value),
+                                                            Failed =>
+                                                            parse_eolEscapeSequence(input,
+                                                                                    state,
+                                                                                    pos),
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -3946,6 +3982,92 @@ fn parse_hex2EscapeSequence<'input>(input: &'input str,
                                                                    as
                                                                    u32).unwrap()
                                             })
+                                }
+                            }
+                            Failed => Failed,
+                        }
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_unicodeEscapeSequence<'input>(input: &'input str,
+                                       state: &mut ParseState, pos: uint)
+ -> ParseResult<char> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "\\u{");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let seq_res =
+                            {
+                                let start_pos = pos;
+                                {
+                                    let seq_res =
+                                        {
+                                            let mut repeat_pos = pos;
+                                            let mut repeat_value = vec!();
+                                            loop  {
+                                                let pos = repeat_pos;
+                                                let step_res =
+                                                    parse_hexDigit(input,
+                                                                   state,
+                                                                   pos);
+                                                match step_res {
+                                                    Matched(newpos, value) =>
+                                                    {
+                                                        repeat_pos = newpos;
+                                                        repeat_value.push(value);
+                                                    }
+                                                    Failed => { break ; }
+                                                }
+                                            }
+                                            if repeat_value.len() >= 1u {
+                                                Matched(repeat_pos, ())
+                                            } else { Failed }
+                                        };
+                                    match seq_res {
+                                        Matched(pos, _) => {
+                                            {
+                                                let match_str =
+                                                    input.slice(start_pos,
+                                                                pos);
+                                                Matched(pos,
+                                                        {
+                                                            from_str_radix::<int>(match_str,
+                                                                                  16)
+                                                        })
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
+                                }
+                            };
+                        match seq_res {
+                            Matched(pos, value) => {
+                                {
+                                    let seq_res =
+                                        slice_eq(input, state, pos, "}");
+                                    match seq_res {
+                                        Matched(pos, _) => {
+                                            {
+                                                let match_str =
+                                                    input.slice(start_pos,
+                                                                pos);
+                                                Matched(pos,
+                                                        {
+                                                            char::from_u32(value.unwrap()
+                                                                               as
+                                                                               u32).unwrap()
+                                                        })
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
                                 }
                             }
                             Failed => Failed,
