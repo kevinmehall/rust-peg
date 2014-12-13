@@ -3,7 +3,7 @@
 use translate::*;
 use std::num::from_str_radix;
 use std::char;
-use self::ParseResult::*;
+use self::ParseResult::{Matched, Failed};
 enum ParseResult<T> { Matched(uint, T), Failed, }
 struct ParseState {
     max_err_pos: uint,
