@@ -24,7 +24,7 @@ atom -> int
 
 number -> int
 	= [0-9]+ { from_str::<int>(match_str).unwrap() }
-"#)
+"#);
 
 fn main() {
 	assert_eq!(expression("1+1"), Ok(2));
