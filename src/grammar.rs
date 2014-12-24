@@ -4565,12 +4565,12 @@ fn parse_eol<'input>(input: &'input str, state: &mut ParseState, pos: uint)
                             Matched(pos, value) => Matched(pos, value),
                             Failed => {
                                 let choice_res =
-                                    slice_eq(input, state, pos, "\u2028");
+                                    slice_eq(input, state, pos, "\u{2028}");
                                 match choice_res {
                                     Matched(pos, value) =>
                                     Matched(pos, value),
                                     Failed =>
-                                    slice_eq(input, state, pos, "\u2029"),
+                                    slice_eq(input, state, pos, "\u{2029}"),
                                 }
                             }
                         }
@@ -4585,25 +4585,26 @@ fn parse_eolChar<'input>(input: &'input str, state: &mut ParseState,
     if input.len() > pos {
         let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
         match ch {
-            '\n' | '\r' | '\u2028' | '\u2029' => Matched(next, ()),
-            _ => state.mark_failure(pos, "[\n\r\u2028\u2029]"),
+            '\n' | '\r' | '\u{2028}' | '\u{2029}' => Matched(next, ()),
+            _ => state.mark_failure(pos, "[\n\r\u{2028}\u{2029}]"),
         }
-    } else { state.mark_failure(pos, "[\n\r\u2028\u2029]") }
+    } else { state.mark_failure(pos, "[\n\r\u{2028}\u{2029}]") }
 }
 fn parse_whitespace<'input>(input: &'input str, state: &mut ParseState,
                             pos: uint) -> ParseResult<()> {
     if input.len() > pos {
         let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
         match ch {
-            ' ' | '\t' | '\u00a0' | '\ufeff' | '\u1680' | '\u180e' | '\u2000'
-            ...'\u200a' | '\u202f' | '\u205f' | '\u3000' => Matched(next, ()),
+            ' ' | '\t' | '\u{a0}' | '\u{feff}' | '\u{1680}' | '\u{180e}' |
+            '\u{2000}' ...'\u{200a}' | '\u{202f}' | '\u{205f}' | '\u{3000}' =>
+            Matched(next, ()),
             _ =>
             state.mark_failure(pos,
-                               "[ \t\u00a0\ufeff\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]"),
+                               "[ \t\u{a0}\u{feff}\u{1680}\u{180e}\u{2000}-\u{200a}\u{202f}\u{205f}\u{3000}]"),
         }
     } else {
         state.mark_failure(pos,
-                           "[ \t\u00a0\ufeff\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]")
+                           "[ \t\u{a0}\u{feff}\u{1680}\u{180e}\u{2000}-\u{200a}\u{202f}\u{205f}\u{3000}]")
     }
 }
 pub fn grammar<'input>(input: &'input str) -> Result<Grammar, String> {
