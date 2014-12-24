@@ -4,6 +4,32 @@ This is a simple parser generator based on the [Parsing Expression Grammar](http
 
 ## Usage
 
+### As a syntax extension
+Add to your Cargo.toml:
+
+```
+[dependencies]
+peg = "~0.1.0"
+```
+
+Add to your crate root:
+```
+#![feature(phase)]
+#[phase(plugin)] extern crate peg_syntax_ext;
+```
+
+Use `peg_file! modname("mygrammarfile.rustpeg");` to include the grammar from an external file. The macro expands into a module called `modname` with functions corresponding to the `#[pub]` rules in your grammar.
+
+Or, use
+```
+peg! modname(r#"
+  // grammar rules here
+"#);`
+```
+
+to embed a short PEG grammar inline in your Rust source file. [Example](examples/test_arithmetic.rs).
+
+### As a standalone code generator
 Run `peg input_file.rustpeg` to compile a grammar and generate Rust code on stdout.
 
 ## Grammar Syntax
