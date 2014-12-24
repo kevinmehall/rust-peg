@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::borrow::ToOwned;
 use std::str::CowString;
 
 #[export]
@@ -10,14 +11,14 @@ options -> Option<()>
 	= "abc" v:"def"? {v}
 
 number -> int
-	= [0-9]+ { from_str::<int>(match_str).unwrap() }
+	= [0-9]+ { match_str.parse().unwrap() }
 
 #[export]
 list -> Vec<int>
 	= number ** ","
 
 digit -> int
-	= [0-9] { from_str::<int>(match_str).unwrap() }
+	= [0-9] { match_str.parse().unwrap() }
 
 #[export]
 repeat_n -> Vec<int>
@@ -46,7 +47,7 @@ borrowed -> &'input str
 #[export]
 lifetime_parameter -> CowString<'input>
 	= [a-z]+ { match_str.into_cow() }
-	/ "COW"  { "cow".into_string().into_cow() }
+	/ "COW"  { "cow".to_owned().into_cow() }
 
 #[export]
 block -> &'input str

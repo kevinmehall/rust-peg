@@ -23,7 +23,7 @@ atom -> int
 	/ "(" v:sum ")" { v }
 
 number -> int
-	= [0-9]+ { from_str::<int>(match_str).unwrap() }
+	= [0-9]+ { match_str.parse().unwrap() }
 "#);
 
 fn main() {

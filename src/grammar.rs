@@ -2877,9 +2877,7 @@ fn parse_integer<'input>(input: &'input str, state: &mut ParseState,
                                     let match_str =
                                         input.slice(start_pos, pos);
                                     Matched(pos,
-                                            {
-                                                from_str::<uint>(match_str).unwrap()
-                                            })
+                                            { match_str.parse().unwrap() })
                                 }
                             }
                             Failed => Failed,

@@ -163,7 +163,7 @@ rbrace    = "}"  __
 comma     = ","  __
 
 integer -> uint
-  = i:([0-9]+ { from_str::<uint>(match_str).unwrap() }) __ { i }
+  = i:([0-9]+ { match_str.parse().unwrap() }) __ { i }
 
 /*
  * Modeled after ECMA-262, 5th ed., 7.6, but much simplified:

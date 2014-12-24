@@ -1,3 +1,4 @@
+use std::borrow::ToOwned;
 use rustast;
 use rustast::DUMMY_SP;
 use rustast::AstBuilder;
@@ -220,7 +221,7 @@ fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
 }
 
 fn format_char_set(cases: &[CharSetCase]) -> String {
-	let mut r = "[".into_string();
+	let mut r = "[".to_owned();
 
 	for &CharSetCase{start, end} in cases.iter() {
 		r.push(start);
