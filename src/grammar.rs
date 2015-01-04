@@ -3147,7 +3147,7 @@ fn parse_doubleQuotedString<'input>(input: &'input str,
                                                                 pos);
                                                 Matched(pos,
                                                         {
-                                                            String::from_chars(s.as_slice())
+                                                            s.into_iter().collect()
                                                         })
                                             }
                                         }
@@ -3328,7 +3328,7 @@ fn parse_singleQuotedString<'input>(input: &'input str,
                                                                 pos);
                                                 Matched(pos,
                                                         {
-                                                            String::from_chars(s.as_slice())
+                                                            s.into_iter().collect()
                                                         })
                                             }
                                         }

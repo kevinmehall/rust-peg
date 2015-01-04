@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::borrow::ToOwned;
+use std::borrow::{IntoCow, ToOwned};
 use std::str::CowString;
 
 #[export]

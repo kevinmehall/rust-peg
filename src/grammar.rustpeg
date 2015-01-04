@@ -199,7 +199,7 @@ string -> String
   = string:(doubleQuotedString / singleQuotedString) __ { string }
 
 doubleQuotedString -> String
-  = '"' s:doubleQuotedCharacter* '"' { String::from_chars(s.as_slice()) }
+  = '"' s:doubleQuotedCharacter* '"' { s.into_iter().collect() }
 
 doubleQuotedCharacter -> char
   = simpleDoubleQuotedCharacter
@@ -215,7 +215,7 @@ simpleDoubleQuotedCharacter -> char
   = !('"' / "\\" / eolChar) . { match_str.char_at(0) }
 
 singleQuotedString -> String
-  = "'" s:singleQuotedCharacter* "'" { String::from_chars(s.as_slice()) }
+  = "'" s:singleQuotedCharacter* "'" { s.into_iter().collect() }
 
 singleQuotedCharacter -> char
   = simpleSingleQuotedCharacter

@@ -10,7 +10,7 @@ pub struct Grammar {
 	pub rules: Vec<Rule>,
 }
 
-#[deriving(Clone)]
+#[derive(Clone)]
 pub enum RustUse {
 	RustUseSimple(String),
 	RustUseGlob(String),
@@ -433,10 +433,10 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 
 		ActionExpr(ref exprs, ref code) => {
 			fn write_seq(ctxt: &rustast::ExtCtxt, exprs: &[TaggedExpr], code: &str) -> rustast::P<rustast::Expr> {
-				match exprs.head() {
-					Some(ref head) => {
-						let name = head.name.as_ref().map(|s| s.as_slice());
-						compile_match_and_then(ctxt, &*head.expr, name,
+				match exprs.first() {
+					Some(ref first) => {
+						let name = first.name.as_ref().map(|s| s.as_slice());
+						compile_match_and_then(ctxt, &*first.expr, name,
 							write_seq(ctxt, exprs.tail(), code)
 						)
 					}
