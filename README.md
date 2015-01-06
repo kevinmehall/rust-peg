@@ -9,7 +9,7 @@ Add to your Cargo.toml:
 
 ```
 [dependencies]
-peg = "~0.1.0"
+peg = "0.1.0"
 ```
 
 Add to your crate root:
