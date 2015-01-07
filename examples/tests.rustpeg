@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::borrow::{IntoCow, ToOwned};
-use std::str::CowString;
+use std::string::CowString;
 
 #[export]
 consonants
