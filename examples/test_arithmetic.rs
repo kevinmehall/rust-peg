@@ -1,7 +1,6 @@
-#![feature(phase)]
+#![feature(plugin)]
 
-#[phase(plugin)]
-extern crate peg_syntax_ext;
+#[plugin] extern crate peg_syntax_ext;
 
 use arithmetic::expression;
 

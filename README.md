@@ -14,8 +14,8 @@ peg = "0.1.0"
 
 Add to your crate root:
 ```
-#![feature(phase)]
-#[phase(plugin)] extern crate peg_syntax_ext;
+#![feature(plugin)]
+#[plugin] extern crate peg_syntax_ext;
 ```
 
 Use `peg_file! modname("mygrammarfile.rustpeg");` to include the grammar from an external file. The macro expands into a module called `modname` with functions corresponding to the `#[pub]` rules in your grammar.

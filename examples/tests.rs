@@ -1,4 +1,3 @@
-#![feature(globs)]
 use test_grammar::*;
 use std::collections::HashMap;
 mod test_grammar;

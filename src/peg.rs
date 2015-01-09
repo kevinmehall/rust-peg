@@ -1,4 +1,3 @@
-#![feature(globs)]
 #![feature(quote)]
 
 extern crate syntax;
