@@ -42,7 +42,7 @@ pub enum Expr {
 	SequenceExpr(Vec<Expr>),
 	ChoiceExpr(Vec<Expr>),
 	OptionalExpr(Box<Expr>),
-	Repeat(Box<Expr>, /*min*/ uint, /*max*/ Option<uint>, /*sep*/ Option<Box<Expr>>),
+	Repeat(Box<Expr>, /*min*/ usize, /*max*/ Option<usize>, /*sep*/ Option<Box<Expr>>),
 	PosAssertExpr(Box<Expr>),
 	NegAssertExpr(Box<Expr>),
 	ActionExpr(Vec<TaggedExpr>, String),
@@ -83,14 +83,14 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 
 	items.push(quote_item!(ctxt,
 		enum ParseResult<T> {
-			Matched(uint, T),
+			Matched(usize, T),
 			Failed,
 		}
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
 		struct ParseState {
-			max_err_pos: uint,
+			max_err_pos: usize,
 			expected: ::std::collections::HashSet<&'static str>,
 		}
 	).unwrap());
@@ -100,7 +100,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 			fn new() -> ParseState {
 				ParseState{ max_err_pos: 0, expected: ::std::collections::HashSet::new() }
 			}
-			fn mark_failure(&mut self, pos: uint, expected: &'static str) -> ParseResult<()> {
+			fn mark_failure(&mut self, pos: usize, expected: &'static str) -> ParseResult<()> {
 				if pos > self.max_err_pos {
 					self.max_err_pos = pos;
 					self.expected.clear();
@@ -116,12 +116,12 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
-		fn slice_eq(input: &str, state: &mut ParseState, pos: uint, m: &'static str) -> ParseResult<()> {
+		fn slice_eq(input: &str, state: &mut ParseState, pos: usize, m: &'static str) -> ParseResult<()> {
 			#![inline]
 			#![allow(dead_code)]
 
 	    let l = m.len();
-	    if input.len() >= pos + l && input.as_bytes().slice(pos, pos+l) == m.as_bytes() {
+	    if input.len() >= pos + l && &input.as_bytes()[pos..pos+l] == m.as_bytes() {
 	      Matched(pos+l, ())
 	    } else {
 	      state.mark_failure(pos, m)
@@ -130,7 +130,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
-		fn any_char(input: &str, state: &mut ParseState, pos: uint) -> ParseResult<()> {
+		fn any_char(input: &str, state: &mut ParseState, pos: usize) -> ParseResult<()> {
 			#![inline]
 			#![allow(dead_code)]
 
@@ -144,9 +144,9 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 
 
 	items.push(quote_item!(ctxt,
-		fn pos_to_line(input: &str, pos: uint) -> (uint, uint) {
+		fn pos_to_line(input: &str, pos: usize) -> (usize, usize) {
 			let mut remaining = pos;
-			let mut lineno: uint = 1;
+			let mut lineno: usize = 1;
 			for line in input.lines() {
 				let line_length = line.len() + 1;
 				if remaining < line_length {
@@ -168,7 +168,7 @@ fn compile_rule(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Ite
 	let ret = rustast::parse_type(rule.ret_type.as_slice());
 	let body = compile_expr(ctxt, &*rule.expr, rule.ret_type.as_slice() != "()");
 	(quote_item!(ctxt,
-		fn $name<'input>(input: &'input str, state: &mut ParseState, pos: uint) -> ParseResult<$ret> {
+		fn $name<'input>(input: &'input str, state: &mut ParseState, pos: usize) -> ParseResult<$ret> {
 			$body
 		}
 	)).unwrap()
@@ -189,8 +189,8 @@ fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rusta
 				}
 				_ => {}
 			}
-			let expected = state.expected.to_string().escape_default();
-			Err(format!("Error at {}: Expected {}", pos_to_line(input, state.max_err_pos), expected))
+			let (line, col) = pos_to_line(input, state.max_err_pos);
+			Err(format!("Error at Line {}:{}: Expected {:?}", line, col, state.expected))
 		}
 	)).unwrap()
 }
@@ -443,7 +443,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 					None => {
 						let code_block = rustast::parse_block(code);
 						quote_expr!(ctxt, {
-							let match_str = input.slice(start_pos, pos);
+							let match_str = &input[start_pos..pos];
 							Matched(pos, $code_block)
 						})
 					}

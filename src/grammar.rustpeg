@@ -162,7 +162,7 @@ lbrace    = "{"  __
 rbrace    = "}"  __
 comma     = ","  __
 
-integer -> uint
+integer -> usize
   = i:([0-9]+ { match_str.parse().unwrap() }) __ { i }
 
 /*
@@ -276,25 +276,25 @@ zeroEscapeSequence -> char
   = "\\0" !digit { 0u8 as char }
 
 hex2EscapeSequence -> char
-  = "\\x" value:(hexDigit hexDigit { from_str_radix::<int>(match_str, 16) }) {
-      char::from_u32(value.unwrap() as u32).unwrap()
+  = "\\x" value:(hexDigit hexDigit { from_str_radix::<u32>(match_str, 16) }) {
+      char::from_u32(value.unwrap()).unwrap()
     }
 
 unicodeEscapeSequence -> char
-  = "\\u{" value:(hexDigit+ { from_str_radix::<int>(match_str, 16)}) "}" {
-      char::from_u32(value.unwrap() as u32).unwrap()
+  = "\\u{" value:(hexDigit+ { from_str_radix::<u32>(match_str, 16)}) "}" {
+      char::from_u32(value.unwrap()).unwrap()
     }
 
 // Deprecated in Rust, will be removed.
 hex4EscapeSequence -> char
-  = "\\u" value:(hexDigit hexDigit hexDigit hexDigit { from_str_radix::<int>(match_str, 16)}) {
-      char::from_u32(value.unwrap() as u32).unwrap()
+  = "\\u" value:(hexDigit hexDigit hexDigit hexDigit { from_str_radix::<u32>(match_str, 16)}) {
+      char::from_u32(value.unwrap()).unwrap()
     }
 
 // Deprecated in Rust, will be removed.
 hex8EscapeSequence -> char
-  = "\\U" value:(hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit { from_str_radix::<int>(match_str, 16)}) {
-      char::from_u32(value.unwrap() as u32).unwrap()
+  = "\\U" value:(hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit { from_str_radix::<u32>(match_str, 16)}) {
+      char::from_u32(value.unwrap()).unwrap()
     }
 
 eolEscapeSequence -> char

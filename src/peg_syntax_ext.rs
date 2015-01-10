@@ -1,5 +1,6 @@
 #![crate_type = "dylib"]
-#![feature(plugin_registrar, quote)]
+#![feature(plugin_registrar, quote, box_syntax)]
+#![allow(unstable)]
 
 extern crate rustc;
 extern crate syntax;
@@ -80,6 +81,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
     let attr = cx.attribute(DUMMY_SP, cx.meta_list(DUMMY_SP, token::InternedString::new("allow"), vec!(
         cx.meta_word(DUMMY_SP, token::InternedString::new("non_snake_case")),
         cx.meta_word(DUMMY_SP, token::InternedString::new("unused")),
+        cx.meta_word(DUMMY_SP, token::InternedString::new("unstable")),
     )));
 
     MacItems::new(Some(cx.item_mod(sp, sp, ident, vec!(attr), ast.view_items.clone(), ast.items.clone())).into_iter())

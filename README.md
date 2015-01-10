@@ -69,7 +69,7 @@ name -> String
 
 ```
 number -> int
-  = [0-9]+ { from_str::<uint>(match_str).unwrap() }
+  = [0-9]+ { from_str::<u64>(match_str).unwrap() }
 ```
 
   * **start_pos** - the index into the string at which the match starts, inclusive

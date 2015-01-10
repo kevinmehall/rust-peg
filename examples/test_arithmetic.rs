@@ -1,4 +1,5 @@
 #![feature(plugin)]
+#![allow(unstable)]
 
 #[plugin] extern crate peg_syntax_ext;
 
@@ -6,22 +7,22 @@ use arithmetic::expression;
 
 peg! arithmetic(r#"
 #[pub]
-expression -> int
+expression -> i64
 	= sum
 
-sum -> int
+sum -> i64
 	= l:product "+" r:product { l+r }
 	/ product
 
-product -> int
+product -> i64
 	= l:atom "*" r:atom { l*r }
 	/ atom
 
-atom -> int
+atom -> i64
 	= number
 	/ "(" v:sum ")" { v }
 
-number -> int
+number -> i64
 	= [0-9]+ { match_str.parse().unwrap() }
 "#);
 

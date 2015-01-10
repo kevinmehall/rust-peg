@@ -10,30 +10,30 @@ consonants
 options -> Option<()>
 	= "abc" v:"def"? {v}
 
-number -> int
+number -> i64
 	= [0-9]+ { match_str.parse().unwrap() }
 
 #[export]
-list -> Vec<int>
+list -> Vec<i64>
 	= number ** ","
 
-digit -> int
+digit -> i64
 	= [0-9] { match_str.parse().unwrap() }
 
 #[export]
-repeat_n -> Vec<int>
+repeat_n -> Vec<i64>
 	= digit{4}
 
 #[export]
-repeat_min -> Vec<int>
+repeat_min -> Vec<i64>
 	= digit{2,}
 
 #[export]
-repeat_max -> Vec<int>
+repeat_max -> Vec<i64>
 	= digit{,2}
 
 #[export]
-repeat_min_max -> Vec<int>
+repeat_min_max -> Vec<i64>
 	= digit{2,3}
 
 #[export]
@@ -57,7 +57,7 @@ block -> &'input str
 	}
 
 #[export]
-keyvals -> HashMap<int, int>
+keyvals -> HashMap<i64, i64>
     = kvs:keyval ++ "\n" {
         let mut rv = HashMap::new();
         for &(k, v) in kvs.iter() {
@@ -66,5 +66,5 @@ keyvals -> HashMap<int, int>
         rv
     }
 
-keyval -> (int, int)
+keyval -> (i64, i64)
     = k:number ":" + v:number { (k, v) }
