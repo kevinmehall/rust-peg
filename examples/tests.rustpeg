@@ -39,6 +39,10 @@ repeat_min_max -> Vec<i64>
 #[export]
 boundaries -> String
 	= "foo" { match_str.to_string() }
+	
+#[export]
+case_insensitive -> String
+	= "foo"i { match_str.to_string() }
 
 #[export]
 borrowed -> &'input str

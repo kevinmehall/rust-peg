@@ -191,8 +191,8 @@ identifier -> String
  * vaguely).
  */
 literal -> Expr
-  = value:(doubleQuotedString / singleQuotedString) flags:"i"? __ {
-      LiteralExpr(value)
+  = value:(doubleQuotedString / singleQuotedString) case_insensitive:"i"? __ {
+      LiteralExpr(value,case_insensitive.is_some())
     }
 
 string -> String
