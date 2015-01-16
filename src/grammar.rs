@@ -34,6 +34,23 @@ fn slice_eq(input: &str, state: &mut ParseState, pos: usize, m: &'static str)
         Matched(pos + l, ())
     } else { state.mark_failure(pos, m) }
 }
+fn slice_eq_case_insensitive(input: &str, state: &mut ParseState, pos: usize,
+                             m: &'static str) -> ParseResult<()> {
+    #![inline]
+    #![allow(dead_code)]
+    let mut used = 0us;
+    let mut input_iter = input[pos..].chars();
+    for m_char in m.chars() {
+        let m_char_upper = m_char.to_uppercase();
+        used += m_char_upper.len_utf8();
+        let input_char_result = input_iter.next();
+        if input_char_result.is_none() ||
+               input_char_result.unwrap().to_uppercase() != m_char_upper {
+            return state.mark_failure(pos, m);
+        }
+    }
+    Matched(pos + used, ())
+}
 fn any_char(input: &str, state: &mut ParseState, pos: usize)
  -> ParseResult<()> {
     #![inline]
@@ -3014,7 +3031,7 @@ fn parse_literal<'input>(input: &'input str, state: &mut ParseState,
                                 Failed => { Matched(pos, None) }
                             };
                         match seq_res {
-                            Matched(pos, flags) => {
+                            Matched(pos, case_insensitive) => {
                                 {
                                     let seq_res = parse___(input, state, pos);
                                     match seq_res {
@@ -3024,7 +3041,8 @@ fn parse_literal<'input>(input: &'input str, state: &mut ParseState,
                                                     &input[start_pos..pos];
                                                 Matched(pos,
                                                         {
-                                                            LiteralExpr(value)
+                                                            LiteralExpr(value,
+                                                                        case_insensitive.is_some())
                                                         })
                                             }
                                         }

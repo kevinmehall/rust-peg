@@ -36,7 +36,7 @@ pub struct TaggedExpr {
 
 pub enum Expr {
 	AnyCharExpr,
-	LiteralExpr(String),
+	LiteralExpr(String,bool),
 	CharSetExpr(bool, Vec<CharSetCase>),
 	RuleExpr(String),
 	SequenceExpr(Vec<Expr>),
@@ -127,6 +127,31 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	      state.mark_failure(pos, m)
 	    }
 		}
+	).unwrap());
+	
+	items.push(quote_item!(ctxt,
+		fn slice_eq_case_insensitive(input: &str, state: &mut ParseState, pos: usize, m: &'static str) -> ParseResult<()> {
+			#![inline]
+			#![allow(dead_code)]
+			
+			let mut used = 0us;
+			let mut input_iter = input[pos..].chars();
+		
+			for m_char in m.chars() {
+				let m_char_upper = m_char.to_uppercase();
+				used += m_char_upper.len_utf8();
+			
+				let input_char_result = input_iter.next();
+			
+				if input_char_result.is_none() 
+					|| input_char_result.unwrap().to_uppercase() != m_char_upper {
+					return state.mark_failure(pos, m);
+				}
+			}
+		
+			Matched(pos+used, ())
+		}
+		
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
@@ -241,9 +266,14 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			quote_expr!(ctxt, any_char(input, state, pos))
 		}
 
-		LiteralExpr(ref s) => {
+		LiteralExpr(ref s, ref case_insensitive) => {
 			let sl = s.as_slice();
-			quote_expr!(ctxt, slice_eq(input, state, pos, $sl))
+			if *case_insensitive {
+				quote_expr!(ctxt, slice_eq_case_insensitive(input, state, pos, $sl))
+			}
+			else {
+				quote_expr!(ctxt, slice_eq(input, state, pos, $sl))
+			}
 		}
 
 		CharSetExpr(invert, ref cases) => {
