@@ -4,15 +4,14 @@ pub use syntax::ast;
 pub use syntax::ptr::P;
 pub use syntax::codemap::DUMMY_SP;
 pub use syntax::ext::base::ExtCtxt;
-pub use syntax::ast::{Mod, Item, Expr, ViewItem};
+pub use syntax::ast::{Mod, Item, Expr};
 pub use syntax::parse::token::str_to_ident;
 pub use syntax::ext::build::AstBuilder;
-pub use syntax::print::pprust::{expr_to_string, item_to_string, view_item_to_string};
+pub use syntax::print::pprust::{expr_to_string, item_to_string};
 
-pub fn module(view_items: Vec<ViewItem>, items: Vec<P<Item>>) -> P<Mod> {
+pub fn module(items: Vec<P<Item>>) -> P<Mod> {
 	P(Mod{
 		inner: DUMMY_SP,
-		view_items: view_items,
 		items: items,
 	})
 }

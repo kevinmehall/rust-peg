@@ -84,7 +84,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
         cx.meta_word(DUMMY_SP, token::InternedString::new("unstable")),
     )));
 
-    MacItems::new(Some(cx.item_mod(sp, sp, ident, vec!(attr), ast.view_items.clone(), ast.items.clone())).into_iter())
+    MacItems::new(Some(cx.item_mod(sp, sp, ident, vec!(attr), ast.items.clone())).into_iter())
 }
 
 fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {

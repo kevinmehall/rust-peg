@@ -52,30 +52,31 @@ pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P
     let mut imports = grammar.imports.clone();
     imports.push(RustUseList("self::ParseResult".to_string(),
                              vec!("Matched".to_string(), "Failed".to_string())));
-	let view_items = translate_view_items(ctxt, imports.as_slice());
+    let mut items = translate_view_items(ctxt, imports.as_slice());
 
-	let items = header_items(ctxt).into_iter()
-		.chain(grammar.rules.iter().map(|rule|{
-			compile_rule(ctxt, rule)
-		}))
-		.chain(grammar.rules.iter().filter(|rule| rule.exported).map(|rule| {
-			compile_rule_export(ctxt, rule)
-		}))
-		.collect::<Vec<_>>();
+    items.push_all(
+        header_items(ctxt).into_iter()
+	    .chain(grammar.rules.iter().map(|rule|{
+	        compile_rule(ctxt, rule)
+	    }))
+	    .chain(grammar.rules.iter().filter(|rule| rule.exported).map(|rule| {
+	        compile_rule_export(ctxt, rule)
+	    }))
+	    .collect::<Vec<_>>().as_slice());
 
-	rustast::module(view_items, items)
+    rustast::module(items)
 }
 
-pub fn translate_view_items(ctxt: &rustast::ExtCtxt, imports: &[RustUse]) -> Vec<rustast::ViewItem> {
+pub fn translate_view_items(ctxt: &rustast::ExtCtxt, imports: &[RustUse]) -> Vec<rustast::P<rustast::Item>> {
 	imports.iter().map(| i |{
 		match *i {
-			RustUseSimple(ref p) => ctxt.view_use_simple(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path(p.as_slice())),
-			RustUseGlob(ref p) => ctxt.view_use_glob(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(p.as_slice())),
-			RustUseList(ref p, ref v) => ctxt.view_use_list(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(p.as_slice()),
+			RustUseSimple(ref p) => ctxt.item_use_simple(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path(p.as_slice())),
+			RustUseGlob(ref p) => ctxt.item_use_glob(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(p.as_slice())),
+			RustUseList(ref p, ref v) => ctxt.item_use_list(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(p.as_slice()),
 				v.iter().map(|s| rustast::str_to_ident(s.as_slice())).collect::<Vec<_>>().as_slice()
 			),
 		}
-	}).collect()
+	}).collect::<Vec<_>>()
 }
 
 pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
@@ -128,30 +129,30 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	    }
 		}
 	).unwrap());
-	
+
 	items.push(quote_item!(ctxt,
 		fn slice_eq_case_insensitive(input: &str, state: &mut ParseState, pos: usize, m: &'static str) -> ParseResult<()> {
 			#![inline]
 			#![allow(dead_code)]
-			
+
 			let mut used = 0us;
 			let mut input_iter = input[pos..].chars();
-		
+
 			for m_char in m.chars() {
 				let m_char_upper = m_char.to_uppercase();
 				used += m_char_upper.len_utf8();
-			
+
 				let input_char_result = input_iter.next();
-			
-				if input_char_result.is_none() 
+
+				if input_char_result.is_none()
 					|| input_char_result.unwrap().to_uppercase() != m_char_upper {
 					return state.mark_failure(pos, m);
 				}
 			}
-		
+
 			Matched(pos+used, ())
 		}
-		
+
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
