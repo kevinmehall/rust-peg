@@ -4,8 +4,8 @@
 extern crate syntax;
 
 use std::str;
-use std::io::{stdin,stdout,stderr};
-use std::io::fs::File;
+use std::old_io::{stdin,stdout,stderr};
+use std::old_io::fs::File;
 use std::os;
 use translate::{compile_grammar};
 
