@@ -1,6 +1,5 @@
 #![crate_type = "dylib"]
-#![feature(plugin_registrar, quote, box_syntax)]
-#![allow(unstable)]
+#![feature(plugin_registrar, quote, box_syntax, core, collections, rustc_private, io, unicode, path)]
 
 extern crate rustc;
 extern crate syntax;
@@ -77,14 +76,13 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
 
     let ast = translate::compile_grammar(cx, &grammar_def);
 
-    // #![allow(non_snake_case_functions, unused_variable)]
-    let attr = cx.attribute(DUMMY_SP, cx.meta_list(DUMMY_SP, token::InternedString::new("allow"), vec!(
+    // #![allow(non_snake_case, unused)]
+    let allow = cx.attribute(DUMMY_SP, cx.meta_list(DUMMY_SP, token::InternedString::new("allow"), vec![
         cx.meta_word(DUMMY_SP, token::InternedString::new("non_snake_case")),
         cx.meta_word(DUMMY_SP, token::InternedString::new("unused")),
-        cx.meta_word(DUMMY_SP, token::InternedString::new("unstable")),
-    )));
+    ]));
 
-    MacItems::new(Some(cx.item_mod(sp, sp, ident, vec!(attr), ast.items.clone())).into_iter())
+    MacItems::new(Some(cx.item_mod(sp, sp, ident, vec![allow], ast.items.clone())).into_iter())
 }
 
 fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {

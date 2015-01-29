@@ -1,4 +1,4 @@
-#![allow(unstable)]
+#![feature(core, collections, unicode)]
 use test_grammar::*;
 use std::collections::HashMap;
 mod test_grammar;
