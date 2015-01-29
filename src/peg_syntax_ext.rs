@@ -12,7 +12,7 @@ use syntax::parse;
 use syntax::parse::token;
 use syntax::fold::Folder;
 use rustc::plugin::Registry;
-use std::io::fs::File;
+use std::old_io::fs::File;
 use std::str;
 
 use rustast::{AstBuilder, DUMMY_SP};
