@@ -1,4 +1,3 @@
-#![crate_type = "dylib"]
 #![feature(plugin_registrar, quote, box_syntax, core, collections, rustc_private, io, unicode, path)]
 
 extern crate rustc;
