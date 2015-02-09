@@ -35,6 +35,14 @@ Run `peg input_file.rustpeg` to compile a grammar and generate Rust code on stdo
 ## Grammar Syntax
 
 ```
+use super::name;
+```
+
+The grammar may begin with a series of `use` declarations, just like in Rust, which are included in
+the generated module. Since the grammar is in its own module, you must `use super::StructName;` to
+access a structure from the parent module.
+
+```
 #[pub]
 rule_name -> type
    = expression
@@ -79,5 +87,5 @@ number -> int
 ## To Do
 
   * Improve parse error reporting
-  * Caching
+  * Memoization
   * Support passing user-specified objects (e.g. filename for source mapping, string interner) into action code
