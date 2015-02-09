@@ -101,7 +101,7 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
                                     "expected only one string literal");
                         return None
                     }
-                    return Some(n.get().to_string())
+                    return Some(n.to_string())
                 }
                 _ => {}
             }
