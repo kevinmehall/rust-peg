@@ -1,4 +1,4 @@
-#![feature(plugin)]
+#![feature(plugin, core)]
 #[plugin] extern crate peg_syntax_ext;
 use arithmetic::expression;
 
