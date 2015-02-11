@@ -1,10 +1,10 @@
-#![feature(quote, box_syntax, core, collections, rustc_private, io, os, path, unicode)]
+#![feature(quote, box_syntax, core, collections, rustc_private, io, path, unicode, os, env)]
 extern crate syntax;
 
 use std::str;
 use std::old_io::{stdin,stdout,stderr};
 use std::old_io::fs::File;
-use std::os;
+use std::env;
 use translate::{compile_grammar};
 
 mod translate;
@@ -17,14 +17,14 @@ fn print_usage(prog: &str) {
 }
 
 fn main() {
-	let args = os::args();
+	let args = env::args().collect::<Vec<_>>();
+	let progname = args[0].to_str().unwrap();
 
-	let source_utf8 = match args.as_slice() {
-		[ref progname, ref arg] if arg.as_slice() == "-h" => return print_usage(progname.as_slice()),
-		[_, ref fname] => File::open(&Path::new(fname.as_slice())).read_to_end().unwrap(),
-		[_] => stdin().read_to_end().unwrap(),
-		[ref progname, ..] => return print_usage(progname.as_slice()),
-		_ => panic!("No program name argument")
+	let source_utf8 = match &args[1..] {
+		[ref arg] if arg.to_str() == Some("-h") => return print_usage(progname),
+		[ref fname] => File::open(&Path::new(fname.to_str().unwrap())).read_to_end().unwrap(),
+		[] => stdin().read_to_end().unwrap(),
+		_ => return print_usage(progname),
 	};
 
 	let source = str::from_utf8(source_utf8.as_slice()).unwrap();
@@ -49,7 +49,7 @@ fn main() {
 		Err(msg) => {
 			let mut e = stderr();
 			(writeln!(&mut e, "Error parsing language specification: {}", msg)).unwrap();
-			os::set_exit_status(1);
+			env::set_exit_status(1);
 		}
 	}
 }
