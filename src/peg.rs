@@ -1,10 +1,12 @@
-#![feature(quote, box_syntax, core, collections, rustc_private, io, os, path, unicode)]
+#![feature(quote, box_syntax, core, collections, rustc_private, env, io, os, path, unicode)]
 extern crate syntax;
 
+use std::env;
+use std::iter::FromIterator;
+use std::ffi::OsString;
 use std::str;
 use std::old_io::{stdin,stdout,stderr};
 use std::old_io::fs::File;
-use std::os;
 use translate::{compile_grammar};
 
 mod translate;
@@ -17,7 +19,9 @@ fn print_usage(prog: &str) {
 }
 
 fn main() {
-	let args = os::args();
+        let args_vec: Vec<OsString> = FromIterator::from_iter(env::args());
+        let args: Vec<String> = args_vec.iter()
+            .map(|s| s.clone().into_string().unwrap()).collect();
 
 	let source_utf8 = match args.as_slice() {
 		[ref progname, ref arg] if arg.as_slice() == "-h" => return print_usage(progname.as_slice()),
@@ -49,7 +53,7 @@ fn main() {
 		Err(msg) => {
 			let mut e = stderr();
 			(writeln!(&mut e, "Error parsing language specification: {}", msg)).unwrap();
-			os::set_exit_status(1);
+			env::set_exit_status(1);
 		}
 	}
 }
