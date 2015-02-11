@@ -1,5 +1,5 @@
 #![feature(plugin, core)]
-#[plugin] extern crate peg_syntax_ext;
+#![plugin(peg_syntax_ext)]
 use arithmetic::expression;
 
 peg! arithmetic(r#"
