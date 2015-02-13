@@ -1,4 +1,4 @@
-#![feature(quote, box_syntax, core, collections, rustc_private, io, path, unicode, os, env)]
+#![feature(quote, box_syntax, core, collections, rustc_private, io, path, unicode, os, env, box_patterns)]
 extern crate syntax;
 
 use std::str;
@@ -17,7 +17,7 @@ fn print_usage(prog: &str) {
 }
 
 fn main() {
-	let args = env::args().collect::<Vec<_>>();
+	let args = env::args_os().collect::<Vec<_>>();
 	let progname = args[0].to_str().unwrap();
 
 	let source_utf8 = match &args[1..] {
