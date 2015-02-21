@@ -135,7 +135,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 			#![inline]
 			#![allow(dead_code)]
 
-			let mut used = 0us;
+			let mut used = 0usize;
 			let mut input_iter = input[pos..].chars();
 
 			for m_char in m.chars() {

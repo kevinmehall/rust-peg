@@ -38,7 +38,7 @@ fn slice_eq_case_insensitive(input: &str, state: &mut ParseState, pos: usize,
                              m: &'static str) -> ParseResult<()> {
     #![inline]
     #![allow(dead_code)]
-    let mut used = 0us;
+    let mut used = 0usize;
     let mut input_iter = input[pos..].chars();
     for m_char in m.chars() {
         let m_char_upper = m_char.to_uppercase();
@@ -614,7 +614,7 @@ fn parse_rust_use<'input>(input: &'input str, state: &mut ParseState,
                                                                                                                                                 }
                                                                                                                                                 if repeat_value.len()
                                                                                                                                                        >=
-                                                                                                                                                       1us
+                                                                                                                                                       1usize
                                                                                                                                                    {
                                                                                                                                                     Matched(repeat_pos,
                                                                                                                                                             repeat_value)
@@ -854,7 +854,7 @@ fn parse_rust_path<'input>(input: &'input str, state: &mut ParseState,
                             Failed => { break ; }
                         }
                     }
-                    if repeat_value.len() >= 1us {
+                    if repeat_value.len() >= 1usize {
                         Matched(repeat_pos, ())
                     } else { Failed }
                 };
@@ -1312,7 +1312,7 @@ fn parse_rust_type<'input>(input: &'input str, state: &mut ParseState,
                                                                             }
                                                                             if repeat_value.len()
                                                                                    >=
-                                                                                   1us
+                                                                                   1usize
                                                                                {
                                                                                 Matched(repeat_pos,
                                                                                         ())
@@ -2618,7 +2618,7 @@ fn parse_nonBraceCharacters<'input>(input: &'input str,
                 Failed => { break ; }
             }
         }
-        if repeat_value.len() >= 1us {
+        if repeat_value.len() >= 1usize {
             Matched(repeat_pos, ())
         } else { Failed }
     }
@@ -2861,7 +2861,7 @@ fn parse_integer<'input>(input: &'input str, state: &mut ParseState,
                                         Failed => { break ; }
                                     }
                                 }
-                                if repeat_value.len() >= 1us {
+                                if repeat_value.len() >= 1usize {
                                     Matched(repeat_pos, ())
                                 } else { Failed }
                             };
@@ -4002,7 +4002,7 @@ fn parse_unicodeEscapeSequence<'input>(input: &'input str,
                                                     Failed => { break ; }
                                                 }
                                             }
-                                            if repeat_value.len() >= 1us {
+                                            if repeat_value.len() >= 1usize {
                                                 Matched(repeat_pos, ())
                                             } else { Failed }
                                         };

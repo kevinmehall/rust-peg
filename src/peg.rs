@@ -1,4 +1,4 @@
-#![feature(quote, box_syntax, core, collections, rustc_private, io, path, unicode, os, env, box_patterns)]
+#![feature(quote, box_syntax, core, collections, rustc_private, old_io, old_path, unicode, os, env, box_patterns)]
 extern crate syntax;
 
 use std::str;
