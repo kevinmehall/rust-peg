@@ -25,7 +25,7 @@ pub fn parse_path(e: &str) -> ast::Path {
 }
 
 pub fn parse_path_vec(s: &str) -> Vec<ast::Ident> {
-	s.split_str("::").map(|i| str_to_ident(i)).collect()
+	s.split("::").map(|i| str_to_ident(i)).collect()
 }
 
 pub fn parse_block(e: &str) -> P<ast::Block> {
