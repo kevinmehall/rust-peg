@@ -109,23 +109,15 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	items.push(quote_item!(ctxt,
 		impl ::std::fmt::Display for ParseError {
 			fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
-				fn quote_expect(s: &'static str) -> &'static str {
-					match s {
-						"\n" => "\\n",
-						"\t" => "\\t",
-						_ => s,
-					}
-				}
-
 				try!(write!(fmt, "error at {}:{}: expected ", self.line, self.column));
 				if self.expected.len() == 1 {
-					try!(write!(fmt, "`{}`", quote_expect(self.expected.iter().next().unwrap())));
+					try!(write!(fmt, "`{}`", self.expected.iter().next().unwrap().escape_default()));
 				} else {
 					let mut iter = self.expected.iter();
 
-					try!(write!(fmt, "one of `{}`", quote_expect(iter.next().unwrap())));
+					try!(write!(fmt, "one of `{}`", iter.next().unwrap().escape_default()));
 					for elem in iter {
-						try!(write!(fmt, ", `{}`", quote_expect(elem)));
+						try!(write!(fmt, ", `{}`", elem.escape_default()));
 					}
 				}
 
