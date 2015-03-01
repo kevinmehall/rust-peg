@@ -97,6 +97,44 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
+		#[derive(PartialEq, Eq, Debug)]
+		struct ParseError {
+			pub line: usize,
+			pub column: usize,
+			pub offset: usize,
+			pub expected: ::std::collections::HashSet<&'static str>,
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
+		impl ::std::fmt::Display for ParseError {
+			fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
+				fn quote_expect(s: &'static str) -> &'static str {
+					match s {
+						"\n" => "\\n",
+						"\t" => "\\t",
+						_ => s,
+					}
+				}
+
+				try!(write!(fmt, "error at {}:{}: expected ", self.line, self.column));
+				if self.expected.len() == 1 {
+					try!(write!(fmt, "`{}`", quote_expect(self.expected.iter().next().unwrap())));
+				} else {
+					let mut iter = self.expected.iter();
+
+					try!(write!(fmt, "one of `{}`", quote_expect(iter.next().unwrap())));
+					for elem in iter {
+						try!(write!(fmt, ", `{}`", quote_expect(elem)));
+					}
+				}
+
+				Ok(())
+			}
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
 		impl ParseState {
 			fn new() -> ParseState {
 				ParseState{ max_err_pos: 0, expected: ::std::collections::HashSet::new() }
@@ -205,7 +243,7 @@ fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rusta
 	let ret = rustast::parse_type(rule.ret_type.as_slice());
 	let parse_fn = rustast::str_to_ident(format!("parse_{}", rule.name).as_slice());
 	(quote_item!(ctxt,
-		pub fn $name<'input>(input: &'input str) -> Result<$ret, String> {
+		pub fn $name<'input>(input: &'input str) -> Result<$ret, ParseError> {
 			let mut state = ParseState::new();
 			match $parse_fn(input, &mut state, 0) {
 				Matched(pos, value) => {
@@ -216,7 +254,13 @@ fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rusta
 				_ => {}
 			}
 			let (line, col) = pos_to_line(input, state.max_err_pos);
-			Err(format!("Error at Line {}:{}: Expected {:?}", line, col, state.expected))
+
+			Err(ParseError {
+				line: line,
+				column: col,
+				offset: state.max_err_pos,
+				expected: state.expected,
+			})
 		}
 	)).unwrap()
 }

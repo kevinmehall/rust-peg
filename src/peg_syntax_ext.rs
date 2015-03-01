@@ -69,7 +69,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
     let grammar_def = match grammar_def {
       Ok(grammar_def) => grammar_def,
       Err(msg) => {
-        cx.span_err(sp, msg.as_slice());
+        cx.span_err(sp, format!("{}", msg).as_slice());
         return DummyResult::any(sp)
       }
     };

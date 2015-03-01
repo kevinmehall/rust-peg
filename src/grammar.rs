@@ -9,6 +9,38 @@ struct ParseState {
     max_err_pos: usize,
     expected: ::std::collections::HashSet<&'static str>,
 }
+#[derive(PartialEq, Eq, Debug)]
+struct ParseError {
+    pub line: usize,
+    pub column: usize,
+    pub offset: usize,
+    pub expected: ::std::collections::HashSet<&'static str>,
+}
+impl ::std::fmt::Display for ParseError {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter)
+     -> ::std::result::Result<(), ::std::fmt::Error> {
+        fn quote_expect(s: &'static str) -> &'static str {
+            match s { "\n" => "\\n", "\t" => "\\t", _ => s, }
+        }
+        try!(write ! (
+             fmt , "error at {}:{}: expected " , self . line , self . column
+             ));
+        if self.expected.len() == 1 {
+            try!(write ! (
+                 fmt , "`{}`" , quote_expect (
+                 self . expected . iter (  ) . next (  ) . unwrap (  ) ) ));
+        } else {
+            let mut iter = self.expected.iter();
+            try!(write ! (
+                 fmt , "one of `{}`" , quote_expect (
+                 iter . next (  ) . unwrap (  ) ) ));
+            for elem in iter {
+                try!(write ! ( fmt , ", `{}`" , quote_expect ( elem ) ));
+            }
+        }
+        Ok(())
+    }
+}
 impl ParseState {
     fn new() -> ParseState {
         ParseState{max_err_pos: 0,
@@ -4570,13 +4602,15 @@ fn parse_whitespace<'input>(input: &'input str, state: &mut ParseState,
                            "[ \t\u{a0}\u{feff}\u{1680}\u{180e}\u{2000}-\u{200a}\u{202f}\u{205f}\u{3000}]")
     }
 }
-pub fn grammar<'input>(input: &'input str) -> Result<Grammar, String> {
+pub fn grammar<'input>(input: &'input str) -> Result<Grammar, ParseError> {
     let mut state = ParseState::new();
     match parse_grammar(input, &mut state, 0) {
         Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
         _ => { }
     }
     let (line, col) = pos_to_line(input, state.max_err_pos);
-    Err(format!("Error at Line {}:{}: Expected {:?}" , line , col , state .
-                expected))
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
 }
