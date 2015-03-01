@@ -5,10 +5,11 @@ extern crate syntax;
 
 use syntax::ast;
 use syntax::codemap;
-use syntax::ext::base::{ExtCtxt, MacResult, MacItems, DummyResult};
+use syntax::ext::base::{ExtCtxt, MacResult, MacEager, DummyResult};
 use syntax::parse;
 use syntax::parse::token;
 use syntax::fold::Folder;
+use syntax::util::small_vector::SmallVector;
 use rustc::plugin::Registry;
 use std::old_io::fs::File;
 use std::str;
@@ -81,7 +82,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
         cx.meta_word(DUMMY_SP, token::InternedString::new("unused")),
     ]));
 
-    MacItems::new(Some(cx.item_mod(sp, sp, ident, vec![allow], ast.items.clone())).into_iter())
+    MacEager::items(SmallVector::one(cx.item_mod(sp, sp, ident, vec![allow], ast.items.clone())))
 }
 
 fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
