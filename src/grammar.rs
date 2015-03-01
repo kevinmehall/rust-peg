@@ -10,7 +10,7 @@ struct ParseState {
     expected: ::std::collections::HashSet<&'static str>,
 }
 #[derive(PartialEq, Eq, Debug)]
-struct ParseError {
+pub struct ParseError {
     pub line: usize,
     pub column: usize,
     pub offset: usize,
