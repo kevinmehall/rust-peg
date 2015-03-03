@@ -105,7 +105,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 			pub expected: ::std::collections::HashSet<&'static str>,
 		}
 	).unwrap());
-	
+
 	items.push(quote_item!(ctxt,
 		pub type ParseResult<T> = Result<T, ParseError>;
 	).unwrap());
@@ -126,6 +126,14 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 				}
 
 				Ok(())
+			}
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
+		impl ::std::error::Error for ParseError {
+			fn description(&self) -> &str {
+				"parse error"
 			}
 		}
 	).unwrap());

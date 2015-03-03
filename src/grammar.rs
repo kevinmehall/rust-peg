@@ -39,6 +39,9 @@ impl ::std::fmt::Display for ParseError {
         Ok(())
     }
 }
+impl ::std::error::Error for ParseError {
+    fn description(&self) -> &str { "parse error" }
+}
 impl ParseState {
     fn new() -> ParseState {
         ParseState{max_err_pos: 0,
