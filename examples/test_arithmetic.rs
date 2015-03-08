@@ -1,4 +1,4 @@
-#![feature(plugin, core)]
+#![feature(plugin, core, unicode, collections)]
 #![plugin(peg_syntax_ext)]
 use arithmetic::expression;
 

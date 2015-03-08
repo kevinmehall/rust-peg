@@ -1,4 +1,4 @@
-#![feature(plugin_registrar, quote, box_syntax, core, collections, rustc_private, unicode, box_patterns, old_path, old_io)]
+#![feature(plugin_registrar, quote, box_syntax, core, collections, rustc_private, unicode, box_patterns, old_path, io)]
 
 extern crate rustc;
 extern crate syntax;
@@ -11,8 +11,8 @@ use syntax::parse::token;
 use syntax::fold::Folder;
 use syntax::util::small_vector::SmallVector;
 use rustc::plugin::Registry;
-use std::old_io::fs::File;
-use std::str;
+use std::io::Read;
+use std::fs::File;
 
 use rustast::{AstBuilder, DUMMY_SP};
 
@@ -48,19 +48,15 @@ fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident
 
     let path = Path::new(cx.codemap().span_to_filename(sp)).dir_path().join(fname);
 
-    let source_utf8 = match File::open(&path).read_to_end() {
-      Ok(source_utf8) => source_utf8,
-      Err(e) => {
+    let mut source = String::new();
+    if let Err(e) = File::open(&path).map(|mut f| f.read_to_string(&mut source)) {
         cx.span_err(sp, e.to_string().as_slice());
-        return DummyResult::any(sp)
-      }
-    };
-
-    let source = str::from_utf8(source_utf8.as_slice()).unwrap();
+        return DummyResult::any(sp);
+    }
 
     cx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
 
-    expand_peg(cx, sp, ident, source.as_slice())
+    expand_peg(cx, sp, ident, &source)
 }
 
 fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &str) -> Box<MacResult + 'static> {
