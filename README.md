@@ -27,7 +27,7 @@ peg! modname(r#"
 "#);`
 ```
 
-to embed a short PEG grammar inline in your Rust source file. [Example](examples/test_arithmetic.rs).
+to embed a short PEG grammar inline in your Rust source file. [Example](tests/test_arithmetic.rs).
 
 ### As a standalone code generator
 Run `peg input_file.rustpeg` to compile a grammar and generate Rust code on stdout.

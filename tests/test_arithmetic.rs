@@ -23,6 +23,7 @@ number -> i64
 	= [0-9]+ { match_str.parse().unwrap() }
 "#);
 
+#[test]
 fn main() {
 	assert_eq!(expression("1+1"), Ok(2));
 	assert_eq!(expression("5*5"), Ok(25));
@@ -32,5 +33,4 @@ fn main() {
 	assert!(expression("(22+)+1").is_err());
 	assert!(expression("1++1").is_err());
 	assert!(expression("3)+1").is_err());
-	println!("Ok");
 }

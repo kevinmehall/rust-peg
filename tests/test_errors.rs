@@ -1,4 +1,4 @@
-#![feature(core, plugin)]
+#![feature(plugin, core, unicode, collections)]
 #![plugin(peg_syntax_ext)]
 
 use parser::parse;
@@ -10,7 +10,8 @@ parse -> usize
     = v:( "a" / "\n" )*   { v.len() }
 "#);
 
-fn main() {
+#[test]
+fn test_errors() {
     assert_eq!(parse(r#"
 aaaa
 aaaaaa
