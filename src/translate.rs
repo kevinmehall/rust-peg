@@ -50,7 +50,7 @@ pub enum Expr {
 
 pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P<rustast::Mod> {
     let mut imports = grammar.imports.clone();
-    imports.push(RustUseList("self::ParseResult".to_string(),
+    imports.push(RustUseList("self::RuleResult".to_string(),
                              vec!("Matched".to_string(), "Failed".to_string())));
     let mut items = translate_view_items(ctxt, imports.as_slice());
 
@@ -83,7 +83,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	let mut items = Vec::new();
 
 	items.push(quote_item!(ctxt,
-		enum ParseResult<T> {
+		enum RuleResult<T> {
 			Matched(usize, T),
 			Failed,
 		}
@@ -97,11 +97,53 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
+		#[derive(PartialEq, Eq, Debug)]
+		pub struct ParseError {
+			pub line: usize,
+			pub column: usize,
+			pub offset: usize,
+			pub expected: ::std::collections::HashSet<&'static str>,
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
+		pub type ParseResult<T> = Result<T, ParseError>;
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
+		impl ::std::fmt::Display for ParseError {
+			fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
+				try!(write!(fmt, "error at {}:{}: expected ", self.line, self.column));
+				if self.expected.len() == 1 {
+					try!(write!(fmt, "`{}`", self.expected.iter().next().unwrap().escape_default()));
+				} else {
+					let mut iter = self.expected.iter();
+
+					try!(write!(fmt, "one of `{}`", iter.next().unwrap().escape_default()));
+					for elem in iter {
+						try!(write!(fmt, ", `{}`", elem.escape_default()));
+					}
+				}
+
+				Ok(())
+			}
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
+		impl ::std::error::Error for ParseError {
+			fn description(&self) -> &str {
+				"parse error"
+			}
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
 		impl ParseState {
 			fn new() -> ParseState {
 				ParseState{ max_err_pos: 0, expected: ::std::collections::HashSet::new() }
 			}
-			fn mark_failure(&mut self, pos: usize, expected: &'static str) -> ParseResult<()> {
+			fn mark_failure(&mut self, pos: usize, expected: &'static str) -> RuleResult<()> {
 				if pos > self.max_err_pos {
 					self.max_err_pos = pos;
 					self.expected.clear();
@@ -117,7 +159,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
-		fn slice_eq(input: &str, state: &mut ParseState, pos: usize, m: &'static str) -> ParseResult<()> {
+		fn slice_eq(input: &str, state: &mut ParseState, pos: usize, m: &'static str) -> RuleResult<()> {
 			#![inline]
 			#![allow(dead_code)]
 
@@ -131,7 +173,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
-		fn slice_eq_case_insensitive(input: &str, state: &mut ParseState, pos: usize, m: &'static str) -> ParseResult<()> {
+		fn slice_eq_case_insensitive(input: &str, state: &mut ParseState, pos: usize, m: &'static str) -> RuleResult<()> {
 			#![inline]
 			#![allow(dead_code)]
 
@@ -156,7 +198,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
-		fn any_char(input: &str, state: &mut ParseState, pos: usize) -> ParseResult<()> {
+		fn any_char(input: &str, state: &mut ParseState, pos: usize) -> RuleResult<()> {
 			#![inline]
 			#![allow(dead_code)]
 
@@ -194,7 +236,7 @@ fn compile_rule(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Ite
 	let ret = rustast::parse_type(rule.ret_type.as_slice());
 	let body = compile_expr(ctxt, &*rule.expr, rule.ret_type.as_slice() != "()");
 	(quote_item!(ctxt,
-		fn $name<'input>(input: &'input str, state: &mut ParseState, pos: usize) -> ParseResult<$ret> {
+		fn $name<'input>(input: &'input str, state: &mut ParseState, pos: usize) -> RuleResult<$ret> {
 			$body
 		}
 	)).unwrap()
@@ -205,7 +247,7 @@ fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rusta
 	let ret = rustast::parse_type(rule.ret_type.as_slice());
 	let parse_fn = rustast::str_to_ident(format!("parse_{}", rule.name).as_slice());
 	(quote_item!(ctxt,
-		pub fn $name<'input>(input: &'input str) -> Result<$ret, String> {
+		pub fn $name<'input>(input: &'input str) -> ParseResult<$ret> {
 			let mut state = ParseState::new();
 			match $parse_fn(input, &mut state, 0) {
 				Matched(pos, value) => {
@@ -216,7 +258,13 @@ fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rusta
 				_ => {}
 			}
 			let (line, col) = pos_to_line(input, state.max_err_pos);
-			Err(format!("Error at Line {}:{}: Expected {:?}", line, col, state.expected))
+
+			Err(ParseError {
+				line: line,
+				column: col,
+				offset: state.max_err_pos,
+				expected: state.expected,
+			})
 		}
 	)).unwrap()
 }

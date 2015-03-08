@@ -20,3 +20,7 @@ name = "peg_syntax_ext"
 [[bin]]
 name = "test_arithmetic"
 path = "examples/test_arithmetic.rs"
+
+[[bin]]
+name = "test_errors"
+path = "examples/test_errors.rs"
