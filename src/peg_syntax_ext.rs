@@ -24,11 +24,11 @@ mod rustast;
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_syntax_extension(
             token::intern("peg"),
-            syntax::ext::base::IdentTT(box expand_peg_str, None));
+            syntax::ext::base::IdentTT(box expand_peg_str, None, false));
 
     reg.register_syntax_extension(
             token::intern("peg_file"),
-            syntax::ext::base::IdentTT(box expand_peg_file, None));
+            syntax::ext::base::IdentTT(box expand_peg_file, None, false));
 }
 
 fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult + 's> {

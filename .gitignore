@@ -1,7 +1,5 @@
 *~
 target
-peg
-
 Cargo.lock
 
 src/grammar_new.rs
@@ -10,4 +8,3 @@ src/grammar.rs
 
 examples/arithmetic.rs
 examples/test_grammar.rs
-

@@ -16,6 +16,7 @@ pub fn with_fake_extctxt<T, F: Fn(&ExtCtxt) -> T>(f: F) -> T {
       name: "".to_string(),
       format: syntax::codemap::MacroBang,
       span: None,
+      allow_internal_unstable: false,
     }
   });
 
