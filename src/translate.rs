@@ -50,6 +50,7 @@ pub enum Expr {
 
 pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P<rustast::Mod> {
     let mut imports = grammar.imports.clone();
+    imports.push(RustUseSimple("std::ascii::AsciiExt".to_string()));
     imports.push(RustUseList("self::RuleResult".to_string(),
                              vec!("Matched".to_string(), "Failed".to_string())));
     let mut items = translate_view_items(ctxt, imports.as_slice());
@@ -181,13 +182,13 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 			let mut input_iter = input[pos..].chars();
 
 			for m_char in m.chars() {
-				let m_char_upper = m_char.to_uppercase();
+				let m_char_upper = m_char.to_ascii_uppercase();
 				used += m_char_upper.len_utf8();
 
 				let input_char_result = input_iter.next();
 
 				if input_char_result.is_none()
-					|| input_char_result.unwrap().to_uppercase() != m_char_upper {
+					|| input_char_result.unwrap().to_ascii_uppercase() != m_char_upper {
 					return state.mark_failure(pos, m);
 				}
 			}
