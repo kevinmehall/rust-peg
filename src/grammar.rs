@@ -3,6 +3,7 @@
 use translate::*;
 use std::num::from_str_radix;
 use std::char;
+use std::ascii::AsciiExt;
 use self::RuleResult::{Matched, Failed};
 enum RuleResult<T> { Matched(usize, T), Failed, }
 struct ParseState {
@@ -74,11 +75,12 @@ fn slice_eq_case_insensitive(input: &str, state: &mut ParseState, pos: usize,
     let mut used = 0usize;
     let mut input_iter = input[pos..].chars();
     for m_char in m.chars() {
-        let m_char_upper = m_char.to_uppercase();
+        let m_char_upper = m_char.to_ascii_uppercase();
         used += m_char_upper.len_utf8();
         let input_char_result = input_iter.next();
         if input_char_result.is_none() ||
-               input_char_result.unwrap().to_uppercase() != m_char_upper {
+               input_char_result.unwrap().to_ascii_uppercase() != m_char_upper
+           {
             return state.mark_failure(pos, m);
         }
     }
