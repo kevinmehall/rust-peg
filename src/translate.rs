@@ -178,16 +178,14 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 			#![allow(dead_code)]
 
 			let mut used = 0usize;
-			let mut input_iter = input[pos..].chars();
+			let mut input_iter = input[pos..].chars().flat_map(|x| x.to_uppercase());
 
-			for m_char in m.chars() {
-				let m_char_upper = m_char.to_uppercase();
+			for m_char_upper in m.chars().flat_map(|x| x.to_uppercase()) {
 				used += m_char_upper.len_utf8();
 
 				let input_char_result = input_iter.next();
 
-				if input_char_result.is_none()
-					|| input_char_result.unwrap().to_uppercase() != m_char_upper {
+				if input_char_result.is_none() || input_char_result.unwrap() != m_char_upper {
 					return state.mark_failure(pos, m);
 				}
 			}

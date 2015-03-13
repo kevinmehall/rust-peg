@@ -1,4 +1,4 @@
-#![feature(quote, box_syntax, core, collections, rustc_private, io, old_path, unicode, box_patterns, exit_status)]
+#![feature(quote, box_syntax, core, collections, rustc_private, io, old_path, box_patterns, exit_status)]
 extern crate syntax;
 
 use std::io::{Read, Write};
