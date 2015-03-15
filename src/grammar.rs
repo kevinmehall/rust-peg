@@ -9,7 +9,7 @@ struct ParseState {
     max_err_pos: usize,
     expected: ::std::collections::HashSet<&'static str>,
 }
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct ParseError {
     pub line: usize,
     pub column: usize,

@@ -1,10 +1,11 @@
-#![feature(quote, box_syntax, core, collections, rustc_private, io, old_path, box_patterns, exit_status)]
+#![feature(quote, box_syntax, core, collections, rustc_private, box_patterns, exit_status)]
 extern crate syntax;
 
-use std::io::{Read, Write};
-use std::io::{stdin,stdout,stderr};
-use std::fs::File;
 use std::env;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::io::{stdin, stdout, stderr};
+use std::path::Path;
 use translate::{compile_grammar};
 
 mod translate;
