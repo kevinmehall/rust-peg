@@ -97,7 +97,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
-		#[derive(PartialEq, Eq, Debug)]
+		#[derive(PartialEq, Eq, Debug, Clone)]
 		pub struct ParseError {
 			pub line: usize,
 			pub column: usize,
