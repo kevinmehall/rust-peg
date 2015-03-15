@@ -1,4 +1,4 @@
-#![feature(plugin_registrar, quote, box_syntax, core, collections, rustc_private, box_patterns, old_path, io)]
+#![feature(plugin_registrar, quote, box_syntax, core, collections, rustc_private, box_patterns)]
 
 extern crate rustc;
 extern crate syntax;
@@ -13,6 +13,7 @@ use syntax::util::small_vector::SmallVector;
 use rustc::plugin::Registry;
 use std::io::Read;
 use std::fs::File;
+use std::path::Path;
 
 use rustast::{AstBuilder, DUMMY_SP};
 
@@ -46,7 +47,7 @@ fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident
         None => return DummyResult::any(sp),
     };
 
-    let path = Path::new(cx.codemap().span_to_filename(sp)).dir_path().join(fname);
+    let path = Path::new(&cx.codemap().span_to_filename(sp)).parent().unwrap().join(&fname);
 
     let mut source = String::new();
     if let Err(e) = File::open(&path).map(|mut f| f.read_to_string(&mut source)) {
@@ -54,7 +55,7 @@ fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident
         return DummyResult::any(sp);
     }
 
-    cx.codemap().new_filemap(path.as_str().unwrap().to_string(), "".to_string());
+    cx.codemap().new_filemap(format!("{}", path.display()), "".to_string());
 
     expand_peg(cx, sp, ident, &source)
 }
