@@ -1,4 +1,4 @@
-#![feature(plugin_registrar, quote, box_syntax, core, collections, rustc_private, box_patterns)]
+#![feature(plugin_registrar, quote, box_syntax, core, collections, rustc_private, box_patterns, str_char)]
 
 extern crate rustc;
 extern crate syntax;
