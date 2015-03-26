@@ -127,6 +127,7 @@ primary -> Expr
   / class
   / dot { AnyCharExpr }
   / lparen expression:expression rparen { expression }
+  / tilde name:identifier { BackrefExpr(name) }
 
 /* "Lexical" elements */
 
@@ -161,6 +162,7 @@ returns   = "->" __
 lbrace    = "{"  __
 rbrace    = "}"  __
 comma     = ","  __
+tilde     = "~"  __
 
 integer -> usize
   = i:([0-9]+ { match_str.parse().unwrap() }) __ { i }
