@@ -11,7 +11,7 @@ test -> &'input str
     = a0:alist "b" ~a0 {match_str}
 
 word -> &'input str
-    = [a-z]+ {println!("'{}'", match_str); match_str}
+    = [a-z]+ {match_str}
 
 #[pub]
 xml
