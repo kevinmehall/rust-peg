@@ -130,6 +130,7 @@ primary -> Expr
   / class
   / dot { AnyCharExpr }
   / lparen expression:expression rparen { expression }
+  / tilde name:identifier { BackrefExpr(name) }
 
 /* "Lexical" elements */
 

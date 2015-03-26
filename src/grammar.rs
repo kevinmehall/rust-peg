@@ -67,6 +67,16 @@ fn slice_eq(input: &str, state: &mut ParseState, pos: usize, m: &'static str)
         Matched(pos + l, ())
     } else { state.mark_failure(pos, m) }
 }
+fn capture_eq(input: &str, state: &mut ParseState, pos: usize, m: &str)
+ -> RuleResult<()> {
+    #![inline]
+    #![allow(dead_code)]
+    let l = m.len();
+    if input.len() >= pos + l &&
+           &input.as_bytes()[pos..pos + l] == m.as_bytes() {
+        Matched(pos + l, ())
+    } else { state.mark_failure(pos, "<capture>") }
+}
 fn slice_eq_case_insensitive(input: &str, state: &mut ParseState, pos: usize,
                              m: &'static str) -> RuleResult<()> {
     #![inline]
@@ -2511,52 +2521,100 @@ fn parse_primary<'input>(input: &'input str, state: &mut ParseState,
                                     Matched(pos, value) =>
                                     Matched(pos, value),
                                     Failed => {
-                                        let start_pos = pos;
-                                        {
-                                            let seq_res =
-                                                parse_lparen(input, state,
-                                                             pos);
-                                            match seq_res {
-                                                Matched(pos, _) => {
-                                                    {
-                                                        let seq_res =
-                                                            parse_expression(input,
-                                                                             state,
-                                                                             pos);
-                                                        match seq_res {
-                                                            Matched(pos,
-                                                                    expression)
-                                                            => {
-                                                                {
-                                                                    let seq_res =
-                                                                        parse_rparen(input,
+                                        let choice_res =
+                                            {
+                                                let start_pos = pos;
+                                                {
+                                                    let seq_res =
+                                                        parse_lparen(input,
+                                                                     state,
+                                                                     pos);
+                                                    match seq_res {
+                                                        Matched(pos, _) => {
+                                                            {
+                                                                let seq_res =
+                                                                    parse_expression(input,
                                                                                      state,
                                                                                      pos);
-                                                                    match seq_res
+                                                                match seq_res
+                                                                    {
+                                                                    Matched(pos,
+                                                                            expression)
+                                                                    => {
                                                                         {
-                                                                        Matched(pos,
-                                                                                _)
-                                                                        => {
-                                                                            {
-                                                                                let match_str =
-                                                                                    &input[start_pos..pos];
+                                                                            let seq_res =
+                                                                                parse_rparen(input,
+                                                                                             state,
+                                                                                             pos);
+                                                                            match seq_res
+                                                                                {
                                                                                 Matched(pos,
-                                                                                        {
-                                                                                            expression
-                                                                                        })
+                                                                                        _)
+                                                                                =>
+                                                                                {
+                                                                                    {
+                                                                                        let match_str =
+                                                                                            &input[start_pos..pos];
+                                                                                        Matched(pos,
+                                                                                                {
+                                                                                                    expression
+                                                                                                })
+                                                                                    }
+                                                                                }
+                                                                                Failed
+                                                                                =>
+                                                                                Failed,
                                                                             }
                                                                         }
-                                                                        Failed
-                                                                        =>
-                                                                        Failed,
                                                                     }
+                                                                    Failed =>
+                                                                    Failed,
                                                                 }
                                                             }
-                                                            Failed => Failed,
                                                         }
+                                                        Failed => Failed,
                                                     }
                                                 }
-                                                Failed => Failed,
+                                            };
+                                        match choice_res {
+                                            Matched(pos, value) =>
+                                            Matched(pos, value),
+                                            Failed => {
+                                                let start_pos = pos;
+                                                {
+                                                    let seq_res =
+                                                        parse_tilde(input,
+                                                                    state,
+                                                                    pos);
+                                                    match seq_res {
+                                                        Matched(pos, _) => {
+                                                            {
+                                                                let seq_res =
+                                                                    parse_identifier(input,
+                                                                                     state,
+                                                                                     pos);
+                                                                match seq_res
+                                                                    {
+                                                                    Matched(pos,
+                                                                            name)
+                                                                    => {
+                                                                        {
+                                                                            let match_str =
+                                                                                &input[start_pos..pos];
+                                                                            Matched(pos,
+                                                                                    {
+                                                                                        BackrefExpr(name)
+                                                                                    })
+                                                                        }
+                                                                    }
+                                                                    Failed =>
+                                                                    Failed,
+                                                                }
+                                                            }
+                                                        }
+                                                        Failed => Failed,
+                                                    }
+                                                }
                                             }
                                         }
                                     }

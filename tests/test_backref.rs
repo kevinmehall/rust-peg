@@ -10,12 +10,16 @@ alist -> &'input str
 test -> &'input str
     = a0:alist "b" ~a0 {match_str}
 
-tag -> &'input str
-    = [a-z]+ {match_str}
+word -> &'input str
+    = [a-z]+ {println!("'{}'", match_str); match_str}
 
 #[pub]
-xml -> ()
-    = "<" name:tag ">" inner:xml* "</" ~name ">" {}
+xml
+    = "<" name:word ">" inner:xml* "</" ~name ">" {}
+
+#[pub]
+example
+    = start:word (!~start .)* ~start {}
 
 "#);
 
@@ -38,4 +42,9 @@ fn test() {
     assert!(parse::xml("<a><b></b></b>").is_err());
     assert!(parse::xml("<a><b></b></a></c>").is_err());
     assert!(parse::xml("<c><a><b></b></a>").is_err());
+
+    // matches anything between two delimiting words
+    assert!(parse::example("start some thing bla bla start").is_ok());
+    assert!(parse::example("stop_:+ä.stop").is_ok());
+    assert!(parse::example("stop_:+ä.stop-.-stop").is_err());
 }
