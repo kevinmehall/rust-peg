@@ -73,9 +73,6 @@ labeled -> TaggedExpr
   / expr: prefixed {
       TaggedExpr{ name: None, expr: box expr }
   }
-  / tilde name:identifier {
-      TaggedExpr{ name: None, expr: box BackrefExpr(name) }
-  }
 
 prefixed -> Expr
   = dollar expression:suffixed {

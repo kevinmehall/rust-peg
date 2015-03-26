@@ -1658,61 +1658,21 @@ fn parse_labeled<'input>(input: &'input str, state: &mut ParseState,
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
             Failed => {
-                let choice_res =
-                    {
-                        let start_pos = pos;
-                        {
-                            let seq_res = parse_prefixed(input, state, pos);
-                            match seq_res {
-                                Matched(pos, expr) => {
-                                    {
-                                        let match_str =
-                                            &input[start_pos..pos];
-                                        Matched(pos,
-                                                {
-                                                    TaggedExpr{name: None,
-                                                               expr:
-                                                                   box() expr,}
-                                                })
-                                    }
-                                }
-                                Failed => Failed,
+                let start_pos = pos;
+                {
+                    let seq_res = parse_prefixed(input, state, pos);
+                    match seq_res {
+                        Matched(pos, expr) => {
+                            {
+                                let match_str = &input[start_pos..pos];
+                                Matched(pos,
+                                        {
+                                            TaggedExpr{name: None,
+                                                       expr: box() expr,}
+                                        })
                             }
                         }
-                    };
-                match choice_res {
-                    Matched(pos, value) => Matched(pos, value),
-                    Failed => {
-                        let start_pos = pos;
-                        {
-                            let seq_res = parse_tilde(input, state, pos);
-                            match seq_res {
-                                Matched(pos, _) => {
-                                    {
-                                        let seq_res =
-                                            parse_identifier(input, state,
-                                                             pos);
-                                        match seq_res {
-                                            Matched(pos, name) => {
-                                                {
-                                                    let match_str =
-                                                        &input[start_pos..pos];
-                                                    Matched(pos,
-                                                            {
-                                                                TaggedExpr{name:
-                                                                               None,
-                                                                           expr:
-                                                                               box() BackrefExpr(name),}
-                                                            })
-                                                }
-                                            }
-                                            Failed => Failed,
-                                        }
-                                    }
-                                }
-                                Failed => Failed,
-                            }
-                        }
+                        Failed => Failed,
                     }
                 }
             }
