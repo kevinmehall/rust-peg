@@ -46,6 +46,7 @@ pub enum Expr {
 	PosAssertExpr(Box<Expr>),
 	NegAssertExpr(Box<Expr>),
 	ActionExpr(Vec<TaggedExpr>, String),
+	BackrefExpr(String),
 }
 
 pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P<rustast::Mod> {
@@ -169,6 +170,20 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	    } else {
 	      state.mark_failure(pos, m)
 	    }
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
+		fn capture_eq(input: &str, state: &mut ParseState, pos: usize, m: &str) -> RuleResult<()> {
+			#![inline]
+			#![allow(dead_code)]
+
+			let l = m.len();
+			if input.len() >= pos + l && &input.as_bytes()[pos..pos+l] == m.as_bytes() {
+				Matched(pos+l, ())
+			} else {
+				state.mark_failure(pos, "<capture>")	// FIXME use capture name and/or value
+			}
 		}
 	).unwrap());
 
@@ -533,6 +548,13 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 				let start_pos = pos;
 				$body
 			})
+		}
+
+		BackrefExpr(ref name) => {
+			// backreference to tagged expression. has to be &str.
+			let ident = rustast::str_to_ident(name);
+
+			quote_expr!(ctxt, capture_eq(input, state, pos, $ident))
 		}
 	}
 }

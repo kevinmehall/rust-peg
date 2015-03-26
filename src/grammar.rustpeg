@@ -73,6 +73,9 @@ labeled -> TaggedExpr
   / expr: prefixed {
       TaggedExpr{ name: None, expr: box expr }
   }
+  / tilde name:identifier {
+      TaggedExpr{ name: None, expr: box BackrefExpr(name) }
+  }
 
 prefixed -> Expr
   = dollar expression:suffixed {
@@ -161,6 +164,7 @@ returns   = "->" __
 lbrace    = "{"  __
 rbrace    = "}"  __
 comma     = ","  __
+tilde     = "~"  __
 
 integer -> usize
   = i:([0-9]+ { match_str.parse().unwrap() }) __ { i }
