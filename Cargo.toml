@@ -12,6 +12,7 @@ A parser generator built on the Parsing Expression Grammar (PEG) formalism.
 [[bin]]
 name = "peg"
 path = "src/peg.rs"
+test = false
 
 [lib]
 plugin = true
