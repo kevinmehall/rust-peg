@@ -33,16 +33,16 @@ pub fn plugin_registrar(reg: &mut Registry) {
 }
 
 fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult + 's> {
-    let source = match parse_arg(cx, tts.as_slice()) {
+    let source = match parse_arg(cx, &tts) {
         Some(source) => source,
         None => return DummyResult::any(sp),
     };
 
-    expand_peg(cx, sp, ident, source.as_slice())
+    expand_peg(cx, sp, ident, &source)
 }
 
 fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult + 's> {
-    let fname = match parse_arg(cx, tts.as_slice()) {
+    let fname = match parse_arg(cx, &tts) {
         Some(fname) => fname,
         None => return DummyResult::any(sp),
     };
@@ -51,7 +51,7 @@ fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident
 
     let mut source = String::new();
     if let Err(e) = File::open(&path).map(|mut f| f.read_to_string(&mut source)) {
-        cx.span_err(sp, e.to_string().as_slice());
+        cx.span_err(sp, &e.to_string());
         return DummyResult::any(sp);
     }
 
@@ -66,7 +66,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
     let grammar_def = match grammar_def {
       Ok(grammar_def) => grammar_def,
       Err(msg) => {
-        cx.span_err(sp, format!("{}", msg).as_slice());
+        cx.span_err(sp, &format!("{}", msg));
         return DummyResult::any(sp)
       }
     };
@@ -109,6 +109,6 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
 
     let err = format!("expected string literal but got `{}`",
                       pprust::expr_to_string(&*arg));
-    cx.span_err(parser.span, err.as_slice());
+    cx.span_err(parser.span, &err);
     None
 }

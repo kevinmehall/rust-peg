@@ -52,9 +52,9 @@ pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P
     let mut imports = grammar.imports.clone();
     imports.push(RustUseList("self::RuleResult".to_string(),
                              vec!("Matched".to_string(), "Failed".to_string())));
-    let mut items = translate_view_items(ctxt, imports.as_slice());
+    let mut items = translate_view_items(ctxt, &imports);
 
-    items.push_all(
+    items.push_all(&
         header_items(ctxt).into_iter()
 	    .chain(grammar.rules.iter().map(|rule|{
 	        compile_rule(ctxt, rule)
@@ -62,7 +62,7 @@ pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P
 	    .chain(grammar.rules.iter().filter(|rule| rule.exported).map(|rule| {
 	        compile_rule_export(ctxt, rule)
 	    }))
-	    .collect::<Vec<_>>().as_slice());
+	    .collect::<Vec<_>>());
 
     rustast::module(items)
 }
@@ -70,10 +70,10 @@ pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P
 pub fn translate_view_items(ctxt: &rustast::ExtCtxt, imports: &[RustUse]) -> Vec<rustast::P<rustast::Item>> {
 	imports.iter().map(| i |{
 		match *i {
-			RustUseSimple(ref p) => ctxt.item_use_simple(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path(p.as_slice())),
-			RustUseGlob(ref p) => ctxt.item_use_glob(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(p.as_slice())),
-			RustUseList(ref p, ref v) => ctxt.item_use_list(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(p.as_slice()),
-				v.iter().map(|s| rustast::str_to_ident(s.as_slice())).collect::<Vec<_>>().as_slice()
+			RustUseSimple(ref p) => ctxt.item_use_simple(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path(&p)),
+			RustUseGlob(ref p) => ctxt.item_use_glob(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(&p)),
+			RustUseList(ref p, ref v) => ctxt.item_use_list(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(&p),
+				&v.iter().map(|s| rustast::str_to_ident(&s)).collect::<Vec<_>>()
 			),
 		}
 	}).collect::<Vec<_>>()
@@ -230,9 +230,9 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 
 
 fn compile_rule(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Item> {
-	let name = rustast::str_to_ident(format!("parse_{}", rule.name).as_slice());
-	let ret = rustast::parse_type(rule.ret_type.as_slice());
-	let body = compile_expr(ctxt, &*rule.expr, rule.ret_type.as_slice() != "()");
+	let name = rustast::str_to_ident(&format!("parse_{}", rule.name));
+	let ret = rustast::parse_type(&rule.ret_type);
+	let body = compile_expr(ctxt, &*rule.expr, (&rule.ret_type as &str) != "()");
 	(quote_item!(ctxt,
 		fn $name<'input>(input: &'input str, state: &mut ParseState, pos: usize) -> RuleResult<$ret> {
 			$body
@@ -241,9 +241,9 @@ fn compile_rule(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Ite
 }
 
 fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Item> {
-	let name = rustast::str_to_ident(rule.name.as_slice());
-	let ret = rustast::parse_type(rule.ret_type.as_slice());
-	let parse_fn = rustast::str_to_ident(format!("parse_{}", rule.name).as_slice());
+	let name = rustast::str_to_ident(&rule.name);
+	let ret = rustast::parse_type(&rule.ret_type);
+	let parse_fn = rustast::str_to_ident(&format!("parse_{}", rule.name));
 	(quote_item!(ctxt,
 		pub fn $name<'input>(input: &'input str) -> ParseResult<$ret> {
 			let mut state = ParseState::new();
@@ -314,7 +314,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 		}
 
 		LiteralExpr(ref s, ref case_insensitive) => {
-			let sl = s.as_slice();
+			let sl: &str = &s;
 			if *case_insensitive {
 				quote_expr!(ctxt, slice_eq_case_insensitive(input, state, pos, $sl))
 			}
@@ -324,8 +324,8 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 		}
 
 		CharSetExpr(invert, ref cases) => {
-			let expected_set = format_char_set(cases.as_slice());
-			let expected_str = expected_set.as_slice();
+			let expected_set = format_char_set(&cases);
+			let expected_str: &str = &expected_set;
 
 			let (in_set, not_in_set) = cond_swap(invert, (
 				quote_expr!(ctxt, Matched(next, ())),
@@ -355,7 +355,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 		}
 
 		RuleExpr(ref rule_name) => {
-			let func = rustast::str_to_ident(format!("parse_{}", *rule_name).as_slice());
+			let func = rustast::str_to_ident(&format!("parse_{}", *rule_name));
 			quote_expr!(ctxt, $func(input, state, pos))
 		}
 
@@ -369,7 +369,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			}
 
 			if exprs.len() > 0 {
-				write_seq(ctxt, exprs.as_slice())
+				write_seq(ctxt, &exprs)
 			} else {
 				quote_expr!(ctxt, Matched(pos, ()))
 			}
@@ -394,7 +394,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			}
 
 			if exprs.len() > 0 {
-				write_choice(ctxt, exprs.as_slice(), result_used)
+				write_choice(ctxt, &exprs, result_used)
 			} else {
 				quote_expr!(ctxt, Matched(pos, ()))
 			}
@@ -512,7 +512,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			fn write_seq(ctxt: &rustast::ExtCtxt, exprs: &[TaggedExpr], code: &str) -> rustast::P<rustast::Expr> {
 				match exprs.first() {
 					Some(ref first) => {
-						let name = first.name.as_ref().map(|s| s.as_slice());
+						let name = first.name.as_ref().map(|s| &s[..]);
 						compile_match_and_then(ctxt, &*first.expr, name,
 							write_seq(ctxt, exprs.tail(), code)
 						)
@@ -527,7 +527,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 				}
 			}
 
-			let body = write_seq(ctxt, exprs.as_slice(), code.as_slice());
+			let body = write_seq(ctxt, &exprs, &code);
 
 			quote_expr!(ctxt, {
 				let start_pos = pos;

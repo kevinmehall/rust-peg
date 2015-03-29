@@ -42,7 +42,7 @@ fn main() {
 				writeln!(&mut out, "#![allow(non_snake_case, unused)]").unwrap();
 
 				for item in ast.items.iter() {
-					writeln!(&mut out, "{}", rustast::item_to_string(&**item).as_slice()).unwrap();
+					writeln!(&mut out, "{}", &rustast::item_to_string(&**item)).unwrap();
 				}
 			})
 		}
