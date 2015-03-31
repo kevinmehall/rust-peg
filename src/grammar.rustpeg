@@ -56,7 +56,7 @@ choice -> Expr
 
 sequence -> Expr
   = elements:labeled* code:action {
-      ActionExpr(elements, code)
+      ActionExpr(elements, code.0, code.1)
     }
   / elements:prefixed* {
       if elements.len() != 1 {
@@ -130,8 +130,18 @@ primary -> Expr
 
 /* "Lexical" elements */
 
-action -> String
-  = braced:braced __ { braced }
+action -> (String, /*is conditional match?*/ bool)
+  = "{" cond:"?"? (((braced "") / nonBraceCharacters)*) "}" __ {
+    match cond {
+        Some(_) => {
+            let mut cond = String::with_capacity(match_str.len()-1);
+            cond.push_str("{"); // }
+            cond.push_str(&match_str[2..]);
+            (cond, true)
+        }
+        None => (match_str.to_string(), false)
+    }
+  }
 
 braced -> String
   = "{" (((braced "") / nonBraceCharacters)*) "}" {match_str.to_string()}

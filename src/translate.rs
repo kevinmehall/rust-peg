@@ -45,7 +45,7 @@ pub enum Expr {
 	Repeat(Box<Expr>, /*min*/ usize, /*max*/ Option<usize>, /*sep*/ Option<Box<Expr>>),
 	PosAssertExpr(Box<Expr>),
 	NegAssertExpr(Box<Expr>),
-	ActionExpr(Vec<TaggedExpr>, String),
+	ActionExpr(Vec<TaggedExpr>, /*action*/ String, /*cond*/ bool),
 }
 
 pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P<rustast::Mod> {
@@ -508,27 +508,41 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			})
 		}
 
-		ActionExpr(ref exprs, ref code) => {
-			fn write_seq(ctxt: &rustast::ExtCtxt, exprs: &[TaggedExpr], code: &str) -> rustast::P<rustast::Expr> {
+		ActionExpr(ref exprs, ref code, is_cond) => {
+			fn write_seq(ctxt: &rustast::ExtCtxt, exprs: &[TaggedExpr], code: &str, is_cond: bool) -> rustast::P<rustast::Expr> {
 				match exprs.first() {
 					Some(ref first) => {
 						let name = first.name.as_ref().map(|s| &s[..]);
 						compile_match_and_then(ctxt, &*first.expr, name,
-							write_seq(ctxt, exprs.tail(), code)
+							write_seq(ctxt, exprs.tail(), code, is_cond)
 						)
 					}
 					None => {
 						let code_block = rustast::parse_block(code);
-						quote_expr!(ctxt, {
-							let match_str = &input[start_pos..pos];
-							Matched(pos, $code_block)
-						})
+
+						if is_cond {
+							quote_expr!(ctxt, {
+								let match_str = &input[start_pos..pos];
+
+								match $code_block {
+									Ok(res) => Matched(pos, res),
+									Err(expected) => {
+										state.mark_failure(pos, expected);
+										Failed
+									},
+								}
+							})
+						} else {
+							quote_expr!(ctxt, {
+								let match_str = &input[start_pos..pos];
+								Matched(pos, $code_block)
+							})
+						}
 					}
 				}
 			}
 
-			let body = write_seq(ctxt, &exprs, &code);
-
+			let body = write_seq(ctxt, &exprs, &code, is_cond);
 			quote_expr!(ctxt, {
 				let start_pos = pos;
 				$body
