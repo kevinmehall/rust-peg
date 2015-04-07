@@ -1545,7 +1545,8 @@ fn parse_sequence<'input>(input: &'input str, state: &mut ParseState,
                                             Matched(pos,
                                                     {
                                                         ActionExpr(elements,
-                                                                   code)
+                                                                   code.0,
+                                                                   code.1)
                                                     })
                                         }
                                     }
@@ -2530,20 +2531,127 @@ fn parse_primary<'input>(input: &'input str, state: &mut ParseState,
     }
 }
 fn parse_action<'input>(input: &'input str, state: &mut ParseState,
-                        pos: usize) -> RuleResult<String> {
+                        pos: usize) -> RuleResult<(String, bool)> {
     {
         let start_pos = pos;
         {
-            let seq_res = parse_braced(input, state, pos);
+            let seq_res = slice_eq(input, state, pos, "{");
             match seq_res {
-                Matched(pos, braced) => {
+                Matched(pos, _) => {
                     {
-                        let seq_res = parse___(input, state, pos);
+                        let seq_res =
+                            match slice_eq(input, state, pos, "?") {
+                                Matched(newpos, value) => {
+                                    Matched(newpos, Some(value))
+                                }
+                                Failed => { Matched(pos, None) }
+                            };
                         match seq_res {
-                            Matched(pos, _) => {
+                            Matched(pos, cond) => {
                                 {
-                                    let match_str = &input[start_pos..pos];
-                                    Matched(pos, { braced })
+                                    let seq_res =
+                                        {
+                                            let mut repeat_pos = pos;
+                                            loop  {
+                                                let pos = repeat_pos;
+                                                let step_res =
+                                                    {
+                                                        let choice_res =
+                                                            {
+                                                                let seq_res =
+                                                                    parse_braced(input,
+                                                                                 state,
+                                                                                 pos);
+                                                                match seq_res
+                                                                    {
+                                                                    Matched(pos,
+                                                                            _)
+                                                                    => {
+                                                                        slice_eq(input,
+                                                                                 state,
+                                                                                 pos,
+                                                                                 "")
+                                                                    }
+                                                                    Failed =>
+                                                                    Failed,
+                                                                }
+                                                            };
+                                                        match choice_res {
+                                                            Matched(pos,
+                                                                    value) =>
+                                                            Matched(pos,
+                                                                    value),
+                                                            Failed =>
+                                                            parse_nonBraceCharacters(input,
+                                                                                     state,
+                                                                                     pos),
+                                                        }
+                                                    };
+                                                match step_res {
+                                                    Matched(newpos, value) =>
+                                                    {
+                                                        repeat_pos = newpos;
+                                                    }
+                                                    Failed => { break ; }
+                                                }
+                                            }
+                                            Matched(repeat_pos, ())
+                                        };
+                                    match seq_res {
+                                        Matched(pos, _) => {
+                                            {
+                                                let seq_res =
+                                                    slice_eq(input, state,
+                                                             pos, "}");
+                                                match seq_res {
+                                                    Matched(pos, _) => {
+                                                        {
+                                                            let seq_res =
+                                                                parse___(input,
+                                                                         state,
+                                                                         pos);
+                                                            match seq_res {
+                                                                Matched(pos,
+                                                                        _) =>
+                                                                {
+                                                                    {
+                                                                        let match_str =
+                                                                            &input[start_pos..pos];
+                                                                        Matched(pos,
+                                                                                {
+                                                                                    match cond
+                                                                                        {
+                                                                                        Some(_)
+                                                                                        =>
+                                                                                        {
+                                                                                            let mut cond =
+                                                                                                String::with_capacity(match_str.len()
+                                                                                                                          -
+                                                                                                                          1);
+                                                                                            cond.push_str("{");
+                                                                                            cond.push_str(&match_str[2..]);
+                                                                                            (cond,
+                                                                                             true)
+                                                                                        }
+                                                                                        None
+                                                                                        =>
+                                                                                        (match_str.to_string(),
+                                                                                         false),
+                                                                                    }
+                                                                                })
+                                                                    }
+                                                                }
+                                                                Failed =>
+                                                                Failed,
+                                                            }
+                                                        }
+                                                    }
+                                                    Failed => Failed,
+                                                }
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
                                 }
                             }
                             Failed => Failed,
