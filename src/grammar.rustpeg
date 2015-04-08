@@ -1,5 +1,4 @@
 use translate::*;
-use std::num::from_str_radix;
 use std::char;
 
 #[export]
@@ -286,24 +285,24 @@ zeroEscapeSequence -> char
   = "\\0" !digit { 0u8 as char }
 
 hex2EscapeSequence -> char
-  = "\\x" value:(hexDigit hexDigit { from_str_radix::<u32>(match_str, 16) }) {
+  = "\\x" value:(hexDigit hexDigit { u32::from_str_radix(match_str, 16) }) {
       char::from_u32(value.unwrap()).unwrap()
     }
 
 unicodeEscapeSequence -> char
-  = "\\u{" value:(hexDigit+ { from_str_radix::<u32>(match_str, 16)}) "}" {
+  = "\\u{" value:(hexDigit+ { u32::from_str_radix(match_str, 16)}) "}" {
       char::from_u32(value.unwrap()).unwrap()
     }
 
 // Deprecated in Rust, will be removed.
 hex4EscapeSequence -> char
-  = "\\u" value:(hexDigit hexDigit hexDigit hexDigit { from_str_radix::<u32>(match_str, 16)}) {
+  = "\\u" value:(hexDigit hexDigit hexDigit hexDigit { u32::from_str_radix(match_str, 16)}) {
       char::from_u32(value.unwrap()).unwrap()
     }
 
 // Deprecated in Rust, will be removed.
 hex8EscapeSequence -> char
-  = "\\U" value:(hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit { from_str_radix::<u32>(match_str, 16)}) {
+  = "\\U" value:(hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit { u32::from_str_radix(match_str, 16)}) {
       char::from_u32(value.unwrap()).unwrap()
     }
 
