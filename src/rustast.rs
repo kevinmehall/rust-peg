@@ -21,7 +21,7 @@ pub fn parse_path(e: &str) -> ast::Path {
 	let mut p = syntax::parse::new_parser_from_source_str(&ps, Vec::new(), "file".to_string(), e.to_string());
 	let r = p.parse_path(syntax::parse::parser::NoTypesAllowed);
 	p.abort_if_errors();
-	r
+	r.unwrap_or_else(|_|panic!())
 }
 
 pub fn parse_path_vec(s: &str) -> Vec<ast::Ident> {
@@ -33,7 +33,7 @@ pub fn parse_block(e: &str) -> P<ast::Block> {
 	let mut p = syntax::parse::new_parser_from_source_str(&ps, Vec::new(), "file".to_string(), e.to_string());
 	let r = p.parse_block();
 	p.abort_if_errors();
-	r
+	r.unwrap_or_else(|e| panic!(e))
 }
 
 pub fn parse_type(e: &str) -> P<ast::Ty> {
