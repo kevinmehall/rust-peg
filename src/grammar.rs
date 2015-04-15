@@ -2767,10 +2767,10 @@ fn parse_nonBraceCharacter<'input>(input: &'input str, state: &mut ParseState,
     if input.len() > pos {
         let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
         match ch {
-            '{' | '}' => state.mark_failure(pos, "[{}]"),
+            '{' | '}' => state.mark_failure(pos, "[^{}]"),
             _ => Matched(next, ()),
         }
-    } else { state.mark_failure(pos, "[{}]") }
+    } else { state.mark_failure(pos, "[^{}]") }
 }
 fn parse_equals<'input>(input: &'input str, state: &mut ParseState,
                         pos: usize) -> RuleResult<()> {

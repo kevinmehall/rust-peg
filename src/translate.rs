@@ -292,8 +292,12 @@ fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
 	}
 }
 
-fn format_char_set(cases: &[CharSetCase]) -> String {
+fn format_char_set(invert: bool, cases: &[CharSetCase]) -> String {
 	let mut r = "[".to_owned();
+
+    if invert {
+        r.push('^');
+    }
 
 	for &CharSetCase{start, end} in cases.iter() {
 		r.push(start);
@@ -324,7 +328,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 		}
 
 		CharSetExpr(invert, ref cases) => {
-			let expected_set = format_char_set(&cases);
+			let expected_set = format_char_set(invert, &cases);
 			let expected_str: &str = &expected_set;
 
 			let (in_set, not_in_set) = cond_swap(invert, (
@@ -549,4 +553,14 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			})
 		}
 	}
+}
+
+#[test]
+fn test_format_char_set() {
+    assert_eq!(format_char_set(false,
+                               &[CharSetCase{start: 'a', end: 'z'},
+                                 CharSetCase{start: '0', end: '9'}]),
+               "[a-z0-9]");
+    assert_eq!(format_char_set(true, &[CharSetCase{start: 'A', end: 'Z'}]),
+               "[^A-Z]");
 }
