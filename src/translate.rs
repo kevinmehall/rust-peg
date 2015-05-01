@@ -245,12 +245,27 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 
 
 fn compile_rule(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Item> {
+	let ref rule_name = rule.name;
 	let name = rustast::str_to_ident(&format!("parse_{}", rule.name));
 	let ret = rustast::parse_type(&rule.ret_type);
 	let body = compile_expr(ctxt, &*rule.expr, (&rule.ret_type as &str) != "()");
 	(quote_item!(ctxt,
 		fn $name<'input>(input: &'input str, state: &mut ParseState, pos: usize) -> RuleResult<$ret> {
-			$body
+			if cfg!(feature = "peg_trace") {
+				let (line, col) = pos_to_line(input, pos);
+				println!("[PEG_TRACE] Attempting to match rule {} at {}:{}", $rule_name, line, col);
+				let mut __peg_closure = move || {
+					$body
+				};
+				let __peg_result = __peg_closure();
+				match __peg_result {
+					Matched(_, _) => println!("[PEG_TRACE] Matched rule {} at {}:{}", $rule_name, line, col),
+					Failed => println!("[PEG_TRACE] Failed to match rule {} at {}:{}", $rule_name, line, col)
+				}
+				__peg_result
+			} else {
+				$body
+			}
 		}
 	)).unwrap()
 }
