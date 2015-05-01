@@ -83,6 +83,20 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	let mut items = Vec::new();
 
 	items.push(quote_item!(ctxt,
+		fn escape_default(s: &str) -> String {
+			s.chars().flat_map(|c| c.escape_default()).collect()
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
+		fn char_range_at(s: &str, pos: usize) -> (char, usize) {
+			let c = &s[pos..].chars().next().unwrap();
+			let next_pos = pos + c.len_utf8();
+			(*c, next_pos)
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
 		enum RuleResult<T> {
 			Matched(usize, T),
 			Failed,
@@ -115,13 +129,13 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 			fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
 				try!(write!(fmt, "error at {}:{}: expected ", self.line, self.column));
 				if self.expected.len() == 1 {
-					try!(write!(fmt, "`{}`", self.expected.iter().next().unwrap().escape_default()));
+					try!(write!(fmt, "`{}`", escape_default(self.expected.iter().next().unwrap())));
 				} else {
 					let mut iter = self.expected.iter();
 
-					try!(write!(fmt, "one of `{}`", iter.next().unwrap().escape_default()));
+					try!(write!(fmt, "one of `{}`", escape_default(iter.next().unwrap())));
 					for elem in iter {
-						try!(write!(fmt, ", `{}`", elem.escape_default()));
+						try!(write!(fmt, ", `{}`", escape_default(elem)));
 					}
 				}
 
@@ -201,7 +215,8 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 			#![allow(dead_code)]
 
 			if input.len() > pos {
-				Matched(input.char_range_at(pos).next, ())
+				let (_, next) = char_range_at(input, pos);
+				Matched(next, ())
 			} else {
 				state.mark_failure(pos, "<character>")
 			}
@@ -351,7 +366,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			));
 
 			quote_expr!(ctxt, if input.len() > pos {
-				let ::std::str::CharRange {ch, next} = input.char_range_at(pos);
+				let (ch, next) = char_range_at(input, pos);
 				$m
 			} else {
 				state.mark_failure(pos, $expected_str)

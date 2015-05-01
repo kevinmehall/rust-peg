@@ -221,7 +221,7 @@ doubleQuotedCharacter -> char
   / eolEscapeSequence
 
 simpleDoubleQuotedCharacter -> char
-  = !('"' / "\\" / eolChar) . { match_str.char_at(0) }
+  = !('"' / "\\" / eolChar) . { match_str.chars().next().unwrap() }
 
 singleQuotedString -> String
   = "'" s:singleQuotedCharacter* "'" { s.into_iter().collect() }
@@ -237,7 +237,7 @@ singleQuotedCharacter -> char
   / eolEscapeSequence
 
 simpleSingleQuotedCharacter -> char
-  = !("'" / "\\" / eolChar) . { match_str.char_at(0) }
+  = !("'" / "\\" / eolChar) . { match_str.chars().next().unwrap() }
 
 class -> Expr
   = "[" inverted:"^"? parts:(classCharacterRange / classCharacter)* "]" flags:"i"? __ {
@@ -266,11 +266,11 @@ bracketDelimitedCharacter -> char
   / eolEscapeSequence
 
 simpleBracketDelimitedCharacter -> char
-  = !("]" / "\\" / eolChar) . { match_str.char_at(0) }
+  = !("]" / "\\" / eolChar) . { match_str.chars().next().unwrap() }
 
 simpleEscapeSequence -> char
   = "\\" !(digit / "x" / "u" / "U" / eolChar) . {
-      match match_str.char_at(1) {
+      match match_str[1..].chars().next().unwrap() {
         //'b' => '\b',
         //'f' => '\f',
         'n' => '\n',
