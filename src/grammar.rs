@@ -3,6 +3,14 @@
 use translate::*;
 use std::char;
 use self::RuleResult::{Matched, Failed};
+fn escape_default(s: &str) -> String {
+    s.chars().flat_map(|c| c.escape_default()).collect()
+}
+fn char_range_at(s: &str, pos: usize) -> (char, usize) {
+    let c = &s[pos..].chars().next().unwrap();
+    let next_pos = pos + c.len_utf8();
+    (*c, next_pos)
+}
 enum RuleResult<T> { Matched(usize, T), Failed, }
 struct ParseState {
     max_err_pos: usize,
@@ -24,15 +32,15 @@ impl ::std::fmt::Display for ParseError {
              ));
         if self.expected.len() == 1 {
             try!(write ! (
-                 fmt , "`{}`" , self . expected . iter (  ) . next (  ) .
-                 unwrap (  ) . escape_default (  ) ));
+                 fmt , "`{}`" , escape_default (
+                 self . expected . iter (  ) . next (  ) . unwrap (  ) ) ));
         } else {
             let mut iter = self.expected.iter();
             try!(write ! (
-                 fmt , "one of `{}`" , iter . next (  ) . unwrap (  ) .
-                 escape_default (  ) ));
+                 fmt , "one of `{}`" , escape_default (
+                 iter . next (  ) . unwrap (  ) ) ));
             for elem in iter {
-                try!(write ! ( fmt , ", `{}`" , elem . escape_default (  ) ));
+                try!(write ! ( fmt , ", `{}`" , escape_default ( elem ) ));
             }
         }
         Ok(())
@@ -87,7 +95,8 @@ fn any_char(input: &str, state: &mut ParseState, pos: usize)
     #![inline]
     #![allow(dead_code)]
     if input.len() > pos {
-        Matched(input.char_range_at(pos).next, ())
+        let (_, next) = char_range_at(input, pos);
+        Matched(next, ())
     } else { state.mark_failure(pos, "<character>") }
 }
 fn pos_to_line(input: &str, pos: usize) -> (usize, usize) {
@@ -2765,7 +2774,7 @@ fn parse_nonBraceCharacters<'input>(input: &'input str,
 fn parse_nonBraceCharacter<'input>(input: &'input str, state: &mut ParseState,
                                    pos: usize) -> RuleResult<()> {
     if input.len() > pos {
-        let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
+        let (ch, next) = char_range_at(input, pos);
         match ch {
             '{' | '}' => state.mark_failure(pos, "[^{}]"),
             _ => Matched(next, ()),
@@ -2979,9 +2988,8 @@ fn parse_integer<'input>(input: &'input str, state: &mut ParseState,
                                     let pos = repeat_pos;
                                     let step_res =
                                         if input.len() > pos {
-                                            let ::std::str::CharRange {
-                                                    ch, next } =
-                                                input.char_range_at(pos);
+                                            let (ch, next) =
+                                                char_range_at(input, pos);
                                             match ch {
                                                 '0' ...'9' =>
                                                 Matched(next, ()),
@@ -3399,7 +3407,10 @@ fn parse_simpleDoubleQuotedCharacter<'input>(input: &'input str,
                             Matched(pos, _) => {
                                 {
                                     let match_str = &input[start_pos..pos];
-                                    Matched(pos, { match_str.char_at(0) })
+                                    Matched(pos,
+                                            {
+                                                match_str.chars().next().unwrap()
+                                            })
                                 }
                             }
                             Failed => Failed,
@@ -3578,7 +3589,10 @@ fn parse_simpleSingleQuotedCharacter<'input>(input: &'input str,
                             Matched(pos, _) => {
                                 {
                                     let match_str = &input[start_pos..pos];
-                                    Matched(pos, { match_str.char_at(0) })
+                                    Matched(pos,
+                                            {
+                                                match_str.chars().next().unwrap()
+                                            })
                                 }
                             }
                             Failed => Failed,
@@ -3896,7 +3910,10 @@ fn parse_simpleBracketDelimitedCharacter<'input>(input: &'input str,
                             Matched(pos, _) => {
                                 {
                                     let match_str = &input[start_pos..pos];
-                                    Matched(pos, { match_str.char_at(0) })
+                                    Matched(pos,
+                                            {
+                                                match_str.chars().next().unwrap()
+                                            })
                                 }
                             }
                             Failed => Failed,
@@ -3986,7 +4003,7 @@ fn parse_simpleEscapeSequence<'input>(input: &'input str,
                                                     &input[start_pos..pos];
                                                 Matched(pos,
                                                         {
-                                                            match match_str.char_at(1)
+                                                            match match_str[1..].chars().next().unwrap()
                                                                 {
                                                                 'n' => '\n',
                                                                 'r' => '\r',
@@ -4471,7 +4488,7 @@ fn parse_eolEscapeSequence<'input>(input: &'input str, state: &mut ParseState,
 fn parse_digit<'input>(input: &'input str, state: &mut ParseState, pos: usize)
  -> RuleResult<()> {
     if input.len() > pos {
-        let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
+        let (ch, next) = char_range_at(input, pos);
         match ch {
             '0' ...'9' => Matched(next, ()),
             _ => state.mark_failure(pos, "[0-9]"),
@@ -4481,7 +4498,7 @@ fn parse_digit<'input>(input: &'input str, state: &mut ParseState, pos: usize)
 fn parse_hexDigit<'input>(input: &'input str, state: &mut ParseState,
                           pos: usize) -> RuleResult<()> {
     if input.len() > pos {
-        let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
+        let (ch, next) = char_range_at(input, pos);
         match ch {
             '0' ...'9' | 'a' ...'f' | 'A' ...'F' => Matched(next, ()),
             _ => state.mark_failure(pos, "[0-9a-fA-F]"),
@@ -4501,7 +4518,7 @@ fn parse_letter<'input>(input: &'input str, state: &mut ParseState,
 fn parse_lowerCaseLetter<'input>(input: &'input str, state: &mut ParseState,
                                  pos: usize) -> RuleResult<()> {
     if input.len() > pos {
-        let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
+        let (ch, next) = char_range_at(input, pos);
         match ch {
             'a' ...'z' => Matched(next, ()),
             _ => state.mark_failure(pos, "[a-z]"),
@@ -4511,7 +4528,7 @@ fn parse_lowerCaseLetter<'input>(input: &'input str, state: &mut ParseState,
 fn parse_upperCaseLetter<'input>(input: &'input str, state: &mut ParseState,
                                  pos: usize) -> RuleResult<()> {
     if input.len() > pos {
-        let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
+        let (ch, next) = char_range_at(input, pos);
         match ch {
             'A' ...'Z' => Matched(next, ()),
             _ => state.mark_failure(pos, "[A-Z]"),
@@ -4683,7 +4700,7 @@ fn parse_eol<'input>(input: &'input str, state: &mut ParseState, pos: usize)
 fn parse_eolChar<'input>(input: &'input str, state: &mut ParseState,
                          pos: usize) -> RuleResult<()> {
     if input.len() > pos {
-        let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
+        let (ch, next) = char_range_at(input, pos);
         match ch {
             '\n' | '\r' | '\u{2028}' | '\u{2029}' => Matched(next, ()),
             _ => state.mark_failure(pos, "[\n\r\u{2028}\u{2029}]"),
@@ -4693,7 +4710,7 @@ fn parse_eolChar<'input>(input: &'input str, state: &mut ParseState,
 fn parse_whitespace<'input>(input: &'input str, state: &mut ParseState,
                             pos: usize) -> RuleResult<()> {
     if input.len() > pos {
-        let ::std::str::CharRange { ch, next } = input.char_range_at(pos);
+        let (ch, next) = char_range_at(input, pos);
         match ch {
             ' ' | '\t' | '\u{a0}' | '\u{feff}' | '\u{1680}' | '\u{180e}' |
             '\u{2000}' ...'\u{200a}' | '\u{202f}' | '\u{205f}' | '\u{3000}' =>

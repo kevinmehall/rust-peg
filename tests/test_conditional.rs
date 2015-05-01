@@ -1,4 +1,4 @@
-#![feature(plugin, collections, str_char)]
+#![feature(plugin)]
 #![plugin(peg_syntax_ext)]
 
 peg! parse(r#"

@@ -1,4 +1,4 @@
-#![feature(plugin, collections, str_char, into_cow)]
+#![feature(plugin, into_cow)]
 #![plugin(peg_syntax_ext)]
 use std::collections::HashMap;
 

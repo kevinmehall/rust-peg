@@ -1,4 +1,4 @@
-#![feature(plugin, collections, str_char)]
+#![feature(plugin)]
 #![plugin(peg_syntax_ext)]
 
 use parser::parse;

@@ -89,6 +89,14 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
+		fn char_range_at(s: &str, pos: usize) -> (char, usize) {
+			let c = &s[pos..].chars().next().unwrap();
+			let next_pos = pos + c.len_utf8();
+			(*c, next_pos)
+		}
+	).unwrap());
+
+	items.push(quote_item!(ctxt,
 		enum RuleResult<T> {
 			Matched(usize, T),
 			Failed,
@@ -207,7 +215,8 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 			#![allow(dead_code)]
 
 			if input.len() > pos {
-				Matched(input.char_range_at(pos).next, ())
+				let (_, next) = char_range_at(input, pos);
+				Matched(next, ())
 			} else {
 				state.mark_failure(pos, "<character>")
 			}
@@ -357,7 +366,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, e: &Expr, result_used: bool) -> rustast
 			));
 
 			quote_expr!(ctxt, if input.len() > pos {
-				let ::std::str::CharRange {ch, next} = input.char_range_at(pos);
+				let (ch, next) = char_range_at(input, pos);
 				$m
 			} else {
 				state.mark_failure(pos, $expected_str)
