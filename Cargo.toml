@@ -17,3 +17,6 @@ test = false
 [lib]
 plugin = true
 name = "peg_syntax_ext"
+
+[features]
+trace = []
