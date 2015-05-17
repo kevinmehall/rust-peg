@@ -4,7 +4,7 @@ use syntax::ext::base::ExtCtxt;
 
 /// Create a fake ExtCtxt to perform macro quasiquotes outside of rustc plugins
 pub fn with_fake_extctxt<T, F: Fn(&ExtCtxt) -> T>(f: F) -> T {
-  let ps = syntax::parse::new_parse_sess();
+  let ps = syntax::parse::ParseSess::new();
 
   let mut cx = syntax::ext::base::ExtCtxt::new(&ps, Vec::new(),
     syntax::ext::expand::ExpansionConfig::default("rust-peg".to_string())
