@@ -17,7 +17,7 @@ pub fn module(items: Vec<P<Item>>) -> P<Mod> {
 }
 
 pub fn parse_path(e: &str) -> ast::Path {
-	let ps = syntax::parse::new_parse_sess();
+	let ps = syntax::parse::ParseSess::new();
 	let mut p = syntax::parse::new_parser_from_source_str(&ps, Vec::new(), "file".to_string(), e.to_string());
 	let r = p.parse_path(syntax::parse::parser::NoTypesAllowed);
 	p.abort_if_errors();
@@ -29,7 +29,7 @@ pub fn parse_path_vec(s: &str) -> Vec<ast::Ident> {
 }
 
 pub fn parse_block(e: &str) -> P<ast::Block> {
-	let ps = syntax::parse::new_parse_sess();
+	let ps = syntax::parse::ParseSess::new();
 	let mut p = syntax::parse::new_parser_from_source_str(&ps, Vec::new(), "file".to_string(), e.to_string());
 	let r = p.parse_block();
 	p.abort_if_errors();
@@ -37,7 +37,7 @@ pub fn parse_block(e: &str) -> P<ast::Block> {
 }
 
 pub fn parse_type(e: &str) -> P<ast::Ty> {
-	let ps = syntax::parse::new_parse_sess();
+	let ps = syntax::parse::ParseSess::new();
 	let mut p = syntax::parse::new_parser_from_source_str(&ps, Vec::new(), "file".to_string(), e.to_string());
 	let r = p.parse_ty();
 	p.abort_if_errors();
