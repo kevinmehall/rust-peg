@@ -86,10 +86,3 @@ number -> int
 
   * **start_pos** - the byte index into the string at which the match starts, inclusive
   * **pos** - the byte index into the string at which the match ends, exclusive
-
-
-## To Do
-
-  * Improve parse error reporting
-  * Memoization
-  * Support passing user-specified objects (e.g. filename for source mapping, string interner) into action code
