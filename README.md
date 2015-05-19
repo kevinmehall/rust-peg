@@ -4,6 +4,9 @@ This is a simple parser generator based on the [Parsing Expression Grammar](http
 
 ## Usage
 
+`rust-peg` relies on the unstable `libsyntax` crate, and only works on Nightly builds of Rust.
+However, generated parsers are compatible with 1.0 stable.
+
 ### As a syntax extension
 Add to your Cargo.toml:
 
