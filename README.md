@@ -67,7 +67,8 @@ If a rule is marked with `#[pub]`, the generated module has a public function th
   * `expression ++ delim` - Match one or more repetitions of `expression` delimited with `delim` and return the results as a `Vec`
   * `e1 / e2 / e3` - Try to match e1. If the match succeeds, return its result, otherwise try e2, and so on.
   * `e1 e2 e3` - Match expressions in sequence
-`a:e1 b:e2 c:e3 { rust }` - Match e1, e2, e3 in sequence. If they match successfully, run the Rust code in the action and return its result. The variables before the colons in the preceding sequence are bound to the results of the corresponding expressions
+  * `a:e1 b:e2 c:e3 { rust }` - Match e1, e2, e3 in sequence. If they match successfully, run the Rust code in the block and return its return value. The variable names before the colons in the preceding sequence are bound to the results of the corresponding expressions. The Rust code must contain matched curly braces, including those in strings and comments.
+  * `a:e1 b:e2 c:e3 {? rust }` - Like above, but the Rust block returns a `Result` instead of a value directly. On `Ok(v)`, it matches successfully and returns `v`. On `Err(e)`, the match of the entire expression fails and it tries alternatives or reports a parse error with the `&str` `e`.
 
 Match actions can extract data from the match using these variables:
 
@@ -83,8 +84,8 @@ number -> int
   = [0-9]+ { from_str::<u64>(match_str).unwrap() }
 ```
 
-  * **start_pos** - the index into the string at which the match starts, inclusive
-  * **pos** - the index into the string at which the match ends, exclusive
+  * **start_pos** - the byte index into the string at which the match starts, inclusive
+  * **pos** - the byte index into the string at which the match ends, exclusive
 
 
 ## To Do
