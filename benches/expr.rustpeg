@@ -1,0 +1,11 @@
+// A grammar for simple arithmetic expression with operator precedences and braces
+
+#[pub]
+expr = eq
+
+eq = additive "=" eq / additive
+additive = multitive "+" additive / multitive
+multitive = pow "*" multitive / pow
+pow = atom "^" pow / atom
+
+atom = [0-9]+ / "(" expr ")"
