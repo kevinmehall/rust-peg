@@ -7,11 +7,12 @@ grammar -> Grammar
   { Grammar{ imports:imports, rules:rules } }
 
 rule -> Rule
-  = exported:exportflag name:identifier returns: returntype equals expression:expression semicolon? {
-      Rule{ name: name, expr: box expression, ret_type: returns, exported: exported }
+  = exported:exportflag cached:cacheflag name:identifier returns: returntype equals expression:expression semicolon? {
+      Rule{ name: name, expr: box expression, ret_type: returns, exported: exported, cached: cached }
     }
 
     exportflag -> bool = ("#[export]"/"#[pub]") __ {true} / "" {false}
+    cacheflag -> bool = "#[cache]" __ {true} / {false}
 
 returntype -> String
   = returns tp:(rust_type {match_str.trim().to_string()}) { tp }
@@ -118,6 +119,7 @@ suffixed -> Expr
     }
   / primary
 
+#[cache]
 primary -> Expr
   = name:identifier !(string? returntype equals) {
       RuleExpr(name)

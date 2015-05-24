@@ -3,9 +3,14 @@
 #[pub]
 expr = eq
 
+#[cache]
 eq = additive "=" eq / additive
+#[cache]
 additive = multitive "+" additive / multitive
+#[cache]
 multitive = pow "*" multitive / pow
+#[cache]
 pow = atom "^" pow / atom
 
+#[cache]
 atom = [0-9]+ / "(" expr ")"
