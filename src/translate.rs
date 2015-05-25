@@ -12,13 +12,7 @@ pub struct Grammar {
 
 impl Grammar {
 	fn find_rule(&self, name: &str) -> Option<&Rule> {
-		for rule in &self.rules {
-			if rule.name == name {
-				return Some(rule);
-			}
-		}
-
-		None
+		self.rules.iter().find(|rule| rule.name == name)
 	}
 }
 
