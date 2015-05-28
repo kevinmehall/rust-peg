@@ -5,7 +5,7 @@ This is a simple parser generator based on the [Parsing Expression Grammar](http
 ## Usage
 
 `rust-peg` relies on the unstable `libsyntax` crate, and only works on Nightly builds of Rust.
-However, generated parsers are compatible with 1.0 stable.
+However, generated parsers are compatible with 1.0 stable, so you can generate stable code by using the `peg` command line tool described below.
 
 ### As a syntax extension
 Add to your Cargo.toml:
@@ -33,7 +33,7 @@ peg! modname(r#"
 to embed a short PEG grammar inline in your Rust source file. [Example](tests/test_arithmetic.rs).
 
 ### As a standalone code generator
-Run `peg input_file.rustpeg` to compile a grammar and generate Rust code on stdout.
+Run `peg input_file.rustpeg` to compile a grammar and generate Rust code on stdout. This code works with stable Rust.
 
 ## Grammar Syntax
 
@@ -86,3 +86,16 @@ number -> int
 
   * **start_pos** - the byte index into the string at which the match starts, inclusive
   * **pos** - the byte index into the string at which the match ends, exclusive
+
+## Tracing
+
+If you pass the `peg/trace` feature to Cargo when building your project, a trace of the parsing will be output to stdout when running the binary. For example,
+```
+$ cargo run --features peg/trace
+...
+[PEG_TRACE] Matched rule type at 8:5
+[PEG_TRACE] Attempting to match rule ident at 8:12
+[PEG_TRACE] Attempting to match rule letter at 8:12
+[PEG_TRACE] Failed to match rule letter at 8:12
+...
+```
