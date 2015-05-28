@@ -95,21 +95,21 @@ fn pos_to_line(input: &str, pos: usize) -> (usize, usize) {
 struct ParseState {
     max_err_pos: usize,
     expected: ::std::collections::HashSet<&'static str>,
+    failing: bool,
     primary_cache: ::std::collections::HashMap<usize, RuleResult<Expr>>,
 }
 impl ParseState {
     fn new() -> ParseState {
         ParseState{max_err_pos: 0,
                    expected: ::std::collections::HashSet::new(),
+                   failing: false,
                    primary_cache: ::std::collections::HashMap::new(),}
     }
     fn mark_failure(&mut self, pos: usize, expected: &'static str)
      -> RuleResult<()> {
-        if pos > self.max_err_pos {
-            self.max_err_pos = pos;
-            self.expected.clear();
-        }
-        if pos == self.max_err_pos { self.expected.insert(expected); }
+        if self.failing && pos == self.max_err_pos {
+            self.expected.insert(expected);
+        } else if pos > self.max_err_pos { self.max_err_pos = pos; }
         Failed
     }
 }
@@ -4857,6 +4857,8 @@ pub fn grammar<'input>(input: &'input str) -> ParseResult<Grammar> {
         Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
         _ => { }
     }
+    state.failing = true;
+    parse_grammar(input, &mut state, 0);
     let (line, col) = pos_to_line(input, state.max_err_pos);
     Err(ParseError{line: line,
                    column: col,
