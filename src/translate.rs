@@ -78,7 +78,7 @@ pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P
 pub fn translate_view_items(ctxt: &rustast::ExtCtxt, imports: &[RustUse]) -> Vec<rustast::P<rustast::Item>> {
 	imports.iter().map(| i |{
 		match *i {
-			RustUseSimple(ref p) => ctxt.item_use_simple(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path(&p)),
+			RustUseSimple(ref p) => ctxt.item_use_simple(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path(ctxt, &p)),
 			RustUseGlob(ref p) => ctxt.item_use_glob(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(&p)),
 			RustUseList(ref p, ref v) => ctxt.item_use_list(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(&p),
 				&v.iter().map(|s| rustast::str_to_ident(&s)).collect::<Vec<_>>()
@@ -95,7 +95,7 @@ fn make_parse_state(ctxt: &rustast::ExtCtxt, rules: &[Rule]) -> Vec<rustast::P<r
 	for rule in rules {
 		if rule.cached {
 			let name = rustast::str_to_ident(&format!("{}_cache", rule.name));
-			let map_type = rustast::parse_type(
+			let map_type = rustast::parse_type(ctxt,
 				&format!("::std::collections::HashMap<usize, RuleResult<{}>>", rule.ret_type));
 
 			cache_fields.append(&mut quote_tokens!(ctxt, $name: $map_type,));
@@ -280,7 +280,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 fn compile_rule(ctxt: &rustast::ExtCtxt, grammar: &Grammar, rule: &Rule) -> rustast::P<rustast::Item> {
 	let ref rule_name = rule.name;
 	let name = rustast::str_to_ident(&format!("parse_{}", rule.name));
-	let ret = rustast::parse_type(&rule.ret_type);
+	let ret = rustast::parse_type(ctxt, &rule.ret_type);
 	let body = compile_expr(ctxt, grammar, &*rule.expr, (&rule.ret_type as &str) != "()");
 	let wrapped_body = if cfg!(feature = "trace") {
 		quote_expr!(ctxt, {
@@ -320,7 +320,7 @@ fn compile_rule(ctxt: &rustast::ExtCtxt, grammar: &Grammar, rule: &Rule) -> rust
 
 fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Item> {
 	let name = rustast::str_to_ident(&rule.name);
-	let ret = rustast::parse_type(&rule.ret_type);
+	let ret = rustast::parse_type(ctxt, &rule.ret_type);
 	let parse_fn = rustast::str_to_ident(&format!("parse_{}", rule.name));
 	(quote_item!(ctxt,
 		pub fn $name<'input>(input: &'input str) -> ParseResult<$ret> {

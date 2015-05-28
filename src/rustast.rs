@@ -16,9 +16,8 @@ pub fn module(items: Vec<P<Item>>) -> P<Mod> {
 	})
 }
 
-pub fn parse_path(e: &str) -> ast::Path {
-	let ps = syntax::parse::ParseSess::new();
-	let mut p = syntax::parse::new_parser_from_source_str(&ps, Vec::new(), "file".to_string(), e.to_string());
+pub fn parse_path(ctxt: &ExtCtxt, e: &str) -> ast::Path {
+	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), "file".to_string(), e.to_string());
 	let r = p.parse_path(syntax::parse::parser::NoTypesAllowed);
 	p.abort_if_errors();
 	r.unwrap_or_else(|_|panic!())
@@ -35,9 +34,8 @@ pub fn parse_block(ctxt: &ExtCtxt, e: &str) -> P<ast::Block> {
 	r.unwrap_or_else(|e| panic!(e))
 }
 
-pub fn parse_type(e: &str) -> P<ast::Ty> {
-	let ps = syntax::parse::ParseSess::new();
-	let mut p = syntax::parse::new_parser_from_source_str(&ps, Vec::new(), "file".to_string(), e.to_string());
+pub fn parse_type(ctxt: &ExtCtxt, e: &str) -> P<ast::Ty> {
+	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), "file".to_string(), e.to_string());
 	let r = p.parse_ty();
 	p.abort_if_errors();
 	r
