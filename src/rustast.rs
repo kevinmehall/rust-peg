@@ -28,9 +28,8 @@ pub fn parse_path_vec(s: &str) -> Vec<ast::Ident> {
 	s.split("::").map(|i| str_to_ident(i)).collect()
 }
 
-pub fn parse_block(e: &str) -> P<ast::Block> {
-	let ps = syntax::parse::ParseSess::new();
-	let mut p = syntax::parse::new_parser_from_source_str(&ps, Vec::new(), "file".to_string(), e.to_string());
+pub fn parse_block(ctxt: &ExtCtxt, e: &str) -> P<ast::Block> {
+	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), "file".to_string(), e.to_string());
 	let r = p.parse_block();
 	p.abort_if_errors();
 	r.unwrap_or_else(|e| panic!(e))

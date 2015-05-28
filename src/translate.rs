@@ -626,7 +626,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 						)
 					}
 					None => {
-						let code_block = rustast::parse_block(code);
+						let code_block = rustast::parse_block(ctxt, code);
 
 						if is_cond {
 							quote_expr!(ctxt, {
