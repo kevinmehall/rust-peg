@@ -144,37 +144,64 @@ fn parse_grammar<'input>(input: &'input str, state: &mut ParseState,
                             Matched(pos, imports) => {
                                 {
                                     let seq_res =
-                                        {
-                                            let mut repeat_pos = pos;
-                                            let mut repeat_value = vec!();
-                                            loop  {
-                                                let pos = repeat_pos;
-                                                let step_res =
-                                                    parse_rule(input, state,
-                                                               pos);
-                                                match step_res {
-                                                    Matched(newpos, value) =>
-                                                    {
-                                                        repeat_pos = newpos;
-                                                        repeat_value.push(value);
-                                                    }
-                                                    Failed => { break ; }
-                                                }
+                                        match parse_context_type(input, state,
+                                                                 pos) {
+                                            Matched(newpos, value) => {
+                                                Matched(newpos, Some(value))
                                             }
-                                            Matched(repeat_pos, repeat_value)
+                                            Failed => { Matched(pos, None) }
                                         };
                                     match seq_res {
-                                        Matched(pos, rules) => {
+                                        Matched(pos, context) => {
                                             {
-                                                let match_str =
-                                                    &input[start_pos..pos];
-                                                Matched(pos,
+                                                let seq_res =
+                                                    {
+                                                        let mut repeat_pos =
+                                                            pos;
+                                                        let mut repeat_value =
+                                                            vec!();
+                                                        loop  {
+                                                            let pos =
+                                                                repeat_pos;
+                                                            let step_res =
+                                                                parse_rule(input,
+                                                                           state,
+                                                                           pos);
+                                                            match step_res {
+                                                                Matched(newpos,
+                                                                        value)
+                                                                => {
+                                                                    repeat_pos
+                                                                        =
+                                                                        newpos;
+                                                                    repeat_value.push(value);
+                                                                }
+                                                                Failed => {
+                                                                    break ;
+                                                                }
+                                                            }
+                                                        }
+                                                        Matched(repeat_pos,
+                                                                repeat_value)
+                                                    };
+                                                match seq_res {
+                                                    Matched(pos, rules) => {
                                                         {
-                                                            Grammar{imports:
-                                                                        imports,
-                                                                    rules:
-                                                                        rules,}
-                                                        })
+                                                            let match_str =
+                                                                &input[start_pos..pos];
+                                                            Matched(pos,
+                                                                    {
+                                                                        Grammar{imports:
+                                                                                    imports,
+                                                                                rules:
+                                                                                    rules,
+                                                                                context_type:
+                                                                                    context,}
+                                                                    })
+                                                        }
+                                                    }
+                                                    Failed => Failed,
+                                                }
                                             }
                                         }
                                         Failed => Failed,
@@ -900,6 +927,73 @@ fn parse_rust_use<'input>(input: &'input str, state: &mut ParseState,
                                                                 Failed =>
                                                                 Failed,
                                                             }
+                                                        }
+                                                    }
+                                                    Failed => Failed,
+                                                }
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
+                                }
+                            }
+                            Failed => Failed,
+                        }
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_context_type<'input>(input: &'input str, state: &mut ParseState,
+                              pos: usize) -> RuleResult<String> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "#![context(");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let seq_res =
+                            {
+                                let start_pos = pos;
+                                {
+                                    let seq_res =
+                                        parse_rust_type(input, state, pos);
+                                    match seq_res {
+                                        Matched(pos, _) => {
+                                            {
+                                                let match_str =
+                                                    &input[start_pos..pos];
+                                                Matched(pos,
+                                                        {
+                                                            match_str.to_string()
+                                                        })
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
+                                }
+                            };
+                        match seq_res {
+                            Matched(pos, t) => {
+                                {
+                                    let seq_res =
+                                        slice_eq(input, state, pos, ")]");
+                                    match seq_res {
+                                        Matched(pos, _) => {
+                                            {
+                                                let seq_res =
+                                                    parse___(input, state,
+                                                             pos);
+                                                match seq_res {
+                                                    Matched(pos, _) => {
+                                                        {
+                                                            let match_str =
+                                                                &input[start_pos..pos];
+                                                            Matched(pos,
+                                                                    { t })
                                                         }
                                                     }
                                                     Failed => Failed,

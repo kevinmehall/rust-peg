@@ -3,8 +3,8 @@ use std::char;
 
 #[export]
 grammar -> Grammar
-  = __ imports:rust_use* rules:rule*
-  { Grammar{ imports:imports, rules:rules } }
+  = __ imports:rust_use* context:context_type? rules:rule*
+  { Grammar{ imports:imports, rules:rules, context_type:context } }
 
 rule -> Rule
   = exported:exportflag cached:cacheflag name:identifier returns: returntype equals expression:expression semicolon? {
@@ -27,6 +27,9 @@ rust_use -> RustUse
     / ""
       { RustUseSimple(p.clone()) }
   ) ";" __ { v }
+
+context_type -> String
+  = "#![context(" t:(rust_type { match_str.to_string() }) ")]" __ { t }
 
 rust_path -> String
   = ( identifier ++ ("::" __)) { match_str.to_string() }
