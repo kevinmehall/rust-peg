@@ -14,7 +14,10 @@ fn test_neg_assert() {
 #[test]
 fn test_eof() {
 	assert_eq!(expect_nothing("t"), Ok(()));
-	assert!(expect_nothing("tt").is_err());
+	match expect_nothing("tt") {
+		Err(e) => println!("{}", e),
+		Ok(_) => panic!("should not happen")
+	};
 }
 
 #[test]
