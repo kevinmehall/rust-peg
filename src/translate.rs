@@ -243,15 +243,16 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
-		fn any_char(input: &str, state: &mut ParseState, pos: usize) -> RuleResult<()> {
+		fn any_char(input: &str, state: &mut ParseState, pos: usize) -> RuleResult<char> {
 			#![inline]
 			#![allow(dead_code)]
 
 			if input.len() > pos {
-				let (_, next) = char_range_at(input, pos);
-				Matched(next, ())
+				let (c, next) = char_range_at(input, pos);
+				Matched(next, c)
 			} else {
-				state.mark_failure(pos, "<character>")
+				state.mark_failure(pos, "<character>");
+                Failed
 			}
 		}
 	).unwrap());

@@ -73,13 +73,13 @@ fn slice_eq_case_insensitive(input: &str, state: &mut ParseState, pos: usize,
     Matched(pos + used, ())
 }
 fn any_char(input: &str, state: &mut ParseState, pos: usize)
- -> RuleResult<()> {
+ -> RuleResult<char> {
     #![inline]
     #![allow(dead_code)]
     if input.len() > pos {
-        let (_, next) = char_range_at(input, pos);
-        Matched(next, ())
-    } else { state.mark_failure(pos, "<character>") }
+        let (c, next) = char_range_at(input, pos);
+        Matched(next, c)
+    } else { state.mark_failure(pos, "<character>"); Failed }
 }
 fn pos_to_line(input: &str, pos: usize) -> (usize, usize) {
     let mut remaining = pos;
