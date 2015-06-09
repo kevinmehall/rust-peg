@@ -252,7 +252,7 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 				Matched(next, c)
 			} else {
 				state.mark_failure(pos, "<character>");
-                Failed
+				Failed
 			}
 		}
 	).unwrap());
