@@ -3531,13 +3531,10 @@ fn parse_simpleDoubleQuotedCharacter<'input>(input: &'input str,
                     {
                         let seq_res = any_char(input, state, pos);
                         match seq_res {
-                            Matched(pos, _) => {
+                            Matched(pos, c) => {
                                 {
                                     let match_str = &input[start_pos..pos];
-                                    Matched(pos,
-                                            {
-                                                match_str.chars().next().unwrap()
-                                            })
+                                    Matched(pos, { c })
                                 }
                             }
                             Failed => Failed,
@@ -3713,13 +3710,10 @@ fn parse_simpleSingleQuotedCharacter<'input>(input: &'input str,
                     {
                         let seq_res = any_char(input, state, pos);
                         match seq_res {
-                            Matched(pos, _) => {
+                            Matched(pos, c) => {
                                 {
                                     let match_str = &input[start_pos..pos];
-                                    Matched(pos,
-                                            {
-                                                match_str.chars().next().unwrap()
-                                            })
+                                    Matched(pos, { c })
                                 }
                             }
                             Failed => Failed,
@@ -4034,13 +4028,10 @@ fn parse_simpleBracketDelimitedCharacter<'input>(input: &'input str,
                     {
                         let seq_res = any_char(input, state, pos);
                         match seq_res {
-                            Matched(pos, _) => {
+                            Matched(pos, c) => {
                                 {
                                     let match_str = &input[start_pos..pos];
-                                    Matched(pos,
-                                            {
-                                                match_str.chars().next().unwrap()
-                                            })
+                                    Matched(pos, { c })
                                 }
                             }
                             Failed => Failed,
@@ -4124,14 +4115,13 @@ fn parse_simpleEscapeSequence<'input>(input: &'input str,
                                 {
                                     let seq_res = any_char(input, state, pos);
                                     match seq_res {
-                                        Matched(pos, _) => {
+                                        Matched(pos, c) => {
                                             {
                                                 let match_str =
                                                     &input[start_pos..pos];
                                                 Matched(pos,
                                                         {
-                                                            match match_str[1..].chars().next().unwrap()
-                                                                {
+                                                            match c {
                                                                 'n' => '\n',
                                                                 'r' => '\r',
                                                                 't' => '\t',
