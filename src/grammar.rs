@@ -4857,6 +4857,7 @@ pub fn grammar<'input>(input: &'input str) -> ParseResult<Grammar> {
         Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
         _ => { }
     }
+    state = ParseState::new();
     state.failing = true;
     parse_grammar(input, &mut state, 0);
     let (line, col) = pos_to_line(input, state.max_err_pos);

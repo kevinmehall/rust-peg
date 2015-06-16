@@ -333,6 +333,7 @@ fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rusta
 				_ => {}
 			}
 
+			state = ParseState::new();
 			state.failing = true;
 			$parse_fn(input, &mut state, 0);
 
