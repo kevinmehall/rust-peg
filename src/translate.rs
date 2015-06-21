@@ -181,7 +181,9 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 		impl ::std::fmt::Display for ParseError {
 			fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
 				try!(write!(fmt, "error at {}:{}: expected ", self.line, self.column));
-				if self.expected.len() == 1 {
+				if self.expected.len() == 0 {
+					try!(write!(fmt, "EOF"));
+				} else if self.expected.len() == 1 {
 					try!(write!(fmt, "`{}`", escape_default(self.expected.iter().next().unwrap())));
 				} else {
 					let mut iter = self.expected.iter();

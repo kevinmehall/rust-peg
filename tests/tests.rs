@@ -12,6 +12,15 @@ fn test_neg_assert() {
 }
 
 #[test]
+fn test_eof() {
+	assert_eq!(expect_nothing("t"), Ok(()));
+	match expect_nothing("tt") {
+		Err(e) => println!("{}", e),
+		Ok(_) => panic!("should not happen")
+	};
+}
+
+#[test]
 fn test_optional() {
 	assert_eq!(options("abc"), Ok(None));
 	assert_eq!(options("abcdef"), Ok(Some(())));
