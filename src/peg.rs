@@ -1,4 +1,4 @@
-#![feature(quote, box_syntax, collections, rustc_private, box_patterns, exit_status, slice_patterns)]
+#![feature(quote, box_syntax, rustc_private, box_patterns, slice_patterns, append)]
 extern crate syntax;
 
 use std::env;
@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::io::{stdin, stdout, stderr};
 use std::path::Path;
+use std::process;
 use translate::{compile_grammar};
 
 mod translate;
@@ -50,7 +51,7 @@ fn main() {
 		Err(msg) => {
 			let mut e = stderr();
 			(writeln!(&mut e, "Error parsing language specification: {}", msg)).unwrap();
-			env::set_exit_status(1);
+			process::exit(1);
 		}
 	}
 }
