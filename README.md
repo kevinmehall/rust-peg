@@ -53,7 +53,7 @@ rule_name -> type
 
 If a rule is marked with `#[pub]`, the generated module has a public function that begins parsing at that rule.
 
-  * `.` - match any single character
+  * `.` - match any single character and return it as a `char`
   * `"literal"` - match a literal string
   * `[a-z]`  - match a single character from a set
   * `[^a-z]` - match a single character not in a set
