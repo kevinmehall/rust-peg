@@ -194,7 +194,9 @@ pub fn header_items(ctxt: &rustast::ExtCtxt) -> Vec<rustast::P<rustast::Item>> {
 		impl ::std::fmt::Display for ParseError {
 			fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
 				try!(write!(fmt, "error at {}:{}: expected ", self.line, self.column));
-				if self.expected.len() == 1 {
+				if self.expected.len() == 0 {
+					try!(write!(fmt, "EOF"));
+				} else if self.expected.len() == 1 {
 					try!(write!(fmt, "`{}`", escape_default(self.expected.iter().next().unwrap())));
 				} else {
 					let mut iter = self.expected.iter();
@@ -490,7 +492,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 				if exprs.len() == 1 {
 					compile_expr(ctxt, grammar, &exprs[0], false)
 				} else {
-					compile_match_and_then(ctxt, grammar, &exprs[0], None, write_seq(ctxt, grammar, exprs.tail()))
+					compile_match_and_then(ctxt, grammar, &exprs[0], None, write_seq(ctxt, grammar, &exprs[1..]))
 				}
 			}
 
@@ -507,7 +509,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 					compile_expr(ctxt, grammar, &exprs[0], result_used)
 				} else {
 					let choice_res = compile_expr(ctxt, grammar, &exprs[0], result_used);
-					let next = write_choice(ctxt, grammar, exprs.tail(), result_used);
+					let next = write_choice(ctxt, grammar, &exprs[1..], result_used);
 
 					quote_expr!(ctxt, {
 						let choice_res = $choice_res;
@@ -640,7 +642,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 					Some(ref first) => {
 						let name = first.name.as_ref().map(|s| &s[..]);
 						compile_match_and_then(ctxt, grammar, &*first.expr, name,
-							write_seq(ctxt, grammar, exprs.tail(), code, is_cond)
+							write_seq(ctxt, grammar, &exprs[1..], code, is_cond)
 						)
 					}
 					None => {
