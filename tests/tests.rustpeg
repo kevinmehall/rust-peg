@@ -71,3 +71,7 @@ keyvals -> HashMap<i64, i64>
 
 keyval -> (i64, i64)
     = k:number ":" + v:number { (k, v) }
+
+#[export]
+expect_nothing -> ()
+	= [a-zA-Z]
