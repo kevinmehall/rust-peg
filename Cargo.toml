@@ -13,6 +13,7 @@ A parser generator built on the Parsing Expression Grammar (PEG) formalism.
 name = "peg"
 path = "src/peg.rs"
 test = false
+bench = false
 
 [lib]
 plugin = true
