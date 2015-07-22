@@ -107,6 +107,7 @@ fn make_parse_state(ctxt: &rustast::ExtCtxt, rules: &[Rule]) -> Vec<rustast::P<r
 		struct ParseState {
 			max_err_pos: usize,
 			expected: ::std::collections::HashSet<&'static str>,
+			failing: bool,
 			$cache_fields
 		}
 	).unwrap());
@@ -117,17 +118,15 @@ fn make_parse_state(ctxt: &rustast::ExtCtxt, rules: &[Rule]) -> Vec<rustast::P<r
 				ParseState {
 					max_err_pos: 0,
 					expected: ::std::collections::HashSet::new(),
+					failing: false,
 					$cache_init
 				}
 			}
 			fn mark_failure(&mut self, pos: usize, expected: &'static str) -> RuleResult<()> {
-				if pos > self.max_err_pos {
-					self.max_err_pos = pos;
-					self.expected.clear();
-				}
-
-				if pos == self.max_err_pos {
+				if self.failing && pos == self.max_err_pos {
 					self.expected.insert(expected);
+				} else if pos > self.max_err_pos {
+					self.max_err_pos = pos;
 				}
 
 				Failed
@@ -335,8 +334,12 @@ fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rusta
 				}
 				_ => {}
 			}
-			let (line, col) = pos_to_line(input, state.max_err_pos);
 
+			state = ParseState::new();
+			state.failing = true;
+			$parse_fn(input, &mut state, 0);
+
+			let (line, col) = pos_to_line(input, state.max_err_pos);
 			Err(ParseError {
 				line: line,
 				column: col,
