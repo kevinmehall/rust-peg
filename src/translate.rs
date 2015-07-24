@@ -8,11 +8,24 @@ pub use self::Expr::*;
 pub struct Grammar {
 	pub imports: Vec<RustUse>,
 	pub rules: Vec<Rule>,
+	pub context_type: Option<String>,
 }
 
 impl Grammar {
 	fn find_rule(&self, name: &str) -> Option<&Rule> {
 		self.rules.iter().find(|rule| rule.name == name)
+	}
+
+	fn context_def_arg(&self, ctxt: &rustast::ExtCtxt) -> Option<Vec<rustast::TokenTree>> {
+		self.context_type.as_ref().map(|t| {
+			let t = rustast::parse_type(ctxt, t);
+			quote_tokens!(ctxt, , context: $t)
+		})
+	}
+
+	fn context_call_arg(&self, ctxt: &rustast::ExtCtxt) -> Option<Vec<rustast::TokenTree>> {
+		#![allow(unused_imports)]
+		self.context_type.as_ref().map(|_| quote_tokens!(ctxt, , context))
 	}
 }
 
@@ -69,7 +82,7 @@ pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P
 		compile_rule(ctxt, grammar, rule)
 	}));
 	items.extend(grammar.rules.iter().filter(|rule| rule.exported).map(|rule| {
-		compile_rule_export(ctxt, rule)
+		compile_rule_export(ctxt, grammar, rule)
 	}));
 
     rustast::module(items)
@@ -300,11 +313,12 @@ fn compile_rule(ctxt: &rustast::ExtCtxt, grammar: &Grammar, rule: &Rule) -> rust
 		})
 	} else { body };
 
+	let ctxdefarg = grammar.context_def_arg(ctxt);
 	if rule.cached {
 		let cache_field = rustast::str_to_ident(&format!("{}_cache", rule.name));
 
 		quote_item!(ctxt,
-			fn $name<'input>(input: &'input str, state: &mut ParseState, pos: usize) -> RuleResult<$ret> {
+			fn $name<'input>(input: &'input str, state: &mut ParseState, pos: usize $ctxdefarg) -> RuleResult<$ret> {
 				let rule_result = $wrapped_body;
 				state.$cache_field.insert(pos, rule_result.clone());
 
@@ -313,21 +327,24 @@ fn compile_rule(ctxt: &rustast::ExtCtxt, grammar: &Grammar, rule: &Rule) -> rust
 		).unwrap()
 	} else {
 		quote_item!(ctxt,
-			fn $name<'input>(input: &'input str, state: &mut ParseState, pos: usize) -> RuleResult<$ret> {
+			fn $name<'input>(input: &'input str, state: &mut ParseState, pos: usize $ctxdefarg) -> RuleResult<$ret> {
 				$wrapped_body
 			}
 		).unwrap()
 	}
 }
 
-fn compile_rule_export(ctxt: &rustast::ExtCtxt, rule: &Rule) -> rustast::P<rustast::Item> {
+fn compile_rule_export(ctxt: &rustast::ExtCtxt, grammar: &Grammar, rule: &Rule) -> rustast::P<rustast::Item> {
 	let name = rustast::str_to_ident(&rule.name);
 	let ret = rustast::parse_type(ctxt, &rule.ret_type);
 	let parse_fn = rustast::str_to_ident(&format!("parse_{}", rule.name));
+	let ctxdefarg = grammar.context_def_arg(ctxt);
+	let ctxcallarg = grammar.context_call_arg(ctxt);
+
 	(quote_item!(ctxt,
-		pub fn $name<'input>(input: &'input str) -> ParseResult<$ret> {
+		pub fn $name<'input>(input: &'input str $ctxdefarg) -> ParseResult<$ret> {
 			let mut state = ParseState::new();
-			match $parse_fn(input, &mut state, 0) {
+			match $parse_fn(input, &mut state, 0 $ctxcallarg) {
 				Matched(pos, value) => {
 					if pos == input.len() {
 						return Ok(value)
@@ -441,6 +458,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 		RuleExpr(ref rule_name) => {
 			let func = rustast::str_to_ident(&format!("parse_{}", *rule_name));
 			let rule = grammar.find_rule(rule_name);
+			let ctxcallarg = grammar.context_call_arg(ctxt);
 			match rule {
 				Some(rule) if rule.cached => {
 					let cache_field = rustast::str_to_ident(&format!("{}_cache", *rule_name));
@@ -455,7 +473,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 								};
 
 								entry.clone()
-							}).unwrap_or_else(|| $func(input, state, pos))
+							}).unwrap_or_else(|| $func(input, state, pos $ctxcallarg))
 						})
 					} else {
 						quote_expr!(ctxt, {
@@ -464,7 +482,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 					}
 				},
 				_ => {
-					quote_expr!(ctxt, $func(input, state, pos))
+					quote_expr!(ctxt, $func(input, state, pos $ctxcallarg))
 				}
 			}
 		}
