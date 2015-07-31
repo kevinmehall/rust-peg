@@ -94,15 +94,17 @@ fn pos_to_line(input: &str, pos: usize) -> (usize, usize) {
     }
     return (lineno, remaining + 1);
 }
-struct ParseState {
+struct ParseState<'input> {
     max_err_pos: usize,
     expected: ::std::collections::HashSet<&'static str>,
+    _phantom: ::std::marker::PhantomData<&'input ()>,
     primary_cache: ::std::collections::HashMap<usize, RuleResult<Expr>>,
 }
-impl ParseState {
-    fn new() -> ParseState {
+impl <'input> ParseState<'input> {
+    fn new() -> ParseState<'input> {
         ParseState{max_err_pos: 0,
                    expected: ::std::collections::HashSet::new(),
+                   _phantom: ::std::marker::PhantomData,
                    primary_cache: ::std::collections::HashMap::new(),}
     }
     fn mark_failure(&mut self, pos: usize, expected: &'static str)

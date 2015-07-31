@@ -104,19 +104,21 @@ fn make_parse_state(ctxt: &rustast::ExtCtxt, rules: &[Rule]) -> Vec<rustast::P<r
 	}
 
 	items.push(quote_item!(ctxt,
-		struct ParseState {
+		struct ParseState<'input> {
 			max_err_pos: usize,
 			expected: ::std::collections::HashSet<&'static str>,
+			_phantom: ::std::marker::PhantomData<&'input ()>,
 			$cache_fields
 		}
 	).unwrap());
 
 	items.push(quote_item!(ctxt,
-		impl ParseState {
-			fn new() -> ParseState {
+		impl<'input> ParseState<'input> {
+			fn new() -> ParseState<'input> {
 				ParseState {
 					max_err_pos: 0,
 					expected: ::std::collections::HashSet::new(),
+					_phantom: ::std::marker::PhantomData,
 					$cache_init
 				}
 			}
@@ -304,7 +306,7 @@ fn compile_rule(ctxt: &rustast::ExtCtxt, grammar: &Grammar, rule: &Rule) -> rust
 		let cache_field = rustast::str_to_ident(&format!("{}_cache", rule.name));
 
 		quote_item!(ctxt,
-			fn $name<'input>(input: &'input str, state: &mut ParseState, pos: usize) -> RuleResult<$ret> {
+			fn $name<'input>(input: &'input str, state: &mut ParseState<'input>, pos: usize) -> RuleResult<$ret> {
 				let rule_result = $wrapped_body;
 				state.$cache_field.insert(pos, rule_result.clone());
 
@@ -313,7 +315,7 @@ fn compile_rule(ctxt: &rustast::ExtCtxt, grammar: &Grammar, rule: &Rule) -> rust
 		).unwrap()
 	} else {
 		quote_item!(ctxt,
-			fn $name<'input>(input: &'input str, state: &mut ParseState, pos: usize) -> RuleResult<$ret> {
+			fn $name<'input>(input: &'input str, state: &mut ParseState<'input>, pos: usize) -> RuleResult<$ret> {
 				$wrapped_body
 			}
 		).unwrap()
