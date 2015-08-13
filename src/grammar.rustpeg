@@ -8,7 +8,7 @@ grammar -> Grammar
 
 rule -> Rule
   = exported:exportflag cached:cacheflag name:identifier returns: returntype equals expression:expression semicolon? {
-      Rule{ name: name, expr: box expression, ret_type: returns, exported: exported, cached: cached }
+      Rule{ name: name, expr: Box::new(expression), ret_type: returns, exported: exported, cached: cached }
     }
 
     exportflag -> bool = ("#[export]"/"#[pub]") __ {true} / "" {false}
@@ -68,10 +68,10 @@ sequence -> Expr
 
 labeled -> TaggedExpr
   = label:identifier colon expression:prefixed {
-      TaggedExpr{ name: Some(label), expr: box expression }
+      TaggedExpr{ name: Some(label), expr: Box::new(expression) }
     }
   / expr: prefixed {
-      TaggedExpr{ name: None, expr: box expr }
+      TaggedExpr{ name: None, expr: Box::new(expr) }
   }
 
 prefixed -> Expr
@@ -82,40 +82,40 @@ prefixed -> Expr
 //      fail!("/*Semantic and unsupported*/");
 //    }
   / and expression:suffixed {
-      PosAssertExpr(box expression)
+      PosAssertExpr(Box::new(expression))
     }
 //  / not code:action {
 //      fail!("/*Semantic not unsupported*/");
 //    }
   / not expression:suffixed {
-      NegAssertExpr(box expression)
+      NegAssertExpr(Box::new(expression))
     }
   / suffixed
 
 suffixed -> Expr
   = expression:primary question {
-       OptionalExpr(box expression)
+       OptionalExpr(Box::new(expression))
     }
   / expression:primary starstar sep:primary {
-      Repeat(box expression, 0, None, Some(box sep))
+      Repeat(Box::new(expression), 0, None, Some(Box::new(sep)))
     }
   / expression:primary plusplus sep:primary {
-      Repeat(box expression, 1, None, Some(box sep))
+      Repeat(Box::new(expression), 1, None, Some(Box::new(sep)))
     }
   / expression:primary star {
-      Repeat(box expression, 0, None, None)
+      Repeat(Box::new(expression), 0, None, None)
     }
   / expression:primary plus {
-      Repeat(box expression, 1, None, None)
+      Repeat(Box::new(expression), 1, None, None)
     }
   / expression:primary lbrace n:integer rbrace {
-      Repeat(box expression, n, Some(n), None)
+      Repeat(Box::new(expression), n, Some(n), None)
     }
   / expression:primary lbrace min:integer comma max:integer? rbrace {
-      Repeat(box expression, min, max, None)
+      Repeat(Box::new(expression), min, max, None)
     }
   / expression:primary lbrace comma max:integer? rbrace {
-      Repeat(box expression, 0, max, None)
+      Repeat(Box::new(expression), 0, max, None)
     }
   / primary
 

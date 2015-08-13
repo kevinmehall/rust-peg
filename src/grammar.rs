@@ -272,7 +272,7 @@ fn parse_rule<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                                                             Rule{name:
                                                                                                                      name,
                                                                                                                  expr:
-                                                                                                                     box() expression,
+                                                                                                                     Box::new(expression),
                                                                                                                  ret_type:
                                                                                                                      returns,
                                                                                                                  exported:
@@ -1708,7 +1708,7 @@ fn parse_labeled<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                     TaggedExpr{name:
                                                                                    Some(label),
                                                                                expr:
-                                                                                   box() expression,}
+                                                                                   Box::new(expression),}
                                                                 })
                                                     }
                                                 }
@@ -1737,7 +1737,7 @@ fn parse_labeled<'input>(input: &'input str, state: &mut ParseState<'input>,
                                 Matched(pos,
                                         {
                                             TaggedExpr{name: None,
-                                                       expr: box() expr,}
+                                                       expr: Box::new(expr),}
                                         })
                             }
                         }
@@ -1797,7 +1797,7 @@ fn parse_prefixed<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                         &input[start_pos..pos];
                                                     Matched(pos,
                                                             {
-                                                                PosAssertExpr(box() expression)
+                                                                PosAssertExpr(Box::new(expression))
                                                             })
                                                 }
                                             }
@@ -1833,7 +1833,7 @@ fn parse_prefixed<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                 &input[start_pos..pos];
                                                             Matched(pos,
                                                                     {
-                                                                        NegAssertExpr(box() expression)
+                                                                        NegAssertExpr(Box::new(expression))
                                                                     })
                                                         }
                                                     }
@@ -1882,7 +1882,7 @@ fn parse_suffixed<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                 &input[start_pos..pos];
                                             Matched(pos,
                                                     {
-                                                        OptionalExpr(box() expression)
+                                                        OptionalExpr(Box::new(expression))
                                                     })
                                         }
                                     }
@@ -1932,10 +1932,10 @@ fn parse_suffixed<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                     &input[start_pos..pos];
                                                                 Matched(pos,
                                                                         {
-                                                                            Repeat(box() expression,
+                                                                            Repeat(Box::new(expression),
                                                                                    0,
                                                                                    None,
-                                                                                   Some(box() sep))
+                                                                                   Some(Box::new(sep)))
                                                                         })
                                                             }
                                                         }
@@ -1993,10 +1993,10 @@ fn parse_suffixed<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                             &input[start_pos..pos];
                                                                         Matched(pos,
                                                                                 {
-                                                                                    Repeat(box() expression,
+                                                                                    Repeat(Box::new(expression),
                                                                                            1,
                                                                                            None,
-                                                                                           Some(box() sep))
+                                                                                           Some(Box::new(sep)))
                                                                                 })
                                                                     }
                                                                 }
@@ -2043,7 +2043,7 @@ fn parse_suffixed<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                         &input[start_pos..pos];
                                                                     Matched(pos,
                                                                             {
-                                                                                Repeat(box() expression,
+                                                                                Repeat(Box::new(expression),
                                                                                        0,
                                                                                        None,
                                                                                        None)
@@ -2093,7 +2093,7 @@ fn parse_suffixed<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                                 &input[start_pos..pos];
                                                                             Matched(pos,
                                                                                     {
-                                                                                        Repeat(box() expression,
+                                                                                        Repeat(Box::new(expression),
                                                                                                1,
                                                                                                None,
                                                                                                None)
@@ -2167,7 +2167,7 @@ fn parse_suffixed<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                                                                 &input[start_pos..pos];
                                                                                                             Matched(pos,
                                                                                                                     {
-                                                                                                                        Repeat(box() expression,
+                                                                                                                        Repeat(Box::new(expression),
                                                                                                                                n,
                                                                                                                                Some(n),
                                                                                                                                None)
@@ -2294,7 +2294,7 @@ fn parse_suffixed<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                                                                                                 &input[start_pos..pos];
                                                                                                                                             Matched(pos,
                                                                                                                                                     {
-                                                                                                                                                        Repeat(box() expression,
+                                                                                                                                                        Repeat(Box::new(expression),
                                                                                                                                                                min,
                                                                                                                                                                max,
                                                                                                                                                                None)
@@ -2426,7 +2426,7 @@ fn parse_suffixed<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                                                                                             &input[start_pos..pos];
                                                                                                                                         Matched(pos,
                                                                                                                                                 {
-                                                                                                                                                    Repeat(box() expression,
+                                                                                                                                                    Repeat(Box::new(expression),
                                                                                                                                                            0,
                                                                                                                                                            max,
                                                                                                                                                            None)
