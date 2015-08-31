@@ -16,8 +16,7 @@ pub fn with_fake_extctxt<T, F: Fn(&ExtCtxt) -> T>(f: F) -> T {
   cx.bt_push(syntax::codemap::ExpnInfo{
     call_site: DUMMY_SP,
     callee: syntax::codemap::NameAndSpan {
-      name: "".to_string(),
-      format: syntax::codemap::MacroBang,
+      format: syntax::codemap::MacroBang(syntax::parse::token::intern("")),
       span: None,
       allow_internal_unstable: false,
     }
