@@ -89,7 +89,7 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
                                                 tts.to_vec());
     // The `expand_expr` method is called so that any macro calls in the
     // parsed expression are expanded.
-    let arg = cx.expander().fold_expr(parser.parse_expr_nopanic().unwrap_or_else(|e| panic!(e)));
+    let arg = cx.expander().fold_expr(parser.parse_expr().unwrap_or_else(|e| panic!(e)));
     match arg.node {
         ast::ExprLit(ref spanned) => {
             match spanned.node {
