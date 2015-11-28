@@ -1,6 +1,6 @@
 #![feature(plugin_registrar, quote, rustc_private, box_patterns)]
 
-extern crate rustc;
+extern crate rustc_plugin;
 extern crate syntax;
 
 use syntax::ast;
@@ -10,7 +10,7 @@ use syntax::parse;
 use syntax::parse::token;
 use syntax::fold::Folder;
 use syntax::util::small_vector::SmallVector;
-use rustc::plugin::Registry;
+use rustc_plugin::Registry;
 use std::io::Read;
 use std::fs::File;
 use std::path::Path;
