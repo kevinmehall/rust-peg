@@ -1,5 +1,5 @@
 #![feature(quote, box_syntax, placement_in_syntax, rustc_private, box_patterns, slice_patterns)]
-extern crate syntax;
+#[macro_use] extern crate syntax;
 
 use std::env;
 use std::fs::File;

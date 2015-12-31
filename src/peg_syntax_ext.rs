@@ -1,7 +1,7 @@
 #![feature(plugin_registrar, quote, rustc_private, box_patterns)]
 
 extern crate rustc_plugin;
-extern crate syntax;
+#[macro_use] extern crate syntax;
 
 use syntax::ast;
 use syntax::codemap;
@@ -89,12 +89,12 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
                                                 tts.to_vec());
     // The `expand_expr` method is called so that any macro calls in the
     // parsed expression are expanded.
-    let arg = cx.expander().fold_expr(parser.parse_expr().unwrap_or_else(|e| panic!(e)));
+    let arg = cx.expander().fold_expr(panictry!(parser.parse_expr()));
     match arg.node {
         ast::ExprLit(ref spanned) => {
             match spanned.node {
                 ast::LitStr(ref n, _) => {
-                    if !parser.eat(&token::Eof).unwrap_or_else(|e| panic!(e)) {
+                    if !panictry!(parser.eat(&token::Eof)) {
                         cx.span_err(parser.span,
                                     "expected only one string literal");
                         return None

@@ -17,10 +17,10 @@ pub fn module(items: Vec<P<Item>>) -> P<Mod> {
 }
 
 pub fn parse_path(ctxt: &ExtCtxt, e: &str) -> ast::Path {
-	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), String::new(), e.to_string());
-	let r = p.parse_path(syntax::parse::parser::NoTypesAllowed);
+	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), "peg".to_string(), e.to_string());
+	let r = panictry!(p.parse_path(syntax::parse::parser::NoTypesAllowed));
 	p.abort_if_errors();
-	r.unwrap_or_else(|e|panic!(e))
+	r
 }
 
 pub fn parse_path_vec(s: &str) -> Vec<ast::Ident> {
@@ -28,15 +28,15 @@ pub fn parse_path_vec(s: &str) -> Vec<ast::Ident> {
 }
 
 pub fn parse_block(ctxt: &ExtCtxt, e: &str) -> P<ast::Block> {
-	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), String::new(), e.to_string());
-	let r = p.parse_block();
+	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), "peg".to_string(), e.to_string());
+	let r = panictry!(p.parse_block());
 	p.abort_if_errors();
-	r.unwrap_or_else(|e| panic!(e))
+	r
 }
 
 pub fn parse_type(ctxt: &ExtCtxt, e: &str) -> P<ast::Ty> {
-	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), String::new(), e.to_string());
-	let r = p.parse_ty();
+	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), "peg".to_string(), e.to_string());
+	let r = panictry!(p.parse_ty());
 	p.abort_if_errors();
-	r.unwrap_or_else(|e| panic!(e))
+	r
 }
