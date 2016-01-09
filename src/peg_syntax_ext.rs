@@ -123,16 +123,16 @@ pub fn compile_file(path: &Path, out: &mut Write) -> grammar::ParseResult<()> {
 }
 
 pub fn compile_string(source: &str, out: &mut Write) -> grammar::ParseResult<()> {
-	match grammar::grammar(source) {
-		Ok(grammar) => {
-			fake_extctxt::with_fake_extctxt(|e| {
-				let ast = compile_grammar(e, &grammar);
-				for item in ast.items.iter() {
-					writeln!(out, "{}", &rustast::item_to_string(&**item)).unwrap();
-				}
-			});
+    match grammar::grammar(source) {
+        Ok(grammar) => {
+            fake_extctxt::with_fake_extctxt(|e| {
+                let ast = compile_grammar(e, &grammar);
+                for item in ast.items.iter() {
+                    writeln!(out, "{}", &rustast::item_to_string(&**item)).unwrap();
+                }
+            });
             Ok(())
-		}
-		Err(err) => Err(err)
-	}
+        }
+        Err(err) => Err(err)
+    }
 }
