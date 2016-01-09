@@ -3,7 +3,7 @@ use syntax::codemap::DUMMY_SP;
 use syntax::ext::base::ExtCtxt;
 
 /// Create a fake ExtCtxt to perform macro quasiquotes outside of rustc plugins
-pub fn with_fake_extctxt<T, F: Fn(&ExtCtxt) -> T>(f: F) -> T {
+pub fn with_fake_extctxt<T, F: FnOnce(&ExtCtxt) -> T>(f: F) -> T {
   let ps = syntax::parse::ParseSess::new();
   let mut fg_cfg = Vec::new();
 

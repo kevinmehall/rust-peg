@@ -14,12 +14,15 @@ use rustc_plugin::Registry;
 use std::io::Read;
 use std::fs::File;
 use std::path::Path;
+use std::io::Write;
+use translate::{compile_grammar};
 
 use rustast::{AstBuilder, DUMMY_SP};
 
 mod translate;
 mod grammar;
 mod rustast;
+mod fake_extctxt;
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
@@ -111,4 +114,25 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
                       pprust::expr_to_string(&*arg));
     cx.span_err(parser.span, &err);
     None
+}
+
+pub fn compile_file(path: &Path, out: &mut Write) -> grammar::ParseResult<()> {
+    let mut source = String::new();
+    File::open(&Path::new(path.to_str().unwrap())).unwrap().read_to_string(&mut source).unwrap();
+    compile_string(&source, out)
+}
+
+pub fn compile_string(source: &str, out: &mut Write) -> grammar::ParseResult<()> {
+	match grammar::grammar(source) {
+		Ok(grammar) => {
+			fake_extctxt::with_fake_extctxt(|e| {
+				let ast = compile_grammar(e, &grammar);
+				for item in ast.items.iter() {
+					writeln!(out, "{}", &rustast::item_to_string(&**item)).unwrap();
+				}
+			});
+            Ok(())
+		}
+		Err(err) => Err(err)
+	}
 }
