@@ -35,6 +35,42 @@ to embed a short PEG grammar inline in your Rust source file. [Example](tests/te
 ### As a standalone code generator
 Run `peg input_file.rustpeg` to compile a grammar and generate Rust code on stdout. This code works with stable Rust.
 
+### As part of a build script
+
+In Cargo.toml:
+```
+[build-dependencies]
+peg = "*"
+```
+
+and build.rs:
+```
+// build.rs
+
+extern crate peg_syntax_ext;
+
+use std::env;
+use std::fs::File;
+use std::path::Path;
+
+fn main() {
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let dest_path = Path::new(&out_dir).join("your_file.rustpeg.rs");
+    let mut f = File::create(&dest_path).unwrap();
+
+    let source_path = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("src").join("your_file.rustpeg");
+    peg_syntax_ext::compile_file(&source_path, &mut f).unwrap();
+}
+```
+
+Finally use the generated file in your code:
+```
+#![allow(non_snake_case, unused)]
+mod pon_peg {
+    include!(concat!(env!("OUT_DIR"), "/your_file.rustpeg.rs"));
+}
+```
+
 ## Grammar Syntax
 
 ```
