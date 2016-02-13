@@ -78,9 +78,9 @@ pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P
 pub fn translate_view_items(ctxt: &rustast::ExtCtxt, imports: &[RustUse]) -> Vec<rustast::P<rustast::Item>> {
 	imports.iter().map(| i |{
 		match *i {
-			RustUseSimple(ref p) => ctxt.item_use_simple(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path(ctxt, &p)),
-			RustUseGlob(ref p) => ctxt.item_use_glob(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(&p)),
-			RustUseList(ref p, ref v) => ctxt.item_use_list(DUMMY_SP, rustast::ast::Inherited, rustast::parse_path_vec(&p),
+			RustUseSimple(ref p) => ctxt.item_use_simple(DUMMY_SP, rustast::ast::Visibility::Inherited, rustast::parse_path(ctxt, &p)),
+			RustUseGlob(ref p) => ctxt.item_use_glob(DUMMY_SP, rustast::ast::Visibility::Inherited, rustast::parse_path_vec(&p)),
+			RustUseList(ref p, ref v) => ctxt.item_use_list(DUMMY_SP, rustast::ast::Visibility::Inherited, rustast::parse_path_vec(&p),
 				&v.iter().map(|s| rustast::str_to_ident(&s)).collect::<Vec<_>>()
 			),
 		}
@@ -421,11 +421,11 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 			let m = ctxt.expr_match(DUMMY_SP, quote_expr!(ctxt, ch), vec!(
 				ctxt.arm(DUMMY_SP, cases.iter().map(|case| {
 					if case.start == case.end {
-						ctxt.pat_lit(DUMMY_SP, ctxt.expr_lit(DUMMY_SP, rustast::ast::LitChar(case.start)))
+						ctxt.pat_lit(DUMMY_SP, ctxt.expr_lit(DUMMY_SP, rustast::ast::LitKind::Char(case.start)))
 					} else {
 						ctxt.pat(DUMMY_SP, rustast::ast::PatRange(
-							ctxt.expr_lit(DUMMY_SP, rustast::ast::LitChar(case.start)),
-							ctxt.expr_lit(DUMMY_SP, rustast::ast::LitChar(case.end))
+							ctxt.expr_lit(DUMMY_SP, rustast::ast::LitKind::Char(case.start)),
+							ctxt.expr_lit(DUMMY_SP, rustast::ast::LitKind::Char(case.end))
 						))
 					}
 				}).collect::<Vec<_>>(), in_set),
