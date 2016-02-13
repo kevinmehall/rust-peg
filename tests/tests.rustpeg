@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::borrow::{IntoCow, ToOwned, Cow};
+use std::borrow::{ToOwned, Cow};
 
 #[export]
 consonants
@@ -49,8 +49,8 @@ borrowed -> &'input str
 
 #[export]
 lifetime_parameter -> Cow<'input, str>
-	= [a-z]+ { match_str.into_cow() }
-	/ "COW"  { "cow".to_owned().into_cow() }
+	= [a-z]+ { match_str.into() }
+	/ "COW"  { "cow".to_owned().into() }
 
 #[export]
 block -> &'input str
