@@ -423,7 +423,7 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 					if case.start == case.end {
 						ctxt.pat_lit(DUMMY_SP, ctxt.expr_lit(DUMMY_SP, rustast::ast::LitKind::Char(case.start)))
 					} else {
-						ctxt.pat(DUMMY_SP, rustast::ast::PatRange(
+						ctxt.pat(DUMMY_SP, rustast::ast::PatKind::Range(
 							ctxt.expr_lit(DUMMY_SP, rustast::ast::LitKind::Char(case.start)),
 							ctxt.expr_lit(DUMMY_SP, rustast::ast::LitKind::Char(case.end))
 						))
