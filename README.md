@@ -87,6 +87,14 @@ number -> int
   * **start_pos** - the byte index into the string at which the match starts, inclusive
   * **pos** - the byte index into the string at which the match ends, exclusive
 
+You can use line comments and block comments just as in rust code, for example:
+
+```
+// comment
+name -> String
+  = /* weirdly placed comment */ [0-9]+ { from_str::<u64>(match_str).unwrap() } // comment
+```
+
 ## Tracing
 
 If you pass the `peg/trace` feature to Cargo when building your project, a trace of the parsing will be output to stdout when running the binary. For example,
