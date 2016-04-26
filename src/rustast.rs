@@ -18,7 +18,7 @@ pub fn module(items: Vec<P<Item>>) -> P<Mod> {
 
 pub fn parse_path(ctxt: &ExtCtxt, e: &str) -> ast::Path {
 	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), "<peg>".to_string(), e.to_string());
-	let r = panictry!(p.parse_path(syntax::parse::parser::NoTypesAllowed));
+	let r = panictry!(p.parse_path(syntax::parse::parser::PathStyle::Mod));
 	p.abort_if_errors();
 	r
 }
