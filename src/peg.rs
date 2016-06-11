@@ -24,9 +24,9 @@ fn main() {
 
 	let mut source = String::new();
 	match &args[1..] {
-		[ref arg] if arg.to_str() == Some("-h") => return print_usage(progname),
-		[ref fname] => File::open(&Path::new(fname.to_str().unwrap())).unwrap().read_to_string(&mut source).unwrap(),
-		[] => stdin().read_to_string(&mut source).unwrap(),
+		&[ref arg] if arg.to_str() == Some("-h") => return print_usage(progname),
+		&[ref fname] => File::open(&Path::new(fname.to_str().unwrap())).unwrap().read_to_string(&mut source).unwrap(),
+		&[] => stdin().read_to_string(&mut source).unwrap(),
 		_ => return print_usage(progname),
 	};
 
