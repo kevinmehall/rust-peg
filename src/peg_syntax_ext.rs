@@ -55,7 +55,7 @@ fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident
         return DummyResult::any(sp);
     }
 
-    cx.codemap().new_filemap(format!("{}", path.display()), "".to_string());
+    cx.codemap().new_filemap(format!("{}", path.display()), None, "".to_string());
 
     expand_peg(cx, sp, ident, &source)
 }
