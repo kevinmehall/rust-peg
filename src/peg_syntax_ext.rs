@@ -1,7 +1,9 @@
 #![feature(plugin_registrar, quote, rustc_private, box_patterns)]
 
 extern crate rustc_plugin;
-#[macro_use] extern crate syntax;
+#[macro_use] pub extern crate syntax;
+#[macro_use] extern crate syntax_pos;
+pub extern crate rustc_errors as errors;
 
 use syntax::ast;
 use syntax::codemap;
@@ -15,7 +17,7 @@ use std::io::Read;
 use std::fs::File;
 use std::path::Path;
 
-use rustast::{AstBuilder, DUMMY_SP};
+use rustast::{AstBuilder, DUMMY_SP, TokenTree};
 
 mod translate;
 mod grammar;
@@ -32,7 +34,7 @@ pub fn plugin_registrar(reg: &mut Registry) {
             syntax::ext::base::IdentTT(Box::new(expand_peg_file), None, false));
 }
 
-fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult + 's> {
+fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<TokenTree>) -> Box<MacResult + 's> {
     let source = match parse_arg(cx, &tts) {
         Some(source) => source,
         None => return DummyResult::any(sp),
@@ -41,7 +43,7 @@ fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident,
     expand_peg(cx, sp, ident, &source)
 }
 
-fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult + 's> {
+fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<TokenTree>) -> Box<MacResult + 's> {
     let fname = match parse_arg(cx, &tts) {
         Some(fname) => fname,
         None => return DummyResult::any(sp),
@@ -82,7 +84,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
     MacEager::items(SmallVector::one(cx.item_mod(sp, sp, ident, vec![allow], ast.items.clone())))
 }
 
-fn parse_arg(cx: &mut ExtCtxt, tts: &[ast::TokenTree]) -> Option<String> {
+fn parse_arg(cx: &mut ExtCtxt, tts: &[TokenTree]) -> Option<String> {
     use syntax::print::pprust;
 
     let mut parser = parse::new_parser_from_tts(cx.parse_sess(), cx.cfg(),

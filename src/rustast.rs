@@ -1,10 +1,11 @@
-extern crate syntax;
-
+pub use syntax;
+pub use errors;
 pub use syntax::ast;
 pub use syntax::ptr::P;
 pub use syntax::codemap::DUMMY_SP;
 pub use syntax::ext::base::ExtCtxt;
-pub use syntax::ast::{Mod, Item, Expr, TokenTree};
+pub use syntax::tokenstream::TokenTree;
+pub use syntax::ast::{Mod, Item, Expr};
 pub use syntax::parse::token::str_to_ident;
 pub use syntax::ext::build::AstBuilder;
 pub use syntax::print::pprust::{expr_to_string, item_to_string};

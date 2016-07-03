@@ -1,5 +1,7 @@
 #![feature(quote, box_syntax, placement_in_syntax, rustc_private, box_patterns, slice_patterns)]
-#[macro_use] extern crate syntax;
+#[macro_use] pub extern crate syntax;
+#[macro_use] extern crate syntax_pos;
+pub extern crate rustc_errors as errors;
 
 use std::env;
 use std::fs::File;
