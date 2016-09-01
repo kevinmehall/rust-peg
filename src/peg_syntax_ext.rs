@@ -77,8 +77,8 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
 
     // #![allow(non_snake_case, unused)]
     let allow = cx.attribute(DUMMY_SP, cx.meta_list(DUMMY_SP, token::InternedString::new("allow"), vec![
-        cx.meta_word(DUMMY_SP, token::InternedString::new("non_snake_case")),
-        cx.meta_word(DUMMY_SP, token::InternedString::new("unused")),
+        cx.meta_list_item_word(DUMMY_SP, token::InternedString::new("non_snake_case")),
+        cx.meta_list_item_word(DUMMY_SP, token::InternedString::new("unused")),
     ]));
 
     MacEager::items(SmallVector::one(cx.item_mod(sp, sp, ident, vec![allow], ast.items.clone())))
