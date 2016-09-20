@@ -10,13 +10,13 @@ However, generated parsers are compatible with 1.0 stable, so you can generate s
 ### As a syntax extension
 Add to your Cargo.toml:
 
-```
+```toml
 [dependencies]
 peg = "0.3.0"
 ```
 
 Add to your crate root:
-```
+```rust
 #![feature(plugin)]
 #![plugin(peg_syntax_ext)]
 ```
@@ -24,7 +24,7 @@ Add to your crate root:
 Use `peg_file! modname("mygrammarfile.rustpeg");` to include the grammar from an external file. The macro expands into a module called `modname` with functions corresponding to the `#[pub]` rules in your grammar.
 
 Or, use
-```
+```rust
 peg! modname(r#"
   // grammar rules here
 "#);`
@@ -37,7 +37,7 @@ Run `peg input_file.rustpeg` to compile a grammar and generate Rust code on stdo
 
 ## Grammar Syntax
 
-```
+```rust
 use super::name;
 ```
 
@@ -45,7 +45,7 @@ The grammar may begin with a series of `use` declarations, just like in Rust, wh
 the generated module. Since the grammar is in its own module, you must `use super::StructName;` to
 access a structure from the parent module.
 
-```
+```rust
 #[pub]
 rule_name -> type
    = expression
@@ -74,12 +74,12 @@ Match actions can extract data from the match using these variables:
 
   * **match_str** - the matched string, as a `&str` slice. Examples:
 
-```
+```rust
 name -> String
   = [a-zA-Z0-9_]+ { match_str.to_string() }
 ```
 
-```
+```rust
 number -> int
   = [0-9]+ { from_str::<u64>(match_str).unwrap() }
 ```
