@@ -636,8 +636,6 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 
 						if is_cond {
 							quote_expr!(ctxt, {
-								let match_str = &input[start_pos..pos];
-
 								match $code_block {
 									Ok(res) => Matched(pos, res),
 									Err(expected) => {
@@ -647,20 +645,13 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 								}
 							})
 						} else {
-							quote_expr!(ctxt, {
-								let match_str = &input[start_pos..pos];
-								Matched(pos, $code_block)
-							})
+							quote_expr!(ctxt, Matched(pos, $code_block))
 						}
 					}
 				}
 			}
 
-			let body = write_seq(ctxt, grammar, &exprs, &code, is_cond);
-			quote_expr!(ctxt, {
-				let start_pos = pos;
-				$body
-			})
+			write_seq(ctxt, grammar, &exprs, &code, is_cond)
 		}
 		MatchStrExpr(ref expr) => {
 			let inner = compile_expr(ctxt, grammar, expr, false);

@@ -5,7 +5,7 @@ peg! parse(r#"
 
 #[pub]
 dec_byte -> u8
-    = [0-9]{,3} {?
+    = match_str:$([0-9]{,3}) {?
         let val: u64 = match_str.parse().unwrap();
 
         // only let this rule match if the value is in range 0..255

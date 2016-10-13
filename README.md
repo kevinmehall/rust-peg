@@ -69,15 +69,8 @@ If a rule is marked with `#[pub]`, the generated module has a public function th
   * `e1 e2 e3` - Match expressions in sequence
   * `a:e1 b:e2 c:e3 { rust }` - Match e1, e2, e3 in sequence. If they match successfully, run the Rust code in the block and return its return value. The variable names before the colons in the preceding sequence are bound to the results of the corresponding expressions. The Rust code must contain matched curly braces, including those in strings and comments.
   * `a:e1 b:e2 c:e3 {? rust }` - Like above, but the Rust block returns a `Result` instead of a value directly. On `Ok(v)`, it matches successfully and returns `v`. On `Err(e)`, the match of the entire expression fails and it tries alternatives or reports a parse error with the `&str` `e`.
-  * `$e` - matches the expression e, and returns the `&str` slice of the input string corresponding to the match
+  * `$(e)` - matches the expression e, and returns the `&str` slice of the input string corresponding to the match
   * `#position` - returns a `usize` representing the current offset into the input string, and consumes no characters
-
-
-Match actions can extract data from the match using these variables:
-
-  * **match_str** - the matched string, as a `&str` slice.
-  * **start_pos** - the byte index into the string at which the match starts, inclusive
-  * **pos** - the byte index into the string at which the match ends, exclusive
 
 ## Tracing
 
@@ -91,3 +84,8 @@ $ cargo run --features peg/trace
 [PEG_TRACE] Failed to match rule letter at 8:12
 ...
 ```
+
+## Migrating from 0.3
+
+* The `match_str` variable has been removed in favor of the `$(expr)` syntax.  Replace `[0-9]+ { match_str.parse().unwrap() }` with `n:$([0-9]+) { n.parse.unwrap() } `
+* `start_pos` and `pos` variables have been removed. Use `#position` as an expression, which returns a `usize` offset into the source string. Replace `foo:x { Span(start_pos, pos, foo) }` with `start:#position foo:x end:#position { Span(start, end, foo) }`

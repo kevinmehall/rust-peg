@@ -10,7 +10,7 @@ options -> Option<()>
 	= "abc" v:"def"? {v}
 
 number -> i64
-	= [0-9]+ { match_str.parse().unwrap() }
+	= n:$([0-9]+) { n.parse().unwrap() }
 
 #[export]
 list -> Vec<i64>

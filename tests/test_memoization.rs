@@ -5,7 +5,7 @@ peg! memo(r#"
 
 #[cache]
 rule -> &'input str
-    = [a-z]+ { match_str }
+    = s:$([a-z]+) { s }
 
 #[pub]
 parse
