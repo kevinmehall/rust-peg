@@ -15,7 +15,7 @@ rule -> Rule
     cacheflag -> bool = "#[cache]" __ {true} / {false}
 
 returntype -> String
-  = returns tp:(rust_type {match_str.trim().to_string()}) { tp }
+  = returns tp:$rust_type { tp.trim().to_owned() }
   / { "()".to_string() }
 
 rust_use -> RustUse
@@ -29,7 +29,7 @@ rust_use -> RustUse
   ) ";" __ { v }
 
 rust_path -> String
-  = ( identifier ++ ("::" __)) { match_str.to_string() }
+  = p:$(identifier ++ ("::" __)) { p.to_string() }
 
 rust_type
   = "()" __
@@ -132,26 +132,13 @@ primary -> Expr
 /* "Lexical" elements */
 
 action -> (String, /*is conditional match?*/ bool)
-  = "{" cond:"?"? (((braced "") / nonBraceCharacters)*) "}" __ {
-    match cond {
-        Some(_) => {
-            let mut cond = String::with_capacity(match_str.len()-1);
-            cond.push_str("{"); // }
-            cond.push_str(&match_str[2..]);
-            (cond, true)
-        }
-        None => (match_str.to_string(), false)
-    }
+  = "{" cond:"?"? literal:$(((braced "") / nonBraceCharacters)*) "}" __ {
+     (format!("{{ {} }}", literal), cond.is_some())
   }
 
-braced -> String
-  = "{" (((braced "") / nonBraceCharacters)*) "}" {match_str.to_string()}
-
-nonBraceCharacters
-  = nonBraceCharacter+
-
-nonBraceCharacter
-  = [^{}]
+braced = "{" (((braced "") / nonBraceCharacters)*) "}"
+nonBraceCharacters = nonBraceCharacter+
+nonBraceCharacter = [^{}]
 
 equals    = "="  __
 colon     = ":"  __
@@ -174,7 +161,7 @@ rbrace    = "}"  __
 comma     = ","  __
 
 integer -> usize
-  = i:([0-9]+ { match_str.parse().unwrap() }) __ { i }
+  = i:$([0-9]+) __ { i.parse().unwrap() }
 
 /*
  * Modeled after ECMA-262, 5th ed., 7.6, but much simplified:
@@ -195,7 +182,7 @@ integer -> usize
  * purpose in the grammar.
  */
 identifier -> String
-  = chars:((letter / "_") (letter / digit / "_")* {match_str.to_string()}) __ { chars }
+  = chars:$((letter / "_") (letter / digit / "_")*) __ { chars.to_owned() }
 
 /*
  * Modeled after ECMA-262, 5th ed., 7.8.4. (syntax & semantics, rules only
@@ -221,7 +208,7 @@ doubleQuotedCharacter -> char
   / eolEscapeSequence
 
 simpleDoubleQuotedCharacter -> char
-  = !('"' / "\\" / eolChar) . { match_str.chars().next().unwrap() }
+  = !('"' / "\\" / eolChar) c:$. { c.chars().next().unwrap() }
 
 singleQuotedString -> String
   = "'" s:singleQuotedCharacter* "'" { s.into_iter().collect() }
@@ -235,7 +222,7 @@ singleQuotedCharacter -> char
   / eolEscapeSequence
 
 simpleSingleQuotedCharacter -> char
-  = !("'" / "\\" / eolChar) . { match_str.chars().next().unwrap() }
+  = !("'" / "\\" / eolChar) c:$. { c.chars().next().unwrap() }
 
 class -> Expr
   = "[" inverted:"^"? parts:(classCharacterRange / classCharacter)* "]" flags:"i"? __ {
@@ -262,11 +249,11 @@ bracketDelimitedCharacter -> char
   / eolEscapeSequence
 
 simpleBracketDelimitedCharacter -> char
-  = !("]" / "\\" / eolChar) . { match_str.chars().next().unwrap() }
+  = !("]" / "\\" / eolChar) c:$(.) { c.chars().next().unwrap() }
 
 simpleEscapeSequence -> char
-  = "\\" !(digit / "x" / "u" / "U" / eolChar) . {
-      match match_str[1..].chars().next().unwrap() {
+  = "\\" !(digit / "x" / "u" / eolChar) c:$(.) {
+      match c.chars().next().unwrap() {
         //'b' => '\b',
         //'f' => '\f',
         'n' => '\n',
@@ -281,17 +268,17 @@ zeroEscapeSequence -> char
   = "\\0" !digit { 0u8 as char }
 
 hex2EscapeSequence -> char
-  = "\\x" value:(hexDigit hexDigit { u32::from_str_radix(match_str, 16) }) {
-      char::from_u32(value.unwrap()).unwrap()
+  = "\\x" value:$(hexDigit hexDigit) {
+      char::from_u32(u32::from_str_radix(value, 16).unwrap()).unwrap()
     }
 
 unicodeEscapeSequence -> char
-  = "\\u{" value:(hexDigit+ { u32::from_str_radix(match_str, 16)}) "}" {
-      char::from_u32(value.unwrap()).unwrap()
+  = "\\u{" value:$(hexDigit+) "}" {
+      char::from_u32(u32::from_str_radix(value, 16).unwrap()).unwrap()
     }
 
 eolEscapeSequence -> char
-  = "\\" eol:eol { '\n' }
+  = "\\" eol { '\n' }
 
 digit
   = [0-9]
