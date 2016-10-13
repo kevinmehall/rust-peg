@@ -349,7 +349,7 @@ eol
   / "\u{2029}"
 
 eolChar
-  = [\n\r\u2028\u2029]
+  = [\n\r\u{2028}\u{2029}]
 
 /* Modeled after ECMA-262, 5th ed., 7.2. */
 whitespace
