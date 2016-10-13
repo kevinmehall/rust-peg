@@ -3470,32 +3470,10 @@ fn parse_doubleQuotedCharacter<'input>(input: &'input str,
                                         match choice_res {
                                             Matched(pos, value) =>
                                             Matched(pos, value),
-                                            Failed => {
-                                                let choice_res =
-                                                    parse_hex4EscapeSequence(input,
-                                                                             state,
-                                                                             pos);
-                                                match choice_res {
-                                                    Matched(pos, value) =>
-                                                    Matched(pos, value),
-                                                    Failed => {
-                                                        let choice_res =
-                                                            parse_hex8EscapeSequence(input,
-                                                                                     state,
-                                                                                     pos);
-                                                        match choice_res {
-                                                            Matched(pos,
-                                                                    value) =>
-                                                            Matched(pos,
-                                                                    value),
-                                                            Failed =>
-                                                            parse_eolEscapeSequence(input,
-                                                                                    state,
-                                                                                    pos),
-                                                        }
-                                                    }
-                                                }
-                                            }
+                                            Failed =>
+                                            parse_eolEscapeSequence(input,
+                                                                    state,
+                                                                    pos),
                                         }
                                     }
                                 }
@@ -3652,32 +3630,10 @@ fn parse_singleQuotedCharacter<'input>(input: &'input str,
                                         match choice_res {
                                             Matched(pos, value) =>
                                             Matched(pos, value),
-                                            Failed => {
-                                                let choice_res =
-                                                    parse_hex4EscapeSequence(input,
-                                                                             state,
-                                                                             pos);
-                                                match choice_res {
-                                                    Matched(pos, value) =>
-                                                    Matched(pos, value),
-                                                    Failed => {
-                                                        let choice_res =
-                                                            parse_hex8EscapeSequence(input,
-                                                                                     state,
-                                                                                     pos);
-                                                        match choice_res {
-                                                            Matched(pos,
-                                                                    value) =>
-                                                            Matched(pos,
-                                                                    value),
-                                                            Failed =>
-                                                            parse_eolEscapeSequence(input,
-                                                                                    state,
-                                                                                    pos),
-                                                        }
-                                                    }
-                                                }
-                                            }
+                                            Failed =>
+                                            parse_eolEscapeSequence(input,
+                                                                    state,
+                                                                    pos),
                                         }
                                     }
                                 }
@@ -3974,32 +3930,10 @@ fn parse_bracketDelimitedCharacter<'input>(input: &'input str,
                                         match choice_res {
                                             Matched(pos, value) =>
                                             Matched(pos, value),
-                                            Failed => {
-                                                let choice_res =
-                                                    parse_hex4EscapeSequence(input,
-                                                                             state,
-                                                                             pos);
-                                                match choice_res {
-                                                    Matched(pos, value) =>
-                                                    Matched(pos, value),
-                                                    Failed => {
-                                                        let choice_res =
-                                                            parse_hex8EscapeSequence(input,
-                                                                                     state,
-                                                                                     pos);
-                                                        match choice_res {
-                                                            Matched(pos,
-                                                                    value) =>
-                                                            Matched(pos,
-                                                                    value),
-                                                            Failed =>
-                                                            parse_eolEscapeSequence(input,
-                                                                                    state,
-                                                                                    pos),
-                                                        }
-                                                    }
-                                                }
-                                            }
+                                            Failed =>
+                                            parse_eolEscapeSequence(input,
+                                                                    state,
+                                                                    pos),
                                         }
                                     }
                                 }
@@ -4335,260 +4269,6 @@ fn parse_unicodeEscapeSequence<'input>(input: &'input str,
                                         }
                                         Failed => Failed,
                                     }
-                                }
-                            }
-                            Failed => Failed,
-                        }
-                    }
-                }
-                Failed => Failed,
-            }
-        }
-    }
-}
-fn parse_hex4EscapeSequence<'input>(input: &'input str,
-                                    state: &mut ParseState<'input>,
-                                    pos: usize) -> RuleResult<char> {
-    {
-        let start_pos = pos;
-        {
-            let seq_res = slice_eq(input, state, pos, "\\u");
-            match seq_res {
-                Matched(pos, _) => {
-                    {
-                        let seq_res =
-                            {
-                                let start_pos = pos;
-                                {
-                                    let seq_res =
-                                        parse_hexDigit(input, state, pos);
-                                    match seq_res {
-                                        Matched(pos, _) => {
-                                            {
-                                                let seq_res =
-                                                    parse_hexDigit(input,
-                                                                   state,
-                                                                   pos);
-                                                match seq_res {
-                                                    Matched(pos, _) => {
-                                                        {
-                                                            let seq_res =
-                                                                parse_hexDigit(input,
-                                                                               state,
-                                                                               pos);
-                                                            match seq_res {
-                                                                Matched(pos,
-                                                                        _) =>
-                                                                {
-                                                                    {
-                                                                        let seq_res =
-                                                                            parse_hexDigit(input,
-                                                                                           state,
-                                                                                           pos);
-                                                                        match seq_res
-                                                                            {
-                                                                            Matched(pos,
-                                                                                    _)
-                                                                            =>
-                                                                            {
-                                                                                {
-                                                                                    let match_str =
-                                                                                        &input[start_pos..pos];
-                                                                                    Matched(pos,
-                                                                                            {
-                                                                                                u32::from_str_radix(match_str,
-                                                                                                                    16)
-                                                                                            })
-                                                                                }
-                                                                            }
-                                                                            Failed
-                                                                            =>
-                                                                            Failed,
-                                                                        }
-                                                                    }
-                                                                }
-                                                                Failed =>
-                                                                Failed,
-                                                            }
-                                                        }
-                                                    }
-                                                    Failed => Failed,
-                                                }
-                                            }
-                                        }
-                                        Failed => Failed,
-                                    }
-                                }
-                            };
-                        match seq_res {
-                            Matched(pos, value) => {
-                                {
-                                    let match_str = &input[start_pos..pos];
-                                    Matched(pos,
-                                            {
-                                                char::from_u32(value.unwrap()).unwrap()
-                                            })
-                                }
-                            }
-                            Failed => Failed,
-                        }
-                    }
-                }
-                Failed => Failed,
-            }
-        }
-    }
-}
-fn parse_hex8EscapeSequence<'input>(input: &'input str,
-                                    state: &mut ParseState<'input>,
-                                    pos: usize) -> RuleResult<char> {
-    {
-        let start_pos = pos;
-        {
-            let seq_res = slice_eq(input, state, pos, "\\U");
-            match seq_res {
-                Matched(pos, _) => {
-                    {
-                        let seq_res =
-                            {
-                                let start_pos = pos;
-                                {
-                                    let seq_res =
-                                        parse_hexDigit(input, state, pos);
-                                    match seq_res {
-                                        Matched(pos, _) => {
-                                            {
-                                                let seq_res =
-                                                    parse_hexDigit(input,
-                                                                   state,
-                                                                   pos);
-                                                match seq_res {
-                                                    Matched(pos, _) => {
-                                                        {
-                                                            let seq_res =
-                                                                parse_hexDigit(input,
-                                                                               state,
-                                                                               pos);
-                                                            match seq_res {
-                                                                Matched(pos,
-                                                                        _) =>
-                                                                {
-                                                                    {
-                                                                        let seq_res =
-                                                                            parse_hexDigit(input,
-                                                                                           state,
-                                                                                           pos);
-                                                                        match seq_res
-                                                                            {
-                                                                            Matched(pos,
-                                                                                    _)
-                                                                            =>
-                                                                            {
-                                                                                {
-                                                                                    let seq_res =
-                                                                                        parse_hexDigit(input,
-                                                                                                       state,
-                                                                                                       pos);
-                                                                                    match seq_res
-                                                                                        {
-                                                                                        Matched(pos,
-                                                                                                _)
-                                                                                        =>
-                                                                                        {
-                                                                                            {
-                                                                                                let seq_res =
-                                                                                                    parse_hexDigit(input,
-                                                                                                                   state,
-                                                                                                                   pos);
-                                                                                                match seq_res
-                                                                                                    {
-                                                                                                    Matched(pos,
-                                                                                                            _)
-                                                                                                    =>
-                                                                                                    {
-                                                                                                        {
-                                                                                                            let seq_res =
-                                                                                                                parse_hexDigit(input,
-                                                                                                                               state,
-                                                                                                                               pos);
-                                                                                                            match seq_res
-                                                                                                                {
-                                                                                                                Matched(pos,
-                                                                                                                        _)
-                                                                                                                =>
-                                                                                                                {
-                                                                                                                    {
-                                                                                                                        let seq_res =
-                                                                                                                            parse_hexDigit(input,
-                                                                                                                                           state,
-                                                                                                                                           pos);
-                                                                                                                        match seq_res
-                                                                                                                            {
-                                                                                                                            Matched(pos,
-                                                                                                                                    _)
-                                                                                                                            =>
-                                                                                                                            {
-                                                                                                                                {
-                                                                                                                                    let match_str =
-                                                                                                                                        &input[start_pos..pos];
-                                                                                                                                    Matched(pos,
-                                                                                                                                            {
-                                                                                                                                                u32::from_str_radix(match_str,
-                                                                                                                                                                    16)
-                                                                                                                                            })
-                                                                                                                                }
-                                                                                                                            }
-                                                                                                                            Failed
-                                                                                                                            =>
-                                                                                                                            Failed,
-                                                                                                                        }
-                                                                                                                    }
-                                                                                                                }
-                                                                                                                Failed
-                                                                                                                =>
-                                                                                                                Failed,
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                    Failed
-                                                                                                    =>
-                                                                                                    Failed,
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                        Failed
-                                                                                        =>
-                                                                                        Failed,
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                            Failed
-                                                                            =>
-                                                                            Failed,
-                                                                        }
-                                                                    }
-                                                                }
-                                                                Failed =>
-                                                                Failed,
-                                                            }
-                                                        }
-                                                    }
-                                                    Failed => Failed,
-                                                }
-                                            }
-                                        }
-                                        Failed => Failed,
-                                    }
-                                }
-                            };
-                        match seq_res {
-                            Matched(pos, value) => {
-                                {
-                                    let match_str = &input[start_pos..pos];
-                                    Matched(pos,
-                                            {
-                                                char::from_u32(value.unwrap()).unwrap()
-                                            })
                                 }
                             }
                             Failed => Failed,

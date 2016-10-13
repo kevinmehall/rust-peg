@@ -218,8 +218,6 @@ doubleQuotedCharacter -> char
   / zeroEscapeSequence
   / hex2EscapeSequence
   / unicodeEscapeSequence
-  / hex4EscapeSequence
-  / hex8EscapeSequence
   / eolEscapeSequence
 
 simpleDoubleQuotedCharacter -> char
@@ -234,8 +232,6 @@ singleQuotedCharacter -> char
   / zeroEscapeSequence
   / hex2EscapeSequence
   / unicodeEscapeSequence
-  / hex4EscapeSequence
-  / hex8EscapeSequence
   / eolEscapeSequence
 
 simpleSingleQuotedCharacter -> char
@@ -263,8 +259,6 @@ bracketDelimitedCharacter -> char
   / zeroEscapeSequence
   / hex2EscapeSequence
   / unicodeEscapeSequence
-  / hex4EscapeSequence
-  / hex8EscapeSequence
   / eolEscapeSequence
 
 simpleBracketDelimitedCharacter -> char
@@ -293,18 +287,6 @@ hex2EscapeSequence -> char
 
 unicodeEscapeSequence -> char
   = "\\u{" value:(hexDigit+ { u32::from_str_radix(match_str, 16)}) "}" {
-      char::from_u32(value.unwrap()).unwrap()
-    }
-
-// Deprecated in Rust, will be removed.
-hex4EscapeSequence -> char
-  = "\\u" value:(hexDigit hexDigit hexDigit hexDigit { u32::from_str_radix(match_str, 16)}) {
-      char::from_u32(value.unwrap()).unwrap()
-    }
-
-// Deprecated in Rust, will be removed.
-hex8EscapeSequence -> char
-  = "\\U" value:(hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit { u32::from_str_radix(match_str, 16)}) {
       char::from_u32(value.unwrap()).unwrap()
     }
 
