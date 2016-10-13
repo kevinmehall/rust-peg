@@ -29,7 +29,7 @@ atom -> Expression
 	/ "(" v:sum ")" { v }
 
 number -> Expression
-	= [0-9]+ { Expression::Number(match_str.parse().unwrap()) }
+	= n:$([0-9]+) { Expression::Number(n.parse().unwrap()) }
 "#);
 
 #[test]

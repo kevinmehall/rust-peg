@@ -56,6 +56,7 @@ pub enum Expr {
 	PosAssertExpr(Box<Expr>),
 	NegAssertExpr(Box<Expr>),
 	ActionExpr(Vec<TaggedExpr>, /*action*/ String, /*cond*/ bool),
+	MatchStrExpr(Box<Expr>),
 }
 
 pub fn compile_grammar(ctxt: &rustast::ExtCtxt, grammar: &Grammar) -> rustast::P<rustast::Mod> {
@@ -658,6 +659,16 @@ fn compile_expr(ctxt: &rustast::ExtCtxt, grammar: &Grammar, e: &Expr, result_use
 			quote_expr!(ctxt, {
 				let start_pos = pos;
 				$body
+			})
+		}
+		MatchStrExpr(ref expr) => {
+			let inner = compile_expr(ctxt, grammar, expr, false);
+			quote_expr!(ctxt, {
+				let str_start = pos;
+				match $inner {
+					Matched(newpos, _) => { Matched(newpos, &input[str_start..newpos]) },
+					Failed => Failed,
+				}
 			})
 		}
 	}

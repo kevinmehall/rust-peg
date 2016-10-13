@@ -17,7 +17,7 @@ list -> Vec<i64>
 	= number ** ","
 
 digit -> i64
-	= [0-9] { match_str.parse().unwrap() }
+	= n:$([0-9]) {n.parse().unwrap() }
 
 #[export]
 repeat_n -> Vec<i64>
@@ -37,25 +37,25 @@ repeat_min_max -> Vec<i64>
 
 #[export]
 boundaries -> String
-	= "foo" { match_str.to_string() }
+	= n:$("foo") { n.to_string() }
 
 #[export]
 case_insensitive -> String
-	= "foo"i { match_str.to_string() }
+	= n:$("foo"i) { n.to_string() }
 
 #[export]
 borrowed -> &'input str
-	= [a-z]+ { match_str }
+	= $([a-z]+)
 
 #[export]
 lifetime_parameter -> Cow<'input, str>
-	= [a-z]+ { match_str.into() }
+	= x:$([a-z]+) { x.into() }
 	/ "COW"  { "cow".to_owned().into() }
 
 #[export]
 block -> &'input str
-	= [a-z]+ {
-		let result = match_str;
+	= x:$([a-z]+) {
+		let result = x;
 		result
 	}
 

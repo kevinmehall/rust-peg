@@ -18,7 +18,7 @@ dec_byte -> u8
     }
 
 tag -> &'input str
-    = [a-z]+ {match_str}
+    = $([a-z]+)
 
 #[pub]
 xml

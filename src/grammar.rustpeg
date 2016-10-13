@@ -76,7 +76,7 @@ labeled -> TaggedExpr
 
 prefixed -> Expr
   = dollar expression:suffixed {
-      expression
+      MatchStrExpr(Box::new(expression))
     }
 //  / and code:action {
 //      fail!("/*Semantic and unsupported*/");

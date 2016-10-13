@@ -1766,7 +1766,10 @@ fn parse_prefixed<'input>(input: &'input str, state: &mut ParseState<'input>,
                                         {
                                             let match_str =
                                                 &input[start_pos..pos];
-                                            Matched(pos, { expression })
+                                            Matched(pos,
+                                                    {
+                                                        MatchStrExpr(Box::new(expression))
+                                                    })
                                         }
                                     }
                                     Failed => Failed,
