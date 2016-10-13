@@ -99,3 +99,8 @@ fn test_case_insensitive() {
 	assert!(case_insensitive(" foo").is_err());
 	assert!(case_insensitive("foo ").is_err());
 }
+
+#[test]
+fn test_position() {
+	assert_eq!(position("aaaabbb").unwrap(), (0, 4, 7));
+}

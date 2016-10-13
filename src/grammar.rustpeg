@@ -127,6 +127,7 @@ primary -> Expr
   / literal
   / class
   / dot { AnyCharExpr }
+  / "#position" __ { PositionExpr }
   / lparen expression:expression rparen { expression }
 
 /* "Lexical" elements */

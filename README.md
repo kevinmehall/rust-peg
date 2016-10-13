@@ -70,6 +70,8 @@ If a rule is marked with `#[pub]`, the generated module has a public function th
   * `a:e1 b:e2 c:e3 { rust }` - Match e1, e2, e3 in sequence. If they match successfully, run the Rust code in the block and return its return value. The variable names before the colons in the preceding sequence are bound to the results of the corresponding expressions. The Rust code must contain matched curly braces, including those in strings and comments.
   * `a:e1 b:e2 c:e3 {? rust }` - Like above, but the Rust block returns a `Result` instead of a value directly. On `Ok(v)`, it matches successfully and returns `v`. On `Err(e)`, the match of the entire expression fails and it tries alternatives or reports a parse error with the `&str` `e`.
   * `$e` - matches the expression e, and returns the `&str` slice of the input string corresponding to the match
+  * `#position` - returns a `usize` representing the current offset into the input string, and consumes no characters
+
 
 Match actions can extract data from the match using these variables:
 

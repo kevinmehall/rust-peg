@@ -75,3 +75,7 @@ keyval -> (i64, i64)
 #[export]
 expect_nothing -> ()
 	= [a-zA-Z]
+
+#[export]
+position -> (usize, usize, usize)
+ = start:#position [a]* middle:#position [b]* end:#position { (start, middle, end) }
