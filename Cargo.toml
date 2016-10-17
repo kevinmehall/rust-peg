@@ -9,6 +9,9 @@ description = """
 A parser generator built on the Parsing Expression Grammar (PEG) formalism.
 """
 
+[dependencies]
+quote = "0.3"
+
 [[bin]]
 name = "peg"
 path = "src/peg.rs"

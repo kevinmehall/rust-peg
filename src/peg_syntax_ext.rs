@@ -1,4 +1,8 @@
 #![feature(plugin_registrar, quote, rustc_private, box_patterns)]
+#![recursion_limit = "192"]
+
+#[macro_use]
+extern crate quote;
 
 extern crate rustc_plugin;
 #[macro_use] pub extern crate syntax;
@@ -8,6 +12,7 @@ pub extern crate rustc_errors as errors;
 use syntax::ast;
 use syntax::codemap;
 use syntax::ext::base::{ExtCtxt, MacResult, MacEager, DummyResult};
+use syntax::tokenstream::TokenTree;
 use syntax::parse;
 use syntax::parse::token;
 use syntax::fold::Folder;
@@ -17,11 +22,8 @@ use std::io::Read;
 use std::fs::File;
 use std::path::Path;
 
-use rustast::{AstBuilder, DUMMY_SP, TokenTree};
-
 mod translate;
 mod grammar;
-mod rustast;
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
@@ -73,15 +75,19 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
       }
     };
 
-    let ast = translate::compile_grammar(cx, &grammar_def);
+    let code = translate::compile_grammar(&grammar_def).to_string();
 
-    // #![allow(non_snake_case, unused)]
-    let allow = cx.attribute(DUMMY_SP, cx.meta_list(DUMMY_SP, token::InternedString::new("allow"), vec![
-        cx.meta_list_item_word(DUMMY_SP, token::InternedString::new("non_snake_case")),
-        cx.meta_list_item_word(DUMMY_SP, token::InternedString::new("unused")),
-    ]));
+    let mut p = parse::new_parser_from_source_str(&cx.parse_sess, Vec::new(), "<peg expansion>".into(), code);
+    let tts = panictry!(p.parse_all_token_trees());
 
-    MacEager::items(SmallVector::one(cx.item_mod(sp, sp, ident, vec![allow], ast.items.clone())))
+    let module = quote_item! { cx,
+        mod $ident {
+            #![allow(non_snake_case, unused)]
+            $tts
+        }
+    }.unwrap();
+
+    MacEager::items(SmallVector::one(module))
 }
 
 fn parse_arg(cx: &mut ExtCtxt, tts: &[TokenTree]) -> Option<String> {
