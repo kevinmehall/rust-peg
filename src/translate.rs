@@ -503,7 +503,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			}
 		}
 
-		OptionalExpr(box ref e) => {
+		OptionalExpr(ref e) => {
 			let optional_res = compile_expr(grammar, e, result_used);
 			quote!{
 				match #optional_res {
@@ -513,7 +513,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			}
 		}
 
-		Repeat(box ref e, min, max, ref sep) => {
+		Repeat(ref e, min, max, ref sep) => {
 			let inner = compile_expr(grammar, e, result_used);
 
 			let match_sep = sep.as_ref().map(|sep| {
@@ -583,7 +583,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			}}
 		}
 
-		PosAssertExpr(box ref e) => {
+		PosAssertExpr(ref e) => {
 			let assert_res = compile_expr(grammar, e, false);
 			quote! {{
 				let assert_res = #assert_res;
@@ -594,7 +594,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			}}
 		}
 
-		NegAssertExpr(box ref e) => {
+		NegAssertExpr(ref e) => {
 			let assert_res = compile_expr(grammar, e, false);
 			quote! {{
 				let assert_res = #assert_res;

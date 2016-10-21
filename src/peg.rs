@@ -1,4 +1,3 @@
-#![feature(box_patterns, slice_patterns)]
 #![recursion_limit = "192"]
 
 #[macro_use]
@@ -15,21 +14,20 @@ use translate::{compile_grammar};
 mod translate;
 mod grammar;
 
-fn print_usage(prog: &str) {
-	println!("Usage: {} [file]", prog)
-}
-
 fn main() {
 	let args = env::args_os().collect::<Vec<_>>();
-	let progname = args[0].to_str().unwrap();
+	let progname = &args[0];
 
 	let mut source = String::new();
-	match &args[1..] {
-		&[ref arg] if arg.to_str() == Some("-h") => return print_usage(progname),
-		&[ref fname] => File::open(&Path::new(fname.to_str().unwrap())).unwrap().read_to_string(&mut source).unwrap(),
-		&[] => stdin().read_to_string(&mut source).unwrap(),
-		_ => return print_usage(progname),
-	};
+
+	if args.len() == 2 && &args[1] != "-h" {
+		let fname = Path::new(&args[1]);
+		File::open(fname).unwrap().read_to_string(&mut source).unwrap();
+	} else if args.len() == 1 {
+		stdin().read_to_string(&mut source).unwrap();
+	} else {
+		println!("Usage: {} [file]", progname.to_string_lossy());
+	}
 
 	let grammar_def = grammar::grammar(&source);
 
