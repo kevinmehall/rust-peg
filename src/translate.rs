@@ -281,15 +281,15 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Tokens {
 
 	let wrapped_body = if cfg!(feature = "trace") {
 		quote!{{
-			let (line, col) = pos_to_line(input, pos);
-			println!("[PEG_TRACE] Attempting to match rule {} at {}:{} (pos {})", #rule_name, line, col, pos);
+			let (line, col) = pos_to_line(__input, __pos);
+			println!("[PEG_TRACE] Attempting to match rule {} at {}:{} (pos {})", #rule_name, line, col, __pos);
 			let mut __peg_closure = || {
 				#body
 			};
 			let __peg_result = __peg_closure();
 			match __peg_result {
-				Matched(_, _) => println!("[PEG_TRACE] Matched rule {} at {}:{} (pos {})", #rule_name, line, col, pos),
-				Failed => println!("[PEG_TRACE] Failed to match rule {} at {}:{} (pos {})", #rule_name, line, col, pos)
+				Matched(_, _) => println!("[PEG_TRACE] Matched rule {} at {}:{} (pos {})", #rule_name, line, col, __pos),
+				Failed => println!("[PEG_TRACE] Failed to match rule {} at {}:{} (pos {})", #rule_name, line, col, __pos)
 			}
 			__peg_result
 		}}
@@ -301,15 +301,15 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Tokens {
 		let cache_field = raw(&format!("{}_cache", rule.name));
 
 		quote! { #nl
-			fn #name<'input>(input: &'input str, state: &mut ParseState<'input>, pos: usize) -> RuleResult<#ret_ty> {
+			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize) -> RuleResult<#ret_ty> {
 				let rule_result = #wrapped_body;
-				state.#cache_field.insert(pos, rule_result.clone());
+				__state.#cache_field.insert(__pos, rule_result.clone());
 				rule_result
 			}
 		}
 	} else {
 		quote! { #nl
-			fn #name<'input>(input: &'input str, state: &mut ParseState<'input>, pos: usize) -> RuleResult<#ret_ty> {
+			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize) -> RuleResult<#ret_ty> {
 				#wrapped_body
 			}
 		}
@@ -353,7 +353,7 @@ fn compile_match_and_then(grammar: &Grammar, e: &Expr, value_name: Option<&str>,
 	quote! {{
 		let seq_res = #seq_res;
 		match seq_res {
-			Matched(pos, #name_pat) => { #then }
+			Matched(__pos, #name_pat) => { #then }
 			Failed => Failed,
 		}
 	}}
@@ -389,14 +389,14 @@ fn format_char_set(invert: bool, cases: &[CharSetCase]) -> String {
 fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 	match *e {
 		AnyCharExpr => {
-			quote!{ any_char(input, state, pos) }
+			quote!{ any_char(__input, __state, __pos) }
 		}
 
 		LiteralExpr(ref s, case_insensitive) => {
 			if case_insensitive {
-				quote!{ slice_eq_case_insensitive(input, state, pos, #s) }
+				quote!{ slice_eq_case_insensitive(__input, __state, __pos, #s) }
 			} else {
-				quote!{ slice_eq(input, state, pos, #s) }
+				quote!{ slice_eq(__input, __state, __pos, #s) }
 			}
 		}
 
@@ -405,7 +405,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 
 			let (in_set, not_in_set) = cond_swap(invert, (
 				quote!{ Matched(next, ()) },
-				quote!{ state.mark_failure(pos, #expected_set) },
+				quote!{ __state.mark_failure(__pos, #expected_set) },
 			));
 
 			let conds: Vec<_> = cases.iter().map(|case| {
@@ -419,14 +419,14 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			}).collect();
 
 			quote!{
-				if input.len() > pos {
-					let (ch, next) = char_range_at(input, pos);
+				if __input.len() > __pos {
+					let (ch, next) = char_range_at(__input, __pos);
 					match ch {
 						#(#conds)|* => #in_set,
 						_ => #not_in_set,
 					}
 				} else {
-					state.mark_failure(pos, #expected_set)
+					__state.mark_failure(__pos, #expected_set)
 				}
 			}
 		}
@@ -440,24 +440,24 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 
 					if cfg!(feature = "trace") {
 						quote! {
-							state.#cache_field.get(&pos).map(|entry| {
-								let (line, col) = pos_to_line(input, pos);
+							__state.#cache_field.get(&__pos).map(|entry| {
+								let (line, col) = pos_to_line(__input, __pos);
 								match entry {
 									&Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}:{} (pos {})", #rule_name, line, col, pos),
 									&Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}:{} (pos {})", #rule_name, line, col, pos),
 								};
 
 								entry.clone()
-							}).unwrap_or_else(|| #func(input, state, pos))
+							}).unwrap_or_else(|| #func(__input, __state, __pos))
 						}
 					} else {
 						quote! {
-							state.#cache_field.get(&pos).map(|entry| entry.clone()).unwrap_or_else(|| #func(input, state, pos))
+							__state.#cache_field.get(&__pos).map(|entry| entry.clone()).unwrap_or_else(|| #func(__input, __state, __pos))
 						}
 					}
 				},
 				_ => {
-					quote!{ #func(input, state, pos) }
+					quote!{ #func(__input, __state, __pos) }
 				}
 			}
 		}
@@ -474,7 +474,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			if exprs.len() > 0 {
 				write_seq(grammar, &exprs)
 			} else {
-				quote!{ Matched(pos, ()) }
+				quote!{ Matched(__pos, ()) }
 			}
 		}
 
@@ -489,7 +489,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 					quote! {{
 						let choice_res = #choice_res;
 						match choice_res {
-							Matched(pos, value) => Matched(pos, value),
+							Matched(__pos, value) => Matched(__pos, value),
 							Failed => #next
 						}
 					}}
@@ -499,7 +499,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			if exprs.len() > 0 {
 				write_choice(grammar, &exprs, result_used)
 			} else {
-				quote!{ Matched(pos, ()) }
+				quote!{ Matched(__pos, ()) }
 			}
 		}
 
@@ -508,7 +508,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			quote!{
 				match #optional_res {
 					Matched(newpos, value) => { Matched(newpos, Some(value)) },
-					Failed => { Matched(pos, None) },
+					Failed => { Matched(__pos, None) },
 				}
 			}
 		}
@@ -519,13 +519,13 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			let match_sep = sep.as_ref().map(|sep| {
 				let sep_inner = compile_expr(grammar, &*sep, false);
 				quote! {
-					let pos = if repeat_value.len() > 0 {
+					let __pos = if repeat_value.len() > 0 {
 						let sep_res = #sep_inner;
 						match sep_res {
 							Matched(newpos, _) => { newpos },
 							Failed => break,
 						}
-					} else { pos };
+					} else { __pos };
 				}
 			});
 
@@ -548,21 +548,21 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			let result_check = if min > 0 {
 				quote!{
 					if repeat_value.len() >= #min {
-						Matched(repeat_pos, #result)
+						Matched(__repeat_pos, #result)
 					} else {
 						Failed
 					}
 				}
 			} else {
-				quote!{ Matched(repeat_pos, #result) }
+				quote!{ Matched(__repeat_pos, #result) }
 			};
 
 			quote!{{
-				let mut repeat_pos = pos;
+				let mut __repeat_pos = __pos;
 				#repeat_vec
 
 				loop {
-					let pos = repeat_pos;
+					let __pos = __repeat_pos;
 
 					#match_sep
 					#max_check
@@ -570,7 +570,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 					let step_res = #inner;
 					match step_res {
 						Matched(newpos, value) => {
-							repeat_pos = newpos;
+							__repeat_pos = newpos;
 							#repeat_step
 						},
 						Failed => {
@@ -588,7 +588,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			quote! {{
 				let assert_res = #assert_res;
 				match assert_res {
-					Matched(..) => Matched(pos, ()),
+					Matched(..) => Matched(__pos, ()),
 					Failed => Failed,
 				}
 			}}
@@ -599,7 +599,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			quote! {{
 				let assert_res = #assert_res;
 				match assert_res {
-					Failed => Matched(pos, ()),
+					Failed => Matched(__pos, ()),
 					Matched(..) => Failed,
 				}
 			}}
@@ -620,15 +620,15 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 						if is_cond {
 							quote!{
 								match #code_block {
-									Ok(res) => Matched(pos, res),
+									Ok(res) => Matched(__pos, res),
 									Err(expected) => {
-										state.mark_failure(pos, expected);
+										__state.mark_failure(__pos, expected);
 										Failed
 									},
 								}
 							}
 						} else {
-							quote!{ Matched(pos, #code_block) }
+							quote!{ Matched(__pos, #code_block) }
 						}
 					}
 				}
@@ -639,15 +639,15 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 		MatchStrExpr(ref expr) => {
 			let inner = compile_expr(grammar, expr, false);
 			quote! {{
-				let str_start = pos;
+				let str_start = __pos;
 				match #inner {
-					Matched(newpos, _) => { Matched(newpos, &input[str_start..newpos]) },
+					Matched(newpos, _) => { Matched(newpos, &__input[str_start..newpos]) },
 					Failed => Failed,
 				}
 			}}
 		}
 		PositionExpr => {
-			quote! { Matched(pos, pos) }
+			quote! { Matched(__pos, __pos) }
 		}
 	}
 }
