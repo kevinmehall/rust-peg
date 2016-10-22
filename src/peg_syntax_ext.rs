@@ -87,7 +87,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
 fn parse_arg(cx: &mut ExtCtxt, tts: &[TokenTree]) -> Option<String> {
     use syntax::print::pprust;
 
-    let mut parser = parse::new_parser_from_tts(cx.parse_sess(), cx.cfg(),
+    let mut parser = parse::new_parser_from_tts(cx.parse_sess(), cx.cfg().clone(),
                                                 tts.to_vec());
     // The `expand_expr` method is called so that any macro calls in the
     // parsed expression are expanded.
