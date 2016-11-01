@@ -1,24 +1,19 @@
-[workspace]
-members = ["./peg-syntax-ext", "./peg-tests"]
-
 [package]
-name = "peg"
+name = "peg-syntax-ext"
 version = "0.4.0"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
 description = """
 A parser generator built on the Parsing Expression Grammar (PEG) formalism.
+
+This crate provides the syntax extension plugin for use with Rust nightly.
 """
 
 [dependencies]
-quote = "0.3"
+peg = { version = "0.4", path = "../" }
 
-[[bin]]
-name = "rust-peg"
-path = "src/bin.rs"
-test = false
-bench = false
-
-[features]
-trace = []
+[lib]
+plugin = true
+name = "peg_syntax_ext"
+path = "lib.rs"

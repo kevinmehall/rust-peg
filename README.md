@@ -2,40 +2,7 @@
 
 This is a simple parser generator based on the [Parsing Expression Grammar](https://en.wikipedia.org/wiki/Parsing_expression_grammar) formalism.
 
-## Usage
-
-`rust-peg` relies on the unstable `libsyntax` crate, and only works on Nightly builds of Rust.
-However, generated parsers are compatible with 1.0 stable, so you can generate stable code by using the `peg` command line tool described below.
-
-### As a syntax extension
-Add to your Cargo.toml:
-
-```toml
-[dependencies]
-peg = "0.3.0"
-```
-
-Add to your crate root:
-```rust
-#![feature(plugin)]
-#![plugin(peg_syntax_ext)]
-```
-
-Use `peg_file! modname("mygrammarfile.rustpeg");` to include the grammar from an external file. The macro expands into a module called `modname` with functions corresponding to the `#[pub]` rules in your grammar.
-
-Or, use
-```rust
-peg! modname(r#"
-  // grammar rules here
-"#);`
-```
-
-to embed a short PEG grammar inline in your Rust source file. [Example](tests/test_arithmetic.rs).
-
-### As a standalone code generator
-Run `peg input_file.rustpeg` to compile a grammar and generate Rust code on stdout. This code works with stable Rust.
-
-## Grammar Syntax
+## Grammar Definition Syntax
 
 ```rust
 use super::name;
@@ -72,6 +39,73 @@ If a rule is marked with `#[pub]`, the generated module has a public function th
   * `$(e)` - matches the expression e, and returns the `&str` slice of the input string corresponding to the match
   * `#position` - returns a `usize` representing the current offset into the input string, and consumes no characters
 
+## Usage
+
+### With a build script
+
+A Cargo build script can compile your PEG grammar to Rust source automatically.
+
+Add to your `Cargo.toml`:
+
+```
+# Under [package]
+build = "build.rs"
+
+[build-dependencies]
+peg = { version = "0.4" }
+```
+
+Create `build.rs` with:
+
+```
+extern crate peg;
+
+fn main() {
+    peg::cargo_build("src/my_grammar.rustpeg");
+}
+```
+
+And import the generated code:
+
+```
+mod my_grammar {
+    include!(concat!(env!("OUT_DIR"), "/my_grammar.rs"));
+}
+```
+
+
+### As a syntax extension
+
+`rust-syntax-ext` only works on Nightly builds of Rust.
+
+Add to your Cargo.toml:
+
+```toml
+[dependencies]
+peg-syntax-ext = "0.4.0"
+```
+
+Add to your crate root:
+```rust
+#![feature(plugin)]
+#![plugin(peg_syntax_ext)]
+```
+
+Use `peg_file! modname("mygrammarfile.rustpeg");` to include the grammar from an external file. The macro expands into a module called `modname` with functions corresponding to the `#[pub]` rules in your grammar.
+
+Or, use
+```rust
+peg! modname(r#"
+  // grammar rules here
+"#);`
+```
+
+to embed a short PEG grammar inline in your Rust source file. [Example](peg-syntax-ext/tests/test_arithmetic.rs).
+
+### As a standalone code generator
+
+Run `peg input_file.rustpeg` to compile a grammar and generate Rust code on stdout.
+
 ## Tracing
 
 If you pass the `peg/trace` feature to Cargo when building your project, a trace of the parsing will be output to stdout when running the binary. For example,
@@ -87,5 +121,8 @@ $ cargo run --features peg/trace
 
 ## Migrating from 0.3
 
-* The `match_str` variable has been removed in favor of the `$(expr)` syntax.  Replace `[0-9]+ { match_str.parse().unwrap() }` with `n:$([0-9]+) { n.parse.unwrap() } `
+* If you were using the syntax extension, replace `peg = "0.3.0"` with `peg-syntax-ext = "0.4.0"` in your `Cargo.toml`'s `[dependencies]` section. The library name in `#![plugin(peg_syntax_ext)]` remains the same. Consider moving to the build script for compatibility with Rust stable.
+
+* The `match_str` variable has been removed in favor of the `$(expr)` syntax.  Replace `[0-9]+ { match_str.parse().unwrap() }` with `n:$([0-9]+) { n.parse().unwrap() } `
+
 * `start_pos` and `pos` variables have been removed. Use `#position` as an expression, which returns a `usize` offset into the source string. Replace `foo:x { Span(start_pos, pos, foo) }` with `start:#position foo:x end:#position { Span(start, end, foo) }`

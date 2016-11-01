@@ -302,6 +302,7 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Tokens {
 
 		quote! { #nl
 			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize) -> RuleResult<#ret_ty> {
+				#![allow(non_snake_case, unused)]
 				let rule_result = #wrapped_body;
 				__state.#cache_field.insert(__pos, rule_result.clone());
 				rule_result
@@ -310,6 +311,7 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Tokens {
 	} else {
 		quote! { #nl
 			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize) -> RuleResult<#ret_ty> {
+				#![allow(non_snake_case, unused)]
 				#wrapped_body
 			}
 		}
@@ -322,6 +324,7 @@ fn compile_rule_export(rule: &Rule) -> Tokens {
 	let parse_fn = raw(&format!("parse_{}", rule.name));
 	quote! {
 		pub fn #name<'input>(input: &'input str) -> ParseResult<#ret_ty> {
+			#![allow(non_snake_case, unused)]
 			let mut state = ParseState::new();
 			match #parse_fn(input, &mut state, 0) {
 				Matched(pos, value) => {

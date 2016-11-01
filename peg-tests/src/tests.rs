@@ -1,9 +1,10 @@
-#![feature(plugin)]
-#![plugin(peg_syntax_ext)]
 use std::collections::HashMap;
 
-use test_grammar::*;
-peg_file! test_grammar("tests.rustpeg");
+mod test_grammar {
+    include!(concat!(env!("OUT_DIR"), "/test_grammar.rs"));
+}
+
+use self::test_grammar::*;
 
 #[test]
 fn test_neg_assert() {
