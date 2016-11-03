@@ -18,7 +18,7 @@ pub fn module(items: Vec<P<Item>>) -> P<Mod> {
 }
 
 pub fn parse_path(ctxt: &ExtCtxt, e: &str) -> ast::Path {
-	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), "<peg>".to_string(), e.to_string());
+	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, "<peg>".to_string(), e.to_string());
 	let r = panictry!(p.parse_path(syntax::parse::parser::PathStyle::Mod));
 	p.abort_if_errors();
 	r
@@ -29,14 +29,14 @@ pub fn parse_path_vec(s: &str) -> Vec<ast::Ident> {
 }
 
 pub fn parse_block(ctxt: &ExtCtxt, e: &str) -> P<ast::Block> {
-	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), "<peg>".to_string(), e.to_string());
+	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, "<peg>".to_string(), e.to_string());
 	let r = panictry!(p.parse_block());
 	p.abort_if_errors();
 	r
 }
 
 pub fn parse_type(ctxt: &ExtCtxt, e: &str) -> P<ast::Ty> {
-	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, Vec::new(), "<peg>".to_string(), e.to_string());
+	let mut p = syntax::parse::new_parser_from_source_str(&ctxt.parse_sess, "<peg>".to_string(), e.to_string());
 	let r = panictry!(p.parse_ty());
 	p.abort_if_errors();
 	r

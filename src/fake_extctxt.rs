@@ -7,7 +7,7 @@ pub fn with_fake_extctxt<T, F: Fn(&ExtCtxt) -> T>(f: F) -> T {
   let ps = syntax::parse::ParseSess::new();
   let mut loader = DummyResolver;
 
-  let mut cx = syntax::ext::base::ExtCtxt::new(&ps, Vec::new(),
+  let mut cx = syntax::ext::base::ExtCtxt::new(&ps,
     syntax::ext::expand::ExpansionConfig::default("rust-peg".to_string()),
     &mut loader,
   );
