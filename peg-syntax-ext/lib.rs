@@ -67,7 +67,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
         }
     };
 
-    let mut p = parse::new_parser_from_source_str(&cx.parse_sess, Vec::new(), "<peg expansion>".into(), code);
+    let mut p = parse::new_parser_from_source_str(&cx.parse_sess, "<peg expansion>".into(), code);
     let tts = panictry!(p.parse_all_token_trees());
 
     let module = quote_item! { cx,
@@ -82,8 +82,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
 fn parse_arg(cx: &mut ExtCtxt, tts: &[TokenTree]) -> Option<String> {
     use syntax::print::pprust;
 
-    let mut parser = parse::new_parser_from_tts(cx.parse_sess(), cx.cfg().clone(),
-                                                tts.to_vec());
+    let mut parser = parse::new_parser_from_tts(cx.parse_sess(), tts.to_vec());
     // The `expand_expr` method is called so that any macro calls in the
     // parsed expression are expanded.
     let arg = cx.expander().fold_expr(panictry!(parser.parse_expr()));
