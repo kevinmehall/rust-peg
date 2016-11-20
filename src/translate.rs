@@ -603,11 +603,11 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 		}
 
 		PosAssertExpr(ref e) => {
-			let assert_res = compile_expr(grammar, e, false);
+			let assert_res = compile_expr(grammar, e, result_used);
 			quote! {{
-				let assert_res = #assert_res;
-				match assert_res {
-					Matched(..) => Matched(__pos, ()),
+				let __assert_res = #assert_res;
+				match __assert_res {
+					Matched(_, __value) => Matched(__pos, __value),
 					Failed => Failed,
 				}
 			}}
@@ -616,8 +616,8 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 		NegAssertExpr(ref e) => {
 			let assert_res = compile_expr(grammar, e, false);
 			quote! {{
-				let assert_res = #assert_res;
-				match assert_res {
+				let __assert_res = #assert_res;
+				match __assert_res {
 					Failed => Matched(__pos, ()),
 					Matched(..) => Failed,
 				}

@@ -80,8 +80,12 @@ expect_nothing -> ()
 position -> (usize, usize, usize)
  = start:#position [a]* middle:#position [b]* end:#position { (start, middle, end) }
 
- #[export]
- empty_charset = []
+#[export]
+empty_charset = []
 
- #[export]
+#[export]
 option_unused_result = "a"? / "b"
+
+#[export]
+lookahead_result -> &'input str
+  = v:&($([a-c]*)) "abcd" { v }

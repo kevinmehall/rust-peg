@@ -13,6 +13,12 @@ fn test_neg_assert() {
 }
 
 #[test]
+fn test_pos_assert() {
+    assert_eq!(lookahead_result("abcd"), Ok("abc"));
+    assert!(lookahead_result("abc").is_err());
+}
+
+#[test]
 fn test_eof() {
 	assert_eq!(expect_nothing("t"), Ok(()));
 	match expect_nothing("tt") {
