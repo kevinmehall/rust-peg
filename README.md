@@ -2,6 +2,8 @@
 
 This is a simple parser generator based on the [Parsing Expression Grammar](https://en.wikipedia.org/wiki/Parsing_expression_grammar) formalism.
 
+Please see the [release notes](https://github.com/kevinmehall/rust-peg/releases/tag/0.4.0) for breaking changes between rust-peg 0.3.x and 0.4.x.
+
 ## Grammar Definition Syntax
 
 ```rust
@@ -55,6 +57,8 @@ name -> String
 
 A Cargo build script can compile your PEG grammar to Rust source automatically.
 
+[Example crate using rust-peg with a build script](peg-tests/)
+
 Add to your `Cargo.toml`:
 
 ```
@@ -83,10 +87,11 @@ mod my_grammar {
 }
 ```
 
-
 ### As a syntax extension
 
 `rust-syntax-ext` only works on Nightly builds of Rust.
+
+[Examples using rust-peg as a syntax extension](peg-syntax-ext/tests/)
 
 Add to your Cargo.toml:
 
@@ -128,11 +133,3 @@ $ cargo run --features peg/trace
 [PEG_TRACE] Failed to match rule letter at 8:12
 ...
 ```
-
-## Migrating from 0.3
-
-* If you were using the syntax extension, replace `peg = "0.3.0"` with `peg-syntax-ext = "0.4.0"` in your `Cargo.toml`'s `[dependencies]` section. The library name in `#![plugin(peg_syntax_ext)]` remains the same. Consider moving to the build script for compatibility with Rust stable.
-
-* The `match_str` variable has been removed in favor of the `$(expr)` syntax.  Replace `[0-9]+ { match_str.parse().unwrap() }` with `n:$([0-9]+) { n.parse().unwrap() } `
-
-* `start_pos` and `pos` variables have been removed. Use `#position` as an expression, which returns a `usize` offset into the source string. Replace `foo:x { Span(start_pos, pos, foo) }` with `start:#position foo:x end:#position { Span(start, end, foo) }`
