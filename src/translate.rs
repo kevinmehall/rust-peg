@@ -407,7 +407,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			let expected_set = format_char_set(invert, &cases);
 
 			let (in_set, not_in_set) = cond_swap(invert, (
-				quote!{ Matched(next, ()) },
+				quote!{ Matched(__next, ()) },
 				quote!{ __state.mark_failure(__pos, #expected_set) },
 			));
 
@@ -421,11 +421,17 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 				}
 			}).collect();
 
+			let in_set_arm = if conds.len() > 0 {
+				quote!( #(#conds)|* => #in_set, )
+			} else {
+				quote!()
+			};
+
 			quote!{
 				if __input.len() > __pos {
-					let (ch, next) = char_range_at(__input, __pos);
-					match ch {
-						#(#conds)|* => #in_set,
+					let (__ch, __next) = char_range_at(__input, __pos);
+					match __ch {
+						#in_set_arm
 						_ => #not_in_set,
 					}
 				} else {

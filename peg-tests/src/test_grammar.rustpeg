@@ -79,3 +79,6 @@ expect_nothing -> ()
 #[export]
 position -> (usize, usize, usize)
  = start:#position [a]* middle:#position [b]* end:#position { (start, middle, end) }
+
+ #[export]
+ empty_charset = []
