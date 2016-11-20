@@ -39,6 +39,14 @@ If a rule is marked with `#[pub]`, the generated module has a public function th
   * `$(e)` - matches the expression e, and returns the `&str` slice of the input string corresponding to the match
   * `#position` - returns a `usize` representing the current offset into the input string, and consumes no characters
 
+You can use line comments and block comments just as in Rust code, for example:
+
+```
+// comment
+name -> String
+  = /* weirdly placed comment */ [0-9]+ { from_str::<u64>(match_str).unwrap() } // comment
+```
+
 ## Usage
 
 ### With a build script
