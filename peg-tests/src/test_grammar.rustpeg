@@ -82,3 +82,6 @@ position -> (usize, usize, usize)
 
  #[export]
  empty_charset = []
+
+ #[export]
+option_unused_result = "a"? / "b"

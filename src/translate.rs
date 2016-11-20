@@ -498,7 +498,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 					quote! {{
 						let choice_res = #choice_res;
 						match choice_res {
-							Matched(__pos, value) => Matched(__pos, value),
+							Matched(__pos, __value) => Matched(__pos, __value),
 							Failed => #next
 						}
 					}}
@@ -514,10 +514,20 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 
 		OptionalExpr(ref e) => {
 			let optional_res = compile_expr(grammar, e, result_used);
-			quote!{
-				match #optional_res {
-					Matched(newpos, value) => { Matched(newpos, Some(value)) },
-					Failed => { Matched(__pos, None) },
+
+			if result_used {
+				quote!{
+					match #optional_res {
+						Matched(newpos, value) => { Matched(newpos, Some(value)) },
+						Failed => { Matched(__pos, None) },
+					}
+				}
+			} else {
+				quote!{
+					match #optional_res {
+						Matched(__newpos, _) => { Matched(__newpos, ()) },
+						Failed => { Matched(__pos, ()) },
+					}
 				}
 			}
 		}
