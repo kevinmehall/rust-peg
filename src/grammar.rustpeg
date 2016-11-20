@@ -78,15 +78,9 @@ prefixed -> Expr
   = dollar expression:suffixed {
       MatchStrExpr(Box::new(expression))
     }
-//  / and code:action {
-//      fail!("/*Semantic and unsupported*/");
-//    }
   / and expression:suffixed {
       PosAssertExpr(Box::new(expression))
     }
-//  / not code:action {
-//      fail!("/*Semantic not unsupported*/");
-//    }
   / not expression:suffixed {
       NegAssertExpr(Box::new(expression))
     }
@@ -102,20 +96,17 @@ suffixed -> Expr
   / expression:primary plusplus sep:primary {
       Repeat(Box::new(expression), 1, None, Some(Box::new(sep)))
     }
+  / expression:primary star lt n:integer gt {
+      Repeat(Box::new(expression), n, Some(n), None)
+    }
+  / expression:primary star lt min:integer? comma max:integer? gt {
+      Repeat(Box::new(expression), min.unwrap_or(0), max, None)
+    }
   / expression:primary star {
       Repeat(Box::new(expression), 0, None, None)
     }
   / expression:primary plus {
       Repeat(Box::new(expression), 1, None, None)
-    }
-  / expression:primary lbrace n:integer rbrace {
-      Repeat(Box::new(expression), n, Some(n), None)
-    }
-  / expression:primary lbrace min:integer comma max:integer? rbrace {
-      Repeat(Box::new(expression), min, max, None)
-    }
-  / expression:primary lbrace comma max:integer? rbrace {
-      Repeat(Box::new(expression), 0, max, None)
     }
   / primary
 
@@ -160,6 +151,8 @@ returns   = "->" __
 lbrace    = "{"  __
 rbrace    = "}"  __
 comma     = ","  __
+lt        = "<"  __
+gt        = ">"  __
 
 integer -> usize
   = i:$([0-9]+) __ { i.parse().unwrap() }

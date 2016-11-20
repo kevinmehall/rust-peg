@@ -27,6 +27,8 @@ If a rule is marked with `#[pub]`, the generated module has a public function th
   * `rule` - match a production defined elsewhere in the grammar and return its result
   * `expression*` - Match zero or more repetitions of `expression` and return the results as a `Vec`
   * `expression+` - Match one or more repetitions of `expression` and return the results as a `Vec`
+  * `expression*<n>` - Match `n` repetitions of `expression` and return the results as a `Vec`
+  * `expression*<n,m>` - Match between `n` and `m` repetitions of `expression` and return the results as a `Vec`.
   * `expression?` - Match one or zero repetitions of `expression`. Returns an `Option`
   * `&expression` - Match only if `expression` matches at this position, without consuming any characters
   * `!expression` - Match only if `expression` does not match at this position, without consuming any characters

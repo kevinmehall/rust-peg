@@ -21,19 +21,19 @@ digit -> i64
 
 #[export]
 repeat_n -> Vec<i64>
-	= digit{4}
+	= digit*<4>
 
 #[export]
 repeat_min -> Vec<i64>
-	= digit{2,}
+	= digit*<2,>
 
 #[export]
 repeat_max -> Vec<i64>
-	= digit{,2}
+	= digit*<,2>
 
 #[export]
 repeat_min_max -> Vec<i64>
-	= digit{2,3}
+	= digit*<2,3>
 
 #[export]
 boundaries -> String
