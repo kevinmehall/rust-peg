@@ -12,6 +12,7 @@ use syntax::ext::base::{ExtCtxt, MacResult, MacEager, DummyResult};
 use syntax::tokenstream::TokenTree;
 use syntax::parse;
 use syntax::parse::token;
+use syntax::symbol::Symbol;
 use syntax::fold::Folder;
 use syntax::util::small_vector::SmallVector;
 use rustc_plugin::Registry;
@@ -22,11 +23,11 @@ use std::path::Path;
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_syntax_extension(
-            token::intern("peg"),
+            Symbol::intern("peg"),
             syntax::ext::base::IdentTT(Box::new(expand_peg_str), None, false));
 
     reg.register_syntax_extension(
-            token::intern("peg_file"),
+            Symbol::intern("peg_file"),
             syntax::ext::base::IdentTT(Box::new(expand_peg_file), None, false));
 }
 
