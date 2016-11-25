@@ -9,4 +9,4 @@ script:
   - git diff --exit-code # Check that src/grammar.rs is updated to match src/grammar.rustpeg
   - cargo test
   - (cd peg-tests && cargo test)
-  - (test $TRAVIS_RUST_VERSION != "nightly" || (cd peg-syntax-ext && cargo test))
+  - (test $TRAVIS_RUST_VERSION != "nightly" || (cd peg-syntax-ext && cargo test && cargo bench))
