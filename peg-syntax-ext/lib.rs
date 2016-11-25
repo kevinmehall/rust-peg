@@ -62,8 +62,8 @@ fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident
 fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &str) -> Box<MacResult + 'static> {
     let code = match peg::compile(&source) {
         Ok(code) => code,
-        Err(..) => {
-          cx.span_err(sp, "PEG compilation failed");
+        Err(e) => {
+          cx.span_err(sp, &format!("{}", e));
           return DummyResult::any(sp)
         }
     };
