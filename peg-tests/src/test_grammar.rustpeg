@@ -89,3 +89,7 @@ option_unused_result = "a"? / "b"
 #[export]
 lookahead_result -> &'input str
   = v:&($([a-c]*)) "abcd" { v }
+
+parenthesized<foo> = "(" s:foo ")" { s }
+#[export]
+parens -> &'input str = parenthesized<$([a-z]*)>

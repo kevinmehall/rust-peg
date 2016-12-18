@@ -1,4 +1,5 @@
 use std::borrow::ToOwned;
+use std::collections::HashMap;
 use quote::{Tokens, ToTokens};
 pub use self::RustUse::*;
 pub use self::Expr::*;
@@ -12,9 +13,23 @@ fn raw(s: &str) -> Tokens {
 pub struct Grammar {
 	pub imports: Vec<RustUse>,
 	pub rules: Vec<Rule>,
+	pub templates: HashMap<String, Template>,
 }
 
 impl Grammar {
+	pub fn from_items(items: Vec<Item>) -> Grammar {
+		let mut imports = Vec::new();
+		let mut rules = Vec::new();
+		let mut templates = HashMap::new();
+		for item in items {
+			match item {
+				Item::Use(u) => { imports.push(u); }
+				Item::Rule(rule) => { rules.push(rule); }
+				Item::Template(template) => { templates.insert(template.name.clone(), template); }
+			}
+		}
+		Grammar{ imports:imports, rules:rules, templates:templates }
+	}
 	fn find_rule(&self, name: &str) -> Option<&Rule> {
 		self.rules.iter().find(|rule| rule.name == name)
 	}
@@ -53,12 +68,24 @@ impl ToTokens for RustUse {
 	}
 }
 
+pub enum Item {
+	Use(RustUse),
+	Rule(Rule),
+	Template(Template),
+}
+
 pub struct Rule {
 	pub name: String,
 	pub expr: Box<Expr>,
 	pub ret_type: String,
 	pub exported: bool,
 	pub cached: bool,
+}
+
+pub struct Template {
+	pub name: String,
+	pub params: Vec<String>,
+	pub expr: Box<Expr>,
 }
 
 #[derive(Clone)]
@@ -88,6 +115,7 @@ pub enum Expr {
 	ActionExpr(Vec<TaggedExpr>, /*action*/ String, /*cond*/ bool),
 	MatchStrExpr(Box<Expr>),
 	PositionExpr,
+	TemplateInvoke(String, Vec<Expr>)
 }
 
 static HELPERS: &'static str = stringify! {
@@ -277,7 +305,8 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Tokens {
 	let ref rule_name = rule.name;
 	let name = raw(&format!("parse_{}", rule.name));
 	let ret_ty = raw(&rule.ret_type);
-	let body = compile_expr(grammar, &*rule.expr, (&rule.ret_type as &str) != "()");
+	let defs = HashMap::new();
+	let body = compile_expr(grammar, &*rule.expr, (&rule.ret_type as &str) != "()", &defs);
 
 	let wrapped_body = if cfg!(feature = "trace") {
 		quote!{{
@@ -346,8 +375,8 @@ fn compile_rule_export(rule: &Rule) -> Tokens {
 	}
 }
 
-fn compile_match_and_then(grammar: &Grammar, e: &Expr, value_name: Option<&str>, then: Tokens) -> Tokens {
-	let seq_res = compile_expr(grammar, e, value_name.is_some());
+fn compile_match_and_then(grammar: &Grammar, e: &Expr, defs: &HashMap<&str, &Expr>, value_name: Option<&str>, then: Tokens) -> Tokens {
+	let seq_res = compile_expr(grammar, e, value_name.is_some(), defs);
 	let name_pat = match value_name {
 		Some(name) => raw(name),
 		None => raw("_")
@@ -389,7 +418,7 @@ fn format_char_set(invert: bool, cases: &[CharSetCase]) -> String {
 	r
 }
 
-fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
+fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool, defs: &HashMap<&str, &Expr>) -> Tokens {
 	match *e {
 		AnyCharExpr => {
 			quote!{ any_char(__input, __state, __pos) }
@@ -441,6 +470,10 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 		}
 
 		RuleExpr(ref rule_name) => {
+			if let Some(template_arg) = defs.get(&rule_name[..]) {
+				return compile_expr(grammar, template_arg, result_used, &HashMap::new())
+			}
+
 			let func = raw(&format!("parse_{}", rule_name));
 			let rule = grammar.find_rule(rule_name);
 			match rule {
@@ -471,29 +504,39 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			}
 		}
 
+		TemplateInvoke(ref name, ref params) => {
+			let template = grammar.templates.get(&name[..]).unwrap_or_else(|| panic!("No template named `{}``"));
+			if template.params.len() != params.len() {
+				panic!("Expected {} arguments to `{}`, found {}", template.params.len(), template.name, params.len());
+			}
+
+			let defs = template.params.iter().map(|x| &x[..]).zip(params.iter()).collect();
+			compile_expr(grammar, &template.expr, result_used, &defs)
+		}
+
 		SequenceExpr(ref exprs) => {
-			fn write_seq(grammar: &Grammar, exprs: &[Expr]) -> Tokens {
+			fn write_seq(grammar: &Grammar, exprs: &[Expr], defs: &HashMap<&str, &Expr>) -> Tokens {
 				if exprs.len() == 1 {
-					compile_expr(grammar, &exprs[0], false)
+					compile_expr(grammar, &exprs[0], false, defs)
 				} else {
-					compile_match_and_then(grammar, &exprs[0], None, write_seq(grammar, &exprs[1..]))
+					compile_match_and_then(grammar, &exprs[0], defs, None, write_seq(grammar, &exprs[1..], defs))
 				}
 			}
 
 			if exprs.len() > 0 {
-				write_seq(grammar, &exprs)
+				write_seq(grammar, &exprs, defs)
 			} else {
 				quote!{ Matched(__pos, ()) }
 			}
 		}
 
 		ChoiceExpr(ref exprs) => {
-			fn write_choice(grammar: &Grammar, exprs: &[Expr], result_used: bool) -> Tokens  {
+			fn write_choice(grammar: &Grammar, exprs: &[Expr], result_used: bool, defs: &HashMap<&str, &Expr>) -> Tokens  {
 				if exprs.len() == 1 {
-					compile_expr(grammar, &exprs[0], result_used)
+					compile_expr(grammar, &exprs[0], result_used, defs)
 				} else {
-					let choice_res = compile_expr(grammar, &exprs[0], result_used);
-					let next = write_choice(grammar, &exprs[1..], result_used);
+					let choice_res = compile_expr(grammar, &exprs[0], result_used, defs);
+					let next = write_choice(grammar, &exprs[1..], result_used, defs);
 
 					quote! {{
 						let choice_res = #choice_res;
@@ -506,14 +549,14 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 			}
 
 			if exprs.len() > 0 {
-				write_choice(grammar, &exprs, result_used)
+				write_choice(grammar, &exprs, result_used, defs)
 			} else {
 				quote!{ Matched(__pos, ()) }
 			}
 		}
 
 		OptionalExpr(ref e) => {
-			let optional_res = compile_expr(grammar, e, result_used);
+			let optional_res = compile_expr(grammar, e, result_used, defs);
 
 			if result_used {
 				quote!{
@@ -533,10 +576,10 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 		}
 
 		Repeat(ref e, min, max, ref sep) => {
-			let inner = compile_expr(grammar, e, result_used);
+			let inner = compile_expr(grammar, e, result_used, defs);
 
 			let match_sep = sep.as_ref().map(|sep| {
-				let sep_inner = compile_expr(grammar, &*sep, false);
+				let sep_inner = compile_expr(grammar, &*sep, false, defs);
 				quote! {
 					let __pos = if repeat_value.len() > 0 {
 						let sep_res = #sep_inner;
@@ -603,7 +646,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 		}
 
 		PosAssertExpr(ref e) => {
-			let assert_res = compile_expr(grammar, e, result_used);
+			let assert_res = compile_expr(grammar, e, result_used, defs);
 			quote! {{
 				let __assert_res = #assert_res;
 				match __assert_res {
@@ -614,7 +657,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 		}
 
 		NegAssertExpr(ref e) => {
-			let assert_res = compile_expr(grammar, e, false);
+			let assert_res = compile_expr(grammar, e, false, defs);
 			quote! {{
 				let __assert_res = #assert_res;
 				match __assert_res {
@@ -625,12 +668,12 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 		}
 
 		ActionExpr(ref exprs, ref code, is_cond) => {
-			fn write_seq(grammar: &Grammar, exprs: &[TaggedExpr], code: &str, is_cond: bool) -> Tokens {
+			fn write_seq(grammar: &Grammar, exprs: &[TaggedExpr], code: &str, is_cond: bool, defs: &HashMap<&str, &Expr>) -> Tokens {
 				match exprs.first() {
 					Some(ref first) => {
 						let name = first.name.as_ref().map(|s| &s[..]);
-						compile_match_and_then(grammar, &*first.expr, name,
-							write_seq(grammar, &exprs[1..], code, is_cond)
+						compile_match_and_then(grammar, &*first.expr, defs, name,
+							write_seq(grammar, &exprs[1..], code, is_cond, defs)
 						)
 					}
 					None => {
@@ -653,10 +696,10 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool) -> Tokens {
 				}
 			}
 
-			write_seq(grammar, &exprs, &code, is_cond)
+			write_seq(grammar, &exprs, &code, is_cond, defs)
 		}
 		MatchStrExpr(ref expr) => {
-			let inner = compile_expr(grammar, expr, false);
+			let inner = compile_expr(grammar, expr, false, defs);
 			quote! {{
 				let str_start = __pos;
 				match #inner {

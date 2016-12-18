@@ -2,9 +2,9 @@ use translate::*;
 use std::char;
 
 #[export]
-grammar -> Grammar
-  = __ imports:rust_use* rules:rule*
-  { Grammar{ imports:imports, rules:rules } }
+grammar -> Grammar = __ items:item* {
+  Grammar::from_items(items)
+}
 
 rule -> Rule
   = exported:exportflag cached:cacheflag name:identifier returns: returntype equals expression:expression semicolon? {
@@ -13,6 +13,16 @@ rule -> Rule
 
     exportflag -> bool = ("#[export]"/"#[pub]") __ {true} / "" {false}
     cacheflag -> bool = "#[cache]" __ {true} / {false}
+
+template -> Template
+  = name:identifier lt params:(identifier ** comma) gt equals expression:expression semicolon? {
+    Template { name: name, params: params, expr: Box::new(expression) }
+  }
+
+item -> Item
+  = u:rust_use  { Item::Use(u) }
+  / r:rule      { Item::Rule(r) }
+  / t: template { Item::Template(t) }
 
 returntype -> String
   = returns tp:$rust_type { tp.trim().to_owned() }
@@ -112,8 +122,11 @@ suffixed -> Expr
 
 #[cache]
 primary -> Expr
-  = name:identifier !(string? returntype equals) {
+  = name:identifier !lt !(string? returntype equals) {
       RuleExpr(name)
+    }
+  / name:identifier lt args:(expression ** comma) gt !equals {
+      TemplateInvoke(name, args)
     }
   / literal
   / class

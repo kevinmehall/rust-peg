@@ -111,3 +111,8 @@ fn test_case_insensitive() {
 fn test_position() {
 	assert_eq!(position("aaaabbb").unwrap(), (0, 4, 7));
 }
+
+#[test]
+fn test_templates() {
+    assert_eq!(parens("(asdf)").unwrap(), "asdf")
+}
