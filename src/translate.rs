@@ -489,13 +489,10 @@ fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 
 		RuleExpr(ref rule_name) => {
 			if let Some(template_arg) = cx.defs.get(&rule_name[..]) {
-				return compile_expr(Context{ defs: &HashMap::new(), ..cx }, template_arg)
-			}
-
-			let func = raw(&format!("parse_{}", rule_name));
-			let rule = cx.grammar.find_rule(rule_name);
-			match rule {
-				Some(rule) if rule.cached => {
+				compile_expr(Context{ defs: &HashMap::new(), ..cx }, template_arg)
+			} else if let Some(rule) = cx.grammar.find_rule(rule_name) {
+				let func = raw(&format!("parse_{}", rule_name));
+				if rule.cached {
 					let cache_field = raw(&format!("{}_cache", *rule_name));
 
 					if cfg!(feature = "trace") {
@@ -515,10 +512,11 @@ fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 							__state.#cache_field.get(&__pos).map(|entry| entry.clone()).unwrap_or_else(|| #func(__input, __state, __pos))
 						}
 					}
-				},
-				_ => {
+				} else {
 					quote!{ #func(__input, __state, __pos) }
 				}
+			} else {
+				panic!("No rule named `{}`", rule_name);
 			}
 		}
 
