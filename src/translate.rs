@@ -305,8 +305,12 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Tokens {
 	let ref rule_name = rule.name;
 	let name = raw(&format!("parse_{}", rule.name));
 	let ret_ty = raw(&rule.ret_type);
-	let defs = HashMap::new();
-	let body = compile_expr(grammar, &*rule.expr, (&rule.ret_type as &str) != "()", &defs);
+	let context = Context {
+		grammar: grammar,
+		result_used: (&rule.ret_type as &str) != "()",
+		defs: &HashMap::new(),
+	};
+	let body = compile_expr(context, &*rule.expr);
 
 	let wrapped_body = if cfg!(feature = "trace") {
 		quote!{{
@@ -375,8 +379,8 @@ fn compile_rule_export(rule: &Rule) -> Tokens {
 	}
 }
 
-fn compile_match_and_then(grammar: &Grammar, e: &Expr, defs: &HashMap<&str, &Expr>, value_name: Option<&str>, then: Tokens) -> Tokens {
-	let seq_res = compile_expr(grammar, e, value_name.is_some(), defs);
+fn compile_match_and_then(cx: Context, e: &Expr, value_name: Option<&str>, then: Tokens) -> Tokens {
+	let seq_res = compile_expr(Context{ result_used: value_name.is_some(), ..cx }, e);
 	let name_pat = match value_name {
 		Some(name) => raw(name),
 		None => raw("_")
@@ -418,7 +422,21 @@ fn format_char_set(invert: bool, cases: &[CharSetCase]) -> String {
 	r
 }
 
-fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool, defs: &HashMap<&str, &Expr>) -> Tokens {
+#[derive(Copy, Clone)]
+struct Context<'a> {
+	grammar: &'a Grammar,
+	result_used: bool,
+	defs: &'a HashMap<&'a str, &'a Expr>
+}
+
+impl<'a> Context<'a> {
+	fn result_used(self, result_used: bool) -> Context<'a> {
+		Context { result_used: result_used, ..self }
+	}
+}
+
+
+fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 	match *e {
 		AnyCharExpr => {
 			quote!{ any_char(__input, __state, __pos) }
@@ -470,12 +488,12 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool, defs: &HashMap<&
 		}
 
 		RuleExpr(ref rule_name) => {
-			if let Some(template_arg) = defs.get(&rule_name[..]) {
-				return compile_expr(grammar, template_arg, result_used, &HashMap::new())
+			if let Some(template_arg) = cx.defs.get(&rule_name[..]) {
+				return compile_expr(Context{ defs: &HashMap::new(), ..cx }, template_arg)
 			}
 
 			let func = raw(&format!("parse_{}", rule_name));
-			let rule = grammar.find_rule(rule_name);
+			let rule = cx.grammar.find_rule(rule_name);
 			match rule {
 				Some(rule) if rule.cached => {
 					let cache_field = raw(&format!("{}_cache", *rule_name));
@@ -505,38 +523,38 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool, defs: &HashMap<&
 		}
 
 		TemplateInvoke(ref name, ref params) => {
-			let template = grammar.templates.get(&name[..]).unwrap_or_else(|| panic!("No template named `{}``"));
+			let template = cx.grammar.templates.get(&name[..]).unwrap_or_else(|| panic!("No template named `{}``"));
 			if template.params.len() != params.len() {
 				panic!("Expected {} arguments to `{}`, found {}", template.params.len(), template.name, params.len());
 			}
 
 			let defs = template.params.iter().map(|x| &x[..]).zip(params.iter()).collect();
-			compile_expr(grammar, &template.expr, result_used, &defs)
+			compile_expr(Context{ defs: &defs, ..cx }, &template.expr)
 		}
 
 		SequenceExpr(ref exprs) => {
-			fn write_seq(grammar: &Grammar, exprs: &[Expr], defs: &HashMap<&str, &Expr>) -> Tokens {
+			fn write_seq(cx: Context, exprs: &[Expr]) -> Tokens {
 				if exprs.len() == 1 {
-					compile_expr(grammar, &exprs[0], false, defs)
+					compile_expr(cx.result_used(false), &exprs[0])
 				} else {
-					compile_match_and_then(grammar, &exprs[0], defs, None, write_seq(grammar, &exprs[1..], defs))
+					compile_match_and_then(cx, &exprs[0], None, write_seq(cx, &exprs[1..]))
 				}
 			}
 
 			if exprs.len() > 0 {
-				write_seq(grammar, &exprs, defs)
+				write_seq(cx, &exprs)
 			} else {
 				quote!{ Matched(__pos, ()) }
 			}
 		}
 
 		ChoiceExpr(ref exprs) => {
-			fn write_choice(grammar: &Grammar, exprs: &[Expr], result_used: bool, defs: &HashMap<&str, &Expr>) -> Tokens  {
+			fn write_choice(cx: Context, exprs: &[Expr]) -> Tokens  {
 				if exprs.len() == 1 {
-					compile_expr(grammar, &exprs[0], result_used, defs)
+					compile_expr(cx, &exprs[0])
 				} else {
-					let choice_res = compile_expr(grammar, &exprs[0], result_used, defs);
-					let next = write_choice(grammar, &exprs[1..], result_used, defs);
+					let choice_res = compile_expr(cx, &exprs[0]);
+					let next = write_choice(cx, &exprs[1..]);
 
 					quote! {{
 						let choice_res = #choice_res;
@@ -549,16 +567,16 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool, defs: &HashMap<&
 			}
 
 			if exprs.len() > 0 {
-				write_choice(grammar, &exprs, result_used, defs)
+				write_choice(cx, &exprs)
 			} else {
 				quote!{ Matched(__pos, ()) }
 			}
 		}
 
 		OptionalExpr(ref e) => {
-			let optional_res = compile_expr(grammar, e, result_used, defs);
+			let optional_res = compile_expr(cx, e);
 
-			if result_used {
+			if cx.result_used {
 				quote!{
 					match #optional_res {
 						Matched(newpos, value) => { Matched(newpos, Some(value)) },
@@ -576,10 +594,10 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool, defs: &HashMap<&
 		}
 
 		Repeat(ref e, min, max, ref sep) => {
-			let inner = compile_expr(grammar, e, result_used, defs);
+			let inner = compile_expr(cx, e);
 
 			let match_sep = sep.as_ref().map(|sep| {
-				let sep_inner = compile_expr(grammar, &*sep, false, defs);
+				let sep_inner = compile_expr(cx.result_used(false), &*sep);
 				quote! {
 					let __pos = if repeat_value.len() > 0 {
 						let sep_res = #sep_inner;
@@ -591,14 +609,14 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool, defs: &HashMap<&
 				}
 			});
 
-			let result = if result_used {
+			let result = if cx.result_used {
 				quote!( repeat_value )
 			} else {
 				quote!( () )
 			};
 
 			let (repeat_vec, repeat_step) =
-			if result_used || min > 0 || max.is_some() || sep.is_some() {
+			if cx.result_used || min > 0 || max.is_some() || sep.is_some() {
 				(Some(quote! { let mut repeat_value = vec!(); }),
 				 Some(quote! { repeat_value.push(value); }))
 			} else {
@@ -646,7 +664,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool, defs: &HashMap<&
 		}
 
 		PosAssertExpr(ref e) => {
-			let assert_res = compile_expr(grammar, e, result_used, defs);
+			let assert_res = compile_expr(cx, e);
 			quote! {{
 				let __assert_res = #assert_res;
 				match __assert_res {
@@ -657,7 +675,7 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool, defs: &HashMap<&
 		}
 
 		NegAssertExpr(ref e) => {
-			let assert_res = compile_expr(grammar, e, false, defs);
+			let assert_res = compile_expr(cx.result_used(false), e);
 			quote! {{
 				let __assert_res = #assert_res;
 				match __assert_res {
@@ -668,12 +686,12 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool, defs: &HashMap<&
 		}
 
 		ActionExpr(ref exprs, ref code, is_cond) => {
-			fn write_seq(grammar: &Grammar, exprs: &[TaggedExpr], code: &str, is_cond: bool, defs: &HashMap<&str, &Expr>) -> Tokens {
+			fn write_seq(cx: Context, exprs: &[TaggedExpr], code: &str, is_cond: bool) -> Tokens {
 				match exprs.first() {
 					Some(ref first) => {
 						let name = first.name.as_ref().map(|s| &s[..]);
-						compile_match_and_then(grammar, &*first.expr, defs, name,
-							write_seq(grammar, &exprs[1..], code, is_cond, defs)
+						compile_match_and_then(cx, &*first.expr, name,
+							write_seq(cx, &exprs[1..], code, is_cond)
 						)
 					}
 					None => {
@@ -696,10 +714,10 @@ fn compile_expr(grammar: &Grammar, e: &Expr, result_used: bool, defs: &HashMap<&
 				}
 			}
 
-			write_seq(grammar, &exprs, &code, is_cond, defs)
+			write_seq(cx, &exprs, &code, is_cond)
 		}
 		MatchStrExpr(ref expr) => {
-			let inner = compile_expr(grammar, expr, false, defs);
+			let inner = compile_expr(cx.result_used(false), expr);
 			quote! {{
 				let str_start = __pos;
 				match #inner {
