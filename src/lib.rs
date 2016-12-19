@@ -24,7 +24,7 @@ pub fn compile(input: &str) -> Result<String, String> {
     };
 
     let output_tokens = translate::compile_grammar(&grammar_def);
-    Ok(output_tokens.to_string())
+    Ok(output_tokens?.to_string())
 }
 
 /// Compile the PEG grammar in the specified filename to cargo's OUT_DIR.

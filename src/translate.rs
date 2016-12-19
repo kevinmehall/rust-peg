@@ -4,6 +4,16 @@ use quote::{Tokens, ToTokens};
 pub use self::RustUse::*;
 pub use self::Expr::*;
 
+pub struct Error {
+	message: String,
+}
+
+impl From<Error> for String {
+	fn from(e: Error) -> String {
+		e.message
+	}
+}
+
 fn raw(s: &str) -> Tokens {
 	let mut t = Tokens::new();
 	t.append(s);
@@ -30,6 +40,7 @@ impl Grammar {
 		}
 		Grammar{ imports:imports, rules:rules, templates:templates }
 	}
+
 	fn find_rule(&self, name: &str) -> Option<&Rule> {
 		self.rules.iter().find(|rule| rule.name == name)
 	}
@@ -244,12 +255,12 @@ static HELPERS: &'static str = stringify! {
 	}
 };
 
-pub fn compile_grammar(grammar: &Grammar) -> Tokens {
+pub fn compile_grammar(grammar: &Grammar) -> Result<Tokens, Error> {
 	let mut items = vec![make_parse_state(&grammar.rules)];
 
-	items.extend(grammar.rules.iter().map(|rule| {
-		compile_rule(grammar, rule)
-	}));
+	for rule in &grammar.rules {
+		items.push(compile_rule(grammar, rule)?)
+	}
 	items.extend(grammar.rules.iter().filter(|rule| rule.exported).map(|rule| {
 		compile_rule_export(rule)
 	}));
@@ -257,14 +268,14 @@ pub fn compile_grammar(grammar: &Grammar) -> Tokens {
 	let view_items = &grammar.imports;
 	let helpers = raw(HELPERS);
 
-	quote! {
+	Ok(quote! {
 		use self::RuleResult::{Matched, Failed};
 		#(use #view_items;)*
 
 		#helpers
 
 		#(#items)*
-	}
+	})
 }
 
 fn make_parse_state(rules: &[Rule]) -> Tokens {
@@ -301,7 +312,7 @@ fn make_parse_state(rules: &[Rule]) -> Tokens {
 }
 
 
-fn compile_rule(grammar: &Grammar, rule: &Rule) -> Tokens {
+fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 	let ref rule_name = rule.name;
 	let name = raw(&format!("parse_{}", rule.name));
 	let ret_ty = raw(&rule.ret_type);
@@ -310,7 +321,8 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Tokens {
 		result_used: (&rule.ret_type as &str) != "()",
 		defs: &HashMap::new(),
 	};
-	let body = compile_expr(context, &*rule.expr);
+
+	let body = compile_expr(context, &*rule.expr)?;
 
 	let wrapped_body = if cfg!(feature = "trace") {
 		quote!{{
@@ -330,7 +342,7 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Tokens {
 
 	let nl = raw("\n\n"); // make output slightly more readable
 
-	if rule.cached {
+	Ok(if rule.cached {
 		let cache_field = raw(&format!("{}_cache", rule.name));
 
 		quote! { #nl
@@ -348,7 +360,7 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Tokens {
 				#wrapped_body
 			}
 		}
-	}
+	})
 }
 
 fn compile_rule_export(rule: &Rule) -> Tokens {
@@ -379,20 +391,20 @@ fn compile_rule_export(rule: &Rule) -> Tokens {
 	}
 }
 
-fn compile_match_and_then(cx: Context, e: &Expr, value_name: Option<&str>, then: Tokens) -> Tokens {
-	let seq_res = compile_expr(Context{ result_used: value_name.is_some(), ..cx }, e);
+fn compile_match_and_then(cx: Context, e: &Expr, value_name: Option<&str>, then: Tokens) -> Result<Tokens, Error> {
+	let seq_res = compile_expr(Context{ result_used: value_name.is_some(), ..cx }, e)?;
 	let name_pat = match value_name {
 		Some(name) => raw(name),
 		None => raw("_")
 	};
 
-	quote! {{
+	Ok(quote! {{
 		let seq_res = #seq_res;
 		match seq_res {
 			Matched(__pos, #name_pat) => { #then }
 			Failed => Failed,
 		}
-	}}
+	}})
 }
 
 fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
@@ -436,8 +448,8 @@ impl<'a> Context<'a> {
 }
 
 
-fn compile_expr(cx: Context, e: &Expr) -> Tokens {
-	match *e {
+fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
+	Ok(match *e {
 		AnyCharExpr => {
 			quote!{ any_char(__input, __state, __pos) }
 		}
@@ -489,7 +501,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 
 		RuleExpr(ref rule_name) => {
 			if let Some(template_arg) = cx.defs.get(&rule_name[..]) {
-				compile_expr(Context{ defs: &HashMap::new(), ..cx }, template_arg)
+				compile_expr(Context{ defs: &HashMap::new(), ..cx }, template_arg)?
 			} else if let Some(rule) = cx.grammar.find_rule(rule_name) {
 				let func = raw(&format!("parse_{}", rule_name));
 				if rule.cached {
@@ -516,63 +528,65 @@ fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 					quote!{ #func(__input, __state, __pos) }
 				}
 			} else {
-				panic!("No rule named `{}`", rule_name);
+				Err(Error{ message: format!("No rule named `{}`", rule_name) })?
 			}
 		}
 
 		TemplateInvoke(ref name, ref params) => {
-			let template = cx.grammar.templates.get(&name[..]).unwrap_or_else(|| panic!("No template named `{}``"));
+			let template = cx.grammar.templates.get(&name[..])
+				.ok_or_else(|| Error { message: format!("No template named `{}``", name) })?;
+
 			if template.params.len() != params.len() {
-				panic!("Expected {} arguments to `{}`, found {}", template.params.len(), template.name, params.len());
+				Err(Error { message: format!("Expected {} arguments to `{}`, found {}", template.params.len(), template.name, params.len())})?
 			}
 
 			let defs = template.params.iter().map(|x| &x[..]).zip(params.iter()).collect();
-			compile_expr(Context{ defs: &defs, ..cx }, &template.expr)
+			compile_expr(Context{ defs: &defs, ..cx }, &template.expr)?
 		}
 
 		SequenceExpr(ref exprs) => {
-			fn write_seq(cx: Context, exprs: &[Expr]) -> Tokens {
+			fn write_seq(cx: Context, exprs: &[Expr]) -> Result<Tokens, Error> {
 				if exprs.len() == 1 {
 					compile_expr(cx.result_used(false), &exprs[0])
 				} else {
-					compile_match_and_then(cx, &exprs[0], None, write_seq(cx, &exprs[1..]))
+					compile_match_and_then(cx, &exprs[0], None, write_seq(cx, &exprs[1..])?)
 				}
 			}
 
 			if exprs.len() > 0 {
-				write_seq(cx, &exprs)
+				write_seq(cx, &exprs)?
 			} else {
 				quote!{ Matched(__pos, ()) }
 			}
 		}
 
 		ChoiceExpr(ref exprs) => {
-			fn write_choice(cx: Context, exprs: &[Expr]) -> Tokens  {
+			fn write_choice(cx: Context, exprs: &[Expr]) -> Result<Tokens, Error>  {
 				if exprs.len() == 1 {
 					compile_expr(cx, &exprs[0])
 				} else {
-					let choice_res = compile_expr(cx, &exprs[0]);
-					let next = write_choice(cx, &exprs[1..]);
+					let choice_res = compile_expr(cx, &exprs[0])?;
+					let next = write_choice(cx, &exprs[1..])?;
 
-					quote! {{
+					Ok(quote! {{
 						let choice_res = #choice_res;
 						match choice_res {
 							Matched(__pos, __value) => Matched(__pos, __value),
 							Failed => #next
 						}
-					}}
+					}})
 				}
 			}
 
 			if exprs.len() > 0 {
-				write_choice(cx, &exprs)
+				write_choice(cx, &exprs)?
 			} else {
 				quote!{ Matched(__pos, ()) }
 			}
 		}
 
 		OptionalExpr(ref e) => {
-			let optional_res = compile_expr(cx, e);
+			let optional_res = compile_expr(cx, e)?;
 
 			if cx.result_used {
 				quote!{
@@ -592,10 +606,10 @@ fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 		}
 
 		Repeat(ref e, min, max, ref sep) => {
-			let inner = compile_expr(cx, e);
+			let inner = compile_expr(cx, e)?;
 
-			let match_sep = sep.as_ref().map(|sep| {
-				let sep_inner = compile_expr(cx.result_used(false), &*sep);
+			let match_sep = if let &Some(ref sep) = sep {
+				let sep_inner = compile_expr(cx.result_used(false), &*sep)?;
 				quote! {
 					let __pos = if repeat_value.len() > 0 {
 						let sep_res = #sep_inner;
@@ -605,7 +619,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 						}
 					} else { __pos };
 				}
-			});
+			} else { quote!() };
 
 			let result = if cx.result_used {
 				quote!( repeat_value )
@@ -662,7 +676,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 		}
 
 		PosAssertExpr(ref e) => {
-			let assert_res = compile_expr(cx, e);
+			let assert_res = compile_expr(cx, e)?;
 			quote! {{
 				let __assert_res = #assert_res;
 				match __assert_res {
@@ -673,7 +687,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 		}
 
 		NegAssertExpr(ref e) => {
-			let assert_res = compile_expr(cx.result_used(false), e);
+			let assert_res = compile_expr(cx.result_used(false), e)?;
 			quote! {{
 				let __assert_res = #assert_res;
 				match __assert_res {
@@ -684,18 +698,18 @@ fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 		}
 
 		ActionExpr(ref exprs, ref code, is_cond) => {
-			fn write_seq(cx: Context, exprs: &[TaggedExpr], code: &str, is_cond: bool) -> Tokens {
+			fn write_seq(cx: Context, exprs: &[TaggedExpr], code: &str, is_cond: bool) -> Result<Tokens, Error> {
 				match exprs.first() {
 					Some(ref first) => {
 						let name = first.name.as_ref().map(|s| &s[..]);
 						compile_match_and_then(cx, &*first.expr, name,
-							write_seq(cx, &exprs[1..], code, is_cond)
+							write_seq(cx, &exprs[1..], code, is_cond)?
 						)
 					}
 					None => {
 						let code_block = raw(code);
 
-						if is_cond {
+						Ok(if is_cond {
 							quote!{
 								match #code_block {
 									Ok(res) => Matched(__pos, res),
@@ -707,15 +721,15 @@ fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 							}
 						} else {
 							quote!{ Matched(__pos, #code_block) }
-						}
+						})
 					}
 				}
 			}
 
-			write_seq(cx, &exprs, &code, is_cond)
+			write_seq(cx, &exprs, &code, is_cond)?
 		}
 		MatchStrExpr(ref expr) => {
-			let inner = compile_expr(cx.result_used(false), expr);
+			let inner = compile_expr(cx.result_used(false), expr)?;
 			quote! {{
 				let str_start = __pos;
 				match #inner {
@@ -727,7 +741,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Tokens {
 		PositionExpr => {
 			quote! { Matched(__pos, __pos) }
 		}
-	}
+	})
 }
 
 #[test]
