@@ -17,7 +17,7 @@ rule -> Rule
       }
     }
 
-    pubflag -> bool = "pub" !(letter / digit) __ { true } / "" { false }
+    pubflag -> bool = PUB { true } / "" { false }
     exportflag -> bool = ("#[export]" / "#[pub]") __ {true} / "" {false}
     cacheflag -> bool = "#[cache]" __ {true} / {false}
 
@@ -173,6 +173,9 @@ rbrace    = "}"  __
 comma     = ","  __
 lt        = "<"  __
 gt        = ">"  __
+PUB = "pub" !(letter / digit) __
+
+keyword = PUB
 
 integer -> usize
   = i:$([0-9]+) __ { i.parse().unwrap() }
@@ -196,7 +199,7 @@ integer -> usize
  * purpose in the grammar.
  */
 identifier -> String
-  = chars:$((letter / "_") (letter / digit / "_")*) __ { chars.to_owned() }
+  = !keyword chars:$((letter / "_") (letter / digit / "_")*) __ { chars.to_owned() }
 
 /*
  * Modeled after ECMA-262, 5th ed., 7.8.4. (syntax & semantics, rules only
