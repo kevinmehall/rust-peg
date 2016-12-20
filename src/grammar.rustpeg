@@ -1,8 +1,7 @@
 use translate::*;
 use std::char;
 
-#[export]
-grammar -> Grammar = __ items:item* {
+pub grammar -> Grammar = __ items:item* {
   Grammar::from_items(items)
 }
 

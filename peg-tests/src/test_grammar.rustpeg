@@ -1,66 +1,53 @@
 use std::collections::HashMap;
 use std::borrow::{ToOwned, Cow};
 
-#[export]
-consonants
+pub consonants
 	= ([a-z]![aeiou])+
 
-#[export]
-options -> Option<()>
+pub options -> Option<()>
 	= "abc" v:"def"? {v}
 
 number -> i64
 	= n:$([0-9]+) { n.parse().unwrap() }
 
-#[export]
-list -> Vec<i64>
+pub list -> Vec<i64>
 	= number ** ","
 
 digit -> i64
 	= n:$([0-9]) {n.parse().unwrap() }
 
-#[export]
-repeat_n -> Vec<i64>
+pub repeat_n -> Vec<i64>
 	= digit*<4>
 
-#[export]
-repeat_min -> Vec<i64>
+pub repeat_min -> Vec<i64>
 	= digit*<2,>
 
-#[export]
-repeat_max -> Vec<i64>
+pub repeat_max -> Vec<i64>
 	= digit*<,2>
 
-#[export]
-repeat_min_max -> Vec<i64>
+pub repeat_min_max -> Vec<i64>
 	= digit*<2,3>
 
-#[export]
-boundaries -> String
+pub boundaries -> String
 	= n:$("foo") { n.to_string() }
 
-#[export]
-case_insensitive -> String
+pub case_insensitive -> String
 	= n:$("foo"i) { n.to_string() }
 
-#[export]
-borrowed -> &'input str
+pub borrowed -> &'input str
 	= $([a-z]+)
 
-#[export]
-lifetime_parameter -> Cow<'input, str>
+pub lifetime_parameter -> Cow<'input, str>
 	= x:$([a-z]+) { x.into() }
 	/ "COW"  { "cow".to_owned().into() }
 
-#[export]
-block -> &'input str
+pub block -> &'input str
 	= x:$([a-z]+) {
 		let result = x;
 		result
 	}
 
-#[export]
-keyvals -> HashMap<i64, i64>
+pub keyvals -> HashMap<i64, i64>
     = kvs:keyval ++ "\n" {
         let mut rv = HashMap::new();
         for &(k, v) in kvs.iter() {
@@ -72,26 +59,21 @@ keyvals -> HashMap<i64, i64>
 keyval -> (i64, i64)
     = k:number ":" + v:number { (k, v) }
 
-#[export]
-expect_nothing -> ()
+pub expect_nothing -> ()
 	= [a-zA-Z]
 
-#[export]
-position -> (usize, usize, usize)
+pub position -> (usize, usize, usize)
  = start:#position [a]* middle:#position [b]* end:#position { (start, middle, end) }
 
-#[export]
-empty_charset = []
+pub empty_charset = []
 
-#[export]
-option_unused_result = "a"? / "b"
+pub option_unused_result = "a"? / "b"
 
-#[export]
-lookahead_result -> &'input str
+pub lookahead_result -> &'input str
   = v:&($([a-c]*)) "abcd" { v }
 
 parenthesized<foo> = "(" s:foo ")" { s }
-#[export] parens -> &'input str = parenthesized<$([a-z]*)>
+pub parens -> &'input str = parenthesized<$([a-z]*)>
 
 double_parenthesized<x> = parenthesized<parenthesized<x>>
-#[export] double_parens -> &'input str = double_parenthesized<$([a-z]*)>
+pub double_parens -> &'input str = double_parenthesized<$([a-z]*)>
