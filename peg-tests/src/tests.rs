@@ -61,6 +61,10 @@ fn test_repeat() {
 	assert_eq!(repeat_min_max("12"), Ok(vec![1,2]));
 	assert_eq!(repeat_min_max("123"), Ok(vec![1,2,3]));
 	assert!(repeat_min_max("1234").is_err());
+
+	assert!(repeat_sep_3("1,2").is_err());
+	assert!(repeat_sep_3("1,2,3,4").is_err());
+	assert_eq!(repeat_sep_3("1,2,3"), Ok(vec![1,2,3]));
 }
 
 #[test]

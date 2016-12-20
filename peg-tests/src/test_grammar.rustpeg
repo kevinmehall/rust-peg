@@ -28,6 +28,9 @@ pub repeat_max -> Vec<i64>
 pub repeat_min_max -> Vec<i64>
 	= digit*<2,3>
 
+pub repeat_sep_3 -> Vec<i64>
+	= digit **<3> ","
+
 pub boundaries -> String
 	= n:$("foo") { n.to_string() }
 
