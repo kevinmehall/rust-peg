@@ -7,11 +7,18 @@ grammar -> Grammar = __ items:item* {
 }
 
 rule -> Rule
-  = exported:exportflag cached:cacheflag name:identifier returns: returntype equals expression:expression semicolon? {
-      Rule{ name: name, expr: Box::new(expression), ret_type: returns, exported: exported, cached: cached }
+  = legacy_exported:exportflag cached:cacheflag public:pubflag name:identifier returns: returntype equals expression:expression semicolon? {
+      Rule{
+        name: name,
+        expr: Box::new(expression),
+        ret_type: returns,
+        exported: public || legacy_exported,
+        cached: cached
+      }
     }
 
-    exportflag -> bool = ("#[export]"/"#[pub]") __ {true} / "" {false}
+    pubflag -> bool = "pub" !(letter / digit) __ { true } / "" { false }
+    exportflag -> bool = ("#[export]" / "#[pub]") __ {true} / "" {false}
     cacheflag -> bool = "#[cache]" __ {true} / {false}
 
 template -> Template
