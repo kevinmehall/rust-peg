@@ -35,7 +35,7 @@ returntype -> String
   / { "()".to_string() }
 
 rust_use -> RustUse
-  = "use" __ p:rust_path __ v:(
+  = USE p:rust_path __ v:(
     "::" __ "*" __
       { RustUseGlob(p.clone()) }
     / "::" __ "{" __ names:(identifier ++ ("," __)) "}" __
@@ -172,9 +172,13 @@ rbrace    = "}"  __
 comma     = ","  __
 lt        = "<"  __
 gt        = ">"  __
-PUB = "pub" !(letter / digit) __
 
-keyword = PUB
+
+KEYWORD<k> = k !(letter / digit) __
+USE = KEYWORD<"use">
+PUB = KEYWORD<"pub">
+
+keyword = USE / PUB
 
 integer -> usize
   = i:$([0-9]+) __ { i.parse().unwrap() }
