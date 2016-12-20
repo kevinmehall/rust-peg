@@ -114,5 +114,6 @@ fn test_position() {
 
 #[test]
 fn test_templates() {
-    assert_eq!(parens("(asdf)").unwrap(), "asdf")
+    assert_eq!(parens("(asdf)").unwrap(), "asdf");
+    assert_eq!(double_parens("((asdf))").unwrap(), "asdf");
 }

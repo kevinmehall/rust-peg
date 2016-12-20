@@ -319,7 +319,7 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 	let context = Context {
 		grammar: grammar,
 		result_used: (&rule.ret_type as &str) != "()",
-		defs: &HashMap::new(),
+		lexical: &LexicalContext { defs: HashMap::new() },
 	};
 
 	let body = compile_expr(context, &*rule.expr)?;
@@ -434,11 +434,15 @@ fn format_char_set(invert: bool, cases: &[CharSetCase]) -> String {
 	r
 }
 
+struct LexicalContext<'a> {
+	defs: HashMap<&'a str, (&'a Expr, &'a LexicalContext<'a>)>
+}
+
 #[derive(Copy, Clone)]
 struct Context<'a> {
 	grammar: &'a Grammar,
 	result_used: bool,
-	defs: &'a HashMap<&'a str, &'a Expr>
+	lexical: &'a LexicalContext<'a>,
 }
 
 impl<'a> Context<'a> {
@@ -500,8 +504,8 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		}
 
 		RuleExpr(ref rule_name) => {
-			if let Some(template_arg) = cx.defs.get(&rule_name[..]) {
-				compile_expr(Context{ defs: &HashMap::new(), ..cx }, template_arg)?
+			if let Some(&(template_arg, lexical_context)) = cx.lexical.defs.get(&rule_name[..]) {
+				compile_expr(Context{ lexical: lexical_context, ..cx }, template_arg)?
 			} else if let Some(rule) = cx.grammar.find_rule(rule_name) {
 				let func = raw(&format!("parse_{}", rule_name));
 				if rule.cached {
@@ -540,8 +544,9 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 				Err(Error { message: format!("Expected {} arguments to `{}`, found {}", template.params.len(), template.name, params.len())})?
 			}
 
-			let defs = template.params.iter().map(|x| &x[..]).zip(params.iter()).collect();
-			compile_expr(Context{ defs: &defs, ..cx }, &template.expr)?
+			let defs = template.params.iter().zip(params.iter())
+				.map(|(name, expr)| (&name[..], (expr, cx.lexical))).collect();
+			compile_expr(Context{ lexical: &LexicalContext { defs: defs }, ..cx }, &template.expr)?
 		}
 
 		SequenceExpr(ref exprs) => {

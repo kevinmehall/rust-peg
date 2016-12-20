@@ -91,5 +91,7 @@ lookahead_result -> &'input str
   = v:&($([a-c]*)) "abcd" { v }
 
 parenthesized<foo> = "(" s:foo ")" { s }
-#[export]
-parens -> &'input str = parenthesized<$([a-z]*)>
+#[export] parens -> &'input str = parenthesized<$([a-z]*)>
+
+double_parenthesized<x> = parenthesized<parenthesized<x>>
+#[export] double_parens -> &'input str = double_parenthesized<$([a-z]*)>
