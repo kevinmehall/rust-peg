@@ -1,17 +1,23 @@
 use translate::*;
 use std::char;
 
-#[export]
-grammar -> Grammar = __ items:item* {
+pub grammar -> Grammar = __ items:item* {
   Grammar::from_items(items)
 }
 
 rule -> Rule
-  = exported:exportflag cached:cacheflag name:identifier returns: returntype equals expression:expression semicolon? {
-      Rule{ name: name, expr: Box::new(expression), ret_type: returns, exported: exported, cached: cached }
+  = legacy_exported:exportflag cached:cacheflag public:pubflag name:identifier returns: returntype equals expression:expression semicolon? {
+      Rule{
+        name: name,
+        expr: Box::new(expression),
+        ret_type: returns,
+        exported: public || legacy_exported,
+        cached: cached
+      }
     }
 
-    exportflag -> bool = ("#[export]"/"#[pub]") __ {true} / "" {false}
+    pubflag -> bool = PUB { true } / "" { false }
+    exportflag -> bool = ("#[export]" / "#[pub]") __ {true} / "" {false}
     cacheflag -> bool = "#[cache]" __ {true} / {false}
 
 template -> Template
@@ -29,7 +35,7 @@ returntype -> String
   / { "()".to_string() }
 
 rust_use -> RustUse
-  = "use" __ p:rust_path __ v:(
+  = USE p:rust_path __ v:(
     "::" __ "*" __
       { RustUseGlob(p.clone()) }
     / "::" __ "{" __ names:(identifier ++ ("," __)) "}" __
@@ -167,6 +173,13 @@ comma     = ","  __
 lt        = "<"  __
 gt        = ">"  __
 
+
+KEYWORD<k> = k !(letter / digit) __
+USE = KEYWORD<"use">
+PUB = KEYWORD<"pub">
+
+keyword = USE / PUB
+
 integer -> usize
   = i:$([0-9]+) __ { i.parse().unwrap() }
 
@@ -189,7 +202,7 @@ integer -> usize
  * purpose in the grammar.
  */
 identifier -> String
-  = chars:$((letter / "_") (letter / digit / "_")*) __ { chars.to_owned() }
+  = !keyword chars:$((letter / "_") (letter / digit / "_")*) __ { chars.to_owned() }
 
 /*
  * Modeled after ECMA-262, 5th ed., 7.8.4. (syntax & semantics, rules only

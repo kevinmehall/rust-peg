@@ -15,12 +15,11 @@ the generated module. Since the grammar is in its own module, you must `use supe
 access a structure from the parent module.
 
 ```rust
-#[pub]
-rule_name -> type
+pub rule_name -> type
    = expression
 ```
 
-If a rule is marked with `#[pub]`, the generated module has a public function that begins parsing at that rule.
+If a rule is marked with `pub`, the generated module has a public function that begins parsing at that rule.
 
   * `.` - match any single character
   * `"literal"` - match a literal string
@@ -106,7 +105,7 @@ Add to your crate root:
 #![plugin(peg_syntax_ext)]
 ```
 
-Use `peg_file! modname("mygrammarfile.rustpeg");` to include the grammar from an external file. The macro expands into a module called `modname` with functions corresponding to the `#[pub]` rules in your grammar.
+Use `peg_file! modname("mygrammarfile.rustpeg");` to include the grammar from an external file. The macro expands into a module called `modname` with functions corresponding to the `pub` rules in your grammar.
 
 Or, use
 ```rust
