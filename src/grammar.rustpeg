@@ -174,7 +174,7 @@ lt        = "<"  __
 gt        = ">"  __
 
 
-KEYWORD<k> = k !(letter / digit) __
+KEYWORD<k> = k !([a-zA-Z0-9_]) __
 USE = KEYWORD<"use">
 PUB = KEYWORD<"pub">
 
@@ -183,26 +183,8 @@ keyword = USE / PUB
 integer -> usize
   = i:$([0-9]+) __ { i.parse().unwrap() }
 
-/*
- * Modeled after ECMA-262, 5th ed., 7.6, but much simplified:
- *
- * * no Unicode escape sequences
- *
- * * "Unicode combining marks" and "Unicode connection punctuation" can't be
- *   part of the identifier
- *
- * * only [a-zA-Z] is considered a "Unicode letter"
- *
- * * only [0-9] is considered a "Unicode digit"
- *
- * The simplifications were made just to make the implementation little bit
- * easier, there is no "philosophical" reason behind them.
- *
- * Contrary to ECMA 262, the "$" character is not valid because it serves other
- * purpose in the grammar.
- */
 identifier -> String
-  = !keyword chars:$((letter / "_") (letter / digit / "_")*) __ { chars.to_owned() }
+  = !keyword chars:$([a-zA-Z_][a-zA-Z0-9_]*) __ { chars.to_owned() }
 
 /*
  * Modeled after ECMA-262, 5th ed., 7.8.4. (syntax & semantics, rules only
@@ -305,16 +287,6 @@ digit
 
 hexDigit
   = [0-9a-fA-F]
-
-letter
-  = lowerCaseLetter
-  / upperCaseLetter
-
-lowerCaseLetter
-  = [a-z]
-
-upperCaseLetter
-  = [A-Z]
 
 __ = (whitespace / eol / comment)*
 
