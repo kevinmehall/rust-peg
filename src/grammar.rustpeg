@@ -34,18 +34,14 @@ returntype -> String
   = returns tp:$rust_type { tp.trim().to_owned() }
   / { "()".to_string() }
 
-rust_use -> RustUse
-  = USE p:rust_path __ v:(
+rust_use -> String
+  = v:$(USE rust_path __ (
     "::" __ "*" __
-      { RustUseGlob(p.clone()) }
-    / "::" __ "{" __ names:(identifier ++ ("," __)) "}" __
-      { RustUseList(p.clone(), names) }
-    / ""
-      { RustUseSimple(p.clone()) }
-  ) ";" __ { v }
+    / "::" __ "{" __ ((identifier ("as" __ identifier)?) ++ ("," __)) "}" __
+    / ("as" __ identifier)?
+  ) ";") __ { v.to_owned() }
 
-rust_path -> String
-  = p:$(identifier ++ ("::" __)) { p.to_string() }
+rust_path = identifier ++ ("::" __)
 
 rust_type
   = "()" __

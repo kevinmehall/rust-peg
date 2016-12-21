@@ -1,7 +1,6 @@
 use std::borrow::ToOwned;
 use std::collections::HashMap;
-use quote::{Tokens, ToTokens};
-pub use self::RustUse::*;
+use quote::Tokens;
 pub use self::Expr::*;
 
 pub struct Error {
@@ -21,7 +20,7 @@ fn raw(s: &str) -> Tokens {
 }
 
 pub struct Grammar {
-	pub imports: Vec<RustUse>,
+	pub imports: Vec<String>,
 	pub rules: Vec<Rule>,
 	pub templates: HashMap<String, Template>,
 }
@@ -46,41 +45,8 @@ impl Grammar {
 	}
 }
 
-#[derive(Clone)]
-pub enum RustUse {
-	RustUseSimple(String),
-	RustUseGlob(String),
-	RustUseList(String, Vec<String>),
-}
-
-impl ToTokens for RustUse {
-	fn to_tokens(&self, tok: &mut Tokens) {
-		match *self {
-			RustUseSimple(ref s) => {
-				tok.append(&s[..]);
-			}
-			RustUseGlob(ref s) => {
-				tok.append(&s[..]);
-				tok.append("::");
-				tok.append("*");
-			}
-			RustUseList(ref s, ref n) => {
-				tok.append(&s[..]);
-				tok.append("::");
-				tok.append("{");
-				for t in n {
-					tok.append(&t[..]);
-					tok.append(",");
-				}
-				tok.append("}");
-			}
-		}
-
-	}
-}
-
 pub enum Item {
-	Use(RustUse),
+	Use(String),
 	Rule(Rule),
 	Template(Template),
 }
@@ -277,12 +243,12 @@ pub fn compile_grammar(grammar: &Grammar) -> Result<Tokens, Error> {
 		compile_rule_export(rule)
 	}));
 
-	let view_items = &grammar.imports;
+	let view_items: Vec<_> = grammar.imports.iter().map(|x| raw(x)).collect();
 	let helpers = raw(HELPERS);
 
 	Ok(quote! {
 		use self::RuleResult::{Matched, Failed};
-		#(use #view_items;)*
+		#(#view_items)*
 
 		#helpers
 

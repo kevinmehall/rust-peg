@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+const FOO: i32 = 42;
+
 mod test_grammar {
     include!(concat!(env!("OUT_DIR"), "/test_grammar.rs"));
 }
@@ -122,4 +124,9 @@ fn test_position() {
 fn test_templates() {
     assert_eq!(parens("(asdf)").unwrap(), "asdf");
     assert_eq!(double_parens("((asdf))").unwrap(), "asdf");
+}
+
+#[test]
+fn test_renamed_imports() {
+	assert_eq!(renamed_imports("").unwrap(), (42, 42));
 }
