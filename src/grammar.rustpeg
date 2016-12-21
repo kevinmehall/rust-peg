@@ -107,23 +107,27 @@ suffixed -> Expr
        OptionalExpr(Box::new(e))
     }
   / e:primary starstar count:repeatcount sep:primary {
-      Repeat(Box::new(e), count.0, count.1, Some(Box::new(sep)))
+      Repeat(Box::new(e), count, Some(Box::new(sep)))
     }
   / e:primary plusplus sep:primary {
-      Repeat(Box::new(e), 1, None, Some(Box::new(sep)))
+      Repeat(Box::new(e), BoundedRepeat::Plus, Some(Box::new(sep)))
     }
   / e:primary star count:repeatcount {
-      Repeat(Box::new(e), count.0, count.1, None)
+      Repeat(Box::new(e), count, None)
     }
   / e:primary plus {
-      Repeat(Box::new(e), 1, None, None)
+      Repeat(Box::new(e), BoundedRepeat::Plus, None)
     }
   / primary
 
-repeatcount -> (usize, Option<usize>)
-  = lt n:integer gt { (n, Some(n)) }
-  / lt min:integer? comma max:integer? gt { (min.unwrap_or(0), max) }
-  / "" { (0, None) }
+repeatcount -> BoundedRepeat
+  = lt n:repeatnum gt { BoundedRepeat::Exact(n) }
+  / lt min:repeatnum? comma max:repeatnum? gt { BoundedRepeat::Both(min, max) }
+  / "" { BoundedRepeat::None }
+
+repeatnum -> String
+  = i:integer __ { i.to_string() }
+  / lbrace e:rust_expr rbrace {e}
 
 #[cache]
 primary -> Expr
@@ -141,14 +145,16 @@ primary -> Expr
 
 /* "Lexical" elements */
 
+rust_expr -> String
+   = literal:$(((braced "") / nonBraceCharacters)*) { format!("{{ {} }}", literal) }
+
 action -> (String, /*is conditional match?*/ bool)
-  = "{" cond:"?"? literal:$(((braced "") / nonBraceCharacters)*) "}" __ {
-     (format!("{{ {} }}", literal), cond.is_some())
+  = "{" cond:"?"? literal:rust_expr "}" __ {
+     (literal, cond.is_some())
   }
 
 braced = "{" (((braced "") / nonBraceCharacters)*) "}"
-nonBraceCharacters = nonBraceCharacter+
-nonBraceCharacter = [^{}]
+nonBraceCharacters = [^{}]+
 
 equals    = "="  __
 colon     = ":"  __

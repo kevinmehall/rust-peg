@@ -65,6 +65,8 @@ fn test_repeat() {
 	assert!(repeat_sep_3("1,2").is_err());
 	assert!(repeat_sep_3("1,2,3,4").is_err());
 	assert_eq!(repeat_sep_3("1,2,3"), Ok(vec![1,2,3]));
+
+	assert_eq!(repeat_variable("1a3abc222"), Ok(vec!["a", "abc", "22"]));
 }
 
 #[test]

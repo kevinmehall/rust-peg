@@ -120,13 +120,21 @@ pub enum Expr {
 	SequenceExpr(Vec<Expr>),
 	ChoiceExpr(Vec<Expr>),
 	OptionalExpr(Box<Expr>),
-	Repeat(Box<Expr>, /*min*/ usize, /*max*/ Option<usize>, /*sep*/ Option<Box<Expr>>),
+	Repeat(Box<Expr>, BoundedRepeat, /*sep*/ Option<Box<Expr>>),
 	PosAssertExpr(Box<Expr>),
 	NegAssertExpr(Box<Expr>),
 	ActionExpr(Vec<TaggedExpr>, /*action*/ String, /*cond*/ bool),
 	MatchStrExpr(Box<Expr>),
 	PositionExpr,
 	TemplateInvoke(String, Vec<Expr>)
+}
+
+#[derive(Clone)]
+pub enum BoundedRepeat {
+	None,
+	Plus,
+	Exact(String),
+	Both(Option<String>, Option<String>),
 }
 
 static HELPERS: &'static str = stringify! {
@@ -610,8 +618,15 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			}
 		}
 
-		Repeat(ref e, min, max, ref sep) => {
+		Repeat(ref e, ref bounds, ref sep) => {
 			let inner = compile_expr(cx, e)?;
+
+			let (min, max) = match *bounds {
+				BoundedRepeat::None => (None, None),
+				BoundedRepeat::Plus => (Some(quote!(1)), None),
+				BoundedRepeat::Exact(ref code) => (Some(raw(code)), Some(raw(code))),
+				BoundedRepeat::Both(ref min, ref max) => (min.as_ref().map(|x| raw(x)), max.as_ref().map(|x| raw(x)))
+			};
 
 			let match_sep = if let &Some(ref sep) = sep {
 				let sep_inner = compile_expr(cx.result_used(false), &*sep)?;
@@ -633,7 +648,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			};
 
 			let (repeat_vec, repeat_step) =
-			if cx.result_used || min > 0 || max.is_some() || sep.is_some() {
+			if cx.result_used || min.is_some() || max.is_some() || sep.is_some() {
 				(Some(quote! { let mut repeat_value = vec!(); }),
 				 Some(quote! { repeat_value.push(value); }))
 			} else {
@@ -642,7 +657,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 
 			let max_check = max.map(|max| { quote! { if repeat_value.len() >= #max { break } }});
 
-			let result_check = if min > 0 {
+			let result_check = if let Some(min) = min {
 				quote!{
 					if repeat_value.len() >= #min {
 						Matched(__repeat_pos, #result)
