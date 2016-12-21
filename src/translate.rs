@@ -126,7 +126,9 @@ pub enum Expr {
 	ActionExpr(Vec<TaggedExpr>, /*action*/ String, /*cond*/ bool),
 	MatchStrExpr(Box<Expr>),
 	PositionExpr,
-	TemplateInvoke(String, Vec<Expr>)
+	TemplateInvoke(String, Vec<Expr>),
+	QuietExpr(Box<Expr>),
+	FailExpr(String),
 }
 
 #[derive(Clone)]
@@ -249,13 +251,15 @@ static HELPERS: &'static str = stringify! {
 
 	impl<'input> ParseState<'input> {
 		fn mark_failure(&mut self, pos: usize, expected: &'static str) -> RuleResult<()> {
-			if pos > self.max_err_pos {
-				self.max_err_pos = pos;
-				self.expected.clear();
-			}
+			if self.suppress_fail == 0 {
+				if pos > self.max_err_pos {
+					self.max_err_pos = pos;
+					self.expected.clear();
+				}
 
-			if pos == self.max_err_pos {
-				self.expected.insert(expected);
+				if pos == self.max_err_pos {
+					self.expected.insert(expected);
+				}
 			}
 
 			Failed
@@ -301,6 +305,7 @@ fn make_parse_state(rules: &[Rule]) -> Tokens {
 	quote! {
 		struct ParseState<'input> {
 			max_err_pos: usize,
+			suppress_fail: usize,
 			expected: ::std::collections::HashSet<&'static str>,
 			_phantom: ::std::marker::PhantomData<&'input ()>,
 			#(#cache_fields_def),*
@@ -310,6 +315,7 @@ fn make_parse_state(rules: &[Rule]) -> Tokens {
 			fn new() -> ParseState<'input> {
 				ParseState {
 					max_err_pos: 0,
+					suppress_fail: 0,
 					expected: ::std::collections::HashSet::new(),
 					_phantom: ::std::marker::PhantomData,
 					#(#cache_fields: ::std::collections::HashMap::new()),*
@@ -760,6 +766,18 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		}
 		PositionExpr => {
 			quote! { Matched(__pos, __pos) }
+		}
+		QuietExpr(ref expr) => {
+			let inner = compile_expr(cx, expr)?;
+			quote! {{
+				__state.suppress_fail += 1;
+				let res = #inner;
+				__state.suppress_fail -= 1;
+				res
+			}}
+		}
+		FailExpr(ref expected) => {
+			quote!{{ __state.mark_failure(__pos, #expected); Failed }}
 		}
 	})
 }
