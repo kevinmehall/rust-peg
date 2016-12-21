@@ -17,7 +17,7 @@ rule -> Rule
     }
 
     pubflag -> bool = PUB { true } / "" { false }
-    exportflag -> bool = ("#[export]" / "#[pub]") __ {true} / "" {false}
+    exportflag -> bool = #quiet<("#[export]" / "#[pub]") __ {true} / "" {false}>
     cacheflag -> bool = "#[cache]" __ {true} / {false}
 
 template -> Template
@@ -131,7 +131,7 @@ repeatnum -> String
 
 #[cache]
 primary -> Expr
-  = name:identifier !lt !(string? returntype equals) {
+  = name:identifier !lt !returns !equals {
       RuleExpr(name)
     }
   / name:identifier lt args:(expression ** comma) gt !equals {
@@ -191,7 +191,7 @@ integer -> usize
   = i:$([0-9]+) __ { i.parse().unwrap() }
 
 identifier -> String
-  = !keyword chars:$([a-zA-Z_][a-zA-Z0-9_]*) __ { chars.to_owned() }
+  = #quiet<!keyword chars:$([a-zA-Z_][a-zA-Z0-9_]*) __ { chars.to_owned() }> / #expected("identifier")
 
 /*
  * Modeled after ECMA-262, 5th ed., 7.8.4. (syntax & semantics, rules only
@@ -295,7 +295,7 @@ digit
 hexDigit
   = [0-9a-fA-F]
 
-__ = (whitespace / eol / comment)*
+__ = #quiet<(whitespace / eol / comment)*>
 
 /* Modeled after ECMA-262, 5th ed., 7.4. */
 comment
