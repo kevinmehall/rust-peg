@@ -347,7 +347,9 @@ fn compile_rule_export(rule: &Rule) -> Tokens {
 	let name = raw(&rule.name);
 	let ret_ty = raw(&rule.ret_type);
 	let parse_fn = raw(&format!("parse_{}", rule.name));
+	let nl = raw("\n\n"); // make output slightly more readable
 	quote! {
+		#nl
 		pub fn #name<'input>(input: &'input str) -> ParseResult<#ret_ty> {
 			#![allow(non_snake_case, unused)]
 			let mut state = ParseState::new();
