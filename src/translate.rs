@@ -95,6 +95,22 @@ pub enum Expr {
 	TemplateInvoke(String, Vec<Expr>),
 	QuietExpr(Box<Expr>),
 	FailExpr(String),
+	InfixExpr{ atom: Box<Expr>, l_arg: String, r_arg: String, ty: String, levels: Vec<InfixLevel> }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum InfixAssoc { Left, Right }
+
+#[derive(Clone)]
+pub struct InfixLevel {
+	pub assoc: InfixAssoc,
+	pub operators: Vec<InfixOperator>,
+}
+
+#[derive(Clone)]
+pub struct InfixOperator {
+	pub operator: Box<Expr>,
+	pub action: String,
 }
 
 #[derive(Clone)]
@@ -753,6 +769,70 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		}
 		FailExpr(ref expected) => {
 			quote!{{ __state.mark_failure(__pos, #expected); Failed }}
+		}
+
+		InfixExpr{ ref atom, ref r_arg, ref l_arg, ref ty, ref levels } => {
+			let match_atom = compile_expr(cx, atom)?;
+			let l_arg = raw(l_arg);
+			let r_arg = raw(r_arg);
+			let ty = raw(ty);
+
+			let mut level_code = Vec::new();
+
+			for (prec, level) in levels.iter().enumerate() {
+				let prec = prec as i32;
+				let new_prec = match level.assoc {
+					InfixAssoc::Left => prec + 1,
+					InfixAssoc::Right => prec
+				};
+
+				let mut rules = Vec::new();
+				for op in &level.operators {
+					let match_rule = compile_expr(cx.result_used(false), &*op.operator)?;
+					let action = raw(&op.action[..]);
+					rules.push(quote!{
+						if let Matched(__pos, _) = #match_rule {
+							if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos) {
+								#l_arg = #action;
+								__repeat_pos = __pos;
+								continue;
+							}
+						}
+					});
+				}
+
+				level_code.push(quote!{
+					if #prec >= __min_prec {
+						#(#rules)*
+					}
+				});
+			}
+
+			let (enter, leave) = if cfg!(feature = "trace") {
+				(quote!{println!("[PEG_TRACE] Entering level {}", __min_prec);},
+				 quote!{println!("[PEG_TRACE] Leaving level {}", __min_prec);})
+			} else {
+				(quote!(), quote!())
+			};
+
+			quote!{{
+				fn __infix_parse<'input>(__min_prec:i32, __input: &'input str, __state: &mut ParseState<'input>, __pos: usize) -> RuleResult<#ty> {
+					if let Matched(__pos, mut #l_arg) = #match_atom {
+						#enter
+						let mut __repeat_pos = __pos;
+						loop {
+							let __pos = __repeat_pos;
+							#(#level_code)*
+							break;
+						}
+						#leave
+						Matched(__repeat_pos, #l_arg)
+					} else {
+						Failed
+					}
+				}
+				__infix_parse(0, __input, __state, __pos)
+			}}
 		}
 	})
 }
