@@ -47,10 +47,10 @@ rust_type
   = "()" __
   / "[" rust_type "]" __
   / "&" ("'" identifier)? rust_type
-  / identifier "<" (("'" identifier "") / rust_type) ** (__ "," __) ">" __
+  / identifier "<" (("'" identifier) / rust_type) ** (__ "," __) ">" __
   / identifier "::" rust_type
   / "(" rust_type ++ (__ "," __) ")" __
-  / identifier ""
+  / identifier
 
 expression -> Expr
   = choice
@@ -144,14 +144,14 @@ primary -> Expr
 /* "Lexical" elements */
 
 rust_expr -> String
-   = literal:$(((braced "") / nonBraceCharacters)*) { format!("{{ {} }}", literal) }
+   = literal:$((braced / nonBraceCharacters)*) { format!("{{ {} }}", literal) }
 
 action -> (String, /*is conditional match?*/ bool)
   = "{" cond:"?"? literal:rust_expr "}" __ {
      (literal, cond.is_some())
   }
 
-braced = "{" (((braced "") / nonBraceCharacters)*) "}"
+braced = "{" ((braced / nonBraceCharacters)*) "}"
 nonBraceCharacters = [^{}]+
 
 equals    = "="  __
