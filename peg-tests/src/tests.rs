@@ -130,3 +130,10 @@ fn test_templates() {
 fn test_renamed_imports() {
 	assert_eq!(renamed_imports("").unwrap(), (42, 42));
 }
+
+#[test]
+fn test_neg_lookahead_err() {
+	let err = neg_lookahead_err("ac").err().unwrap();
+	assert_eq!(err.expected.len(), 1, "expected set includes: {:?}", err.expected);
+	assert_eq!(err.offset, 1);
+}

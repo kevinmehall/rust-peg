@@ -675,7 +675,9 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		PosAssertExpr(ref e) => {
 			let assert_res = compile_expr(cx, e)?;
 			quote! {{
+				__state.suppress_fail += 1;
 				let __assert_res = #assert_res;
+				__state.suppress_fail -= 1;
 				match __assert_res {
 					Matched(_, __value) => Matched(__pos, __value),
 					Failed => Failed,
@@ -686,7 +688,9 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		NegAssertExpr(ref e) => {
 			let assert_res = compile_expr(cx.result_used(false), e)?;
 			quote! {{
+				__state.suppress_fail += 1;
 				let __assert_res = #assert_res;
+				__state.suppress_fail -= 1;
 				match __assert_res {
 					Failed => Matched(__pos, ()),
 					Matched(..) => Failed,

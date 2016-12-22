@@ -87,3 +87,5 @@ pub double_parens -> &'input str = double_parenthesized<$([a-z]*)>
 use super::FOO as F1;
 use super::{FOO as F2};
 pub renamed_imports -> (i32, i32) = { (F1, F2) }
+
+pub neg_lookahead_err = !([a][b]) [a][x]
