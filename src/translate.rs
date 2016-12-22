@@ -325,9 +325,25 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 	Ok(if rule.cached {
 		let cache_field = raw(&format!("{}_cache", rule.name));
 
+		let cache_trace = if cfg!(feature = "trace") {
+			quote!{
+				let (line, col) = pos_to_line(__input, __pos);
+                match entry {
+                    &Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}:{} (pos {})", #rule_name, line, col, __pos),
+                    &Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}:{} (pos {})", #rule_name, line, col, __pos),
+                };
+			}
+		} else {
+			quote!()
+		};
+
 		quote! { #nl
 			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize) -> RuleResult<#ret_ty> {
 				#![allow(non_snake_case, unused)]
+				if let Some(entry) = __state.#cache_field.get(&__pos) {
+					#cache_trace
+					return entry.clone();
+				}
 				let rule_result = #wrapped_body;
 				__state.#cache_field.insert(__pos, rule_result.clone());
 				rule_result
@@ -488,31 +504,9 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		RuleExpr(ref rule_name) => {
 			if let Some(&(template_arg, lexical_context)) = cx.lexical.defs.get(&rule_name[..]) {
 				compile_expr(Context{ lexical: lexical_context, ..cx }, template_arg)?
-			} else if let Some(rule) = cx.grammar.find_rule(rule_name) {
+			} else if let Some(_) = cx.grammar.find_rule(rule_name) {
 				let func = raw(&format!("parse_{}", rule_name));
-				if rule.cached {
-					let cache_field = raw(&format!("{}_cache", *rule_name));
-
-					if cfg!(feature = "trace") {
-						quote! {
-							__state.#cache_field.get(&__pos).map(|entry| {
-								let (line, col) = pos_to_line(__input, __pos);
-								match entry {
-									&Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}:{} (pos {})", #rule_name, line, col, pos),
-									&Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}:{} (pos {})", #rule_name, line, col, pos),
-								};
-
-								entry.clone()
-							}).unwrap_or_else(|| #func(__input, __state, __pos))
-						}
-					} else {
-						quote! {
-							__state.#cache_field.get(&__pos).map(|entry| entry.clone()).unwrap_or_else(|| #func(__input, __state, __pos))
-						}
-					}
-				} else {
-					quote!{ #func(__input, __state, __pos) }
-				}
+				quote!{ #func(__input, __state, __pos) }
 			} else {
 				Err(Error{ message: format!("No rule named `{}`", rule_name) })?
 			}
