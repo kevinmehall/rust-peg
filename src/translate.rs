@@ -504,9 +504,18 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		RuleExpr(ref rule_name) => {
 			if let Some(&(template_arg, lexical_context)) = cx.lexical.defs.get(&rule_name[..]) {
 				compile_expr(Context{ lexical: lexical_context, ..cx }, template_arg)?
-			} else if let Some(_) = cx.grammar.find_rule(rule_name) {
+			} else if let Some(rule) = cx.grammar.find_rule(rule_name) {
 				let func = raw(&format!("parse_{}", rule_name));
-				quote!{ #func(__input, __state, __pos) }
+				if cx.result_used || rule.ret_type == "()" {
+					quote!{ #func(__input, __state, __pos) }
+				} else {
+					quote!{
+						match #func(__input, __state, __pos) {
+							Matched(pos, _) => Matched(pos, ()),
+							Failed => Failed,
+						}
+					}
+				}
 			} else {
 				Err(Error{ message: format!("No rule named `{}`", rule_name) })?
 			}
