@@ -95,7 +95,7 @@ pub enum Expr {
 	TemplateInvoke(String, Vec<Expr>),
 	QuietExpr(Box<Expr>),
 	FailExpr(String),
-	InfixExpr{ atom: Box<Expr>, l_arg: String, r_arg: String, ty: String, levels: Vec<InfixLevel> }
+	InfixExpr{ atom: Box<Expr>, levels: Vec<InfixLevel> }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -110,6 +110,9 @@ pub struct InfixLevel {
 #[derive(Clone)]
 pub struct InfixOperator {
 	pub operator: Box<Expr>,
+	pub l_arg: String,
+	pub op_arg: Option<String>,
+	pub r_arg: String,
 	pub action: String,
 }
 
@@ -771,11 +774,17 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			quote!{{ __state.mark_failure(__pos, #expected); Failed }}
 		}
 
-		InfixExpr{ ref atom, ref r_arg, ref l_arg, ref ty, ref levels } => {
+		InfixExpr{ ref atom, ref levels } => {
 			let match_atom = compile_expr(cx, atom)?;
-			let l_arg = raw(l_arg);
-			let r_arg = raw(r_arg);
-			let ty = raw(ty);
+			let ty = if let RuleExpr(ref atom_rule_name) = **atom {
+				if let Some(rule) = cx.grammar.find_rule(atom_rule_name) {
+					raw(&rule.ret_type[..])
+				} else {
+					Err(Error{ message: format!("No rule named `{}`", atom_rule_name) })?
+				}
+			} else {
+				Err(Error{ message: format!("#infix atom must be a rule, not an arbitrary expression (so its return type can be inspected)") })?
+			};
 
 			let mut level_code = Vec::new();
 
@@ -790,10 +799,16 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 				for op in &level.operators {
 					let match_rule = compile_expr(cx.result_used(false), &*op.operator)?;
 					let action = raw(&op.action[..]);
+
+					let l_arg = raw(&op.l_arg[..]);
+					let op_arg = op.op_arg.as_ref().map(|x| raw(&x[..])).unwrap_or_else(|| quote!(_));
+					let r_arg = raw(&op.r_arg[..]);
+
 					rules.push(quote!{
-						if let Matched(__pos, _) = #match_rule {
+						if let Matched(__pos, #op_arg) = #match_rule {
 							if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos) {
-								#l_arg = #action;
+								let #l_arg = __infix_result;
+								__infix_result = #action;
 								__repeat_pos = __pos;
 								continue;
 							}
@@ -817,7 +832,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 
 			quote!{{
 				fn __infix_parse<'input>(__min_prec:i32, __input: &'input str, __state: &mut ParseState<'input>, __pos: usize) -> RuleResult<#ty> {
-					if let Matched(__pos, mut #l_arg) = #match_atom {
+					if let Matched(__pos, mut __infix_result) = #match_atom {
 						#enter
 						let mut __repeat_pos = __pos;
 						loop {
@@ -826,7 +841,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 							break;
 						}
 						#leave
-						Matched(__repeat_pos, #l_arg)
+						Matched(__repeat_pos, __infix_result)
 					} else {
 						Failed
 					}

@@ -139,8 +139,8 @@ primary -> Expr
   / "#position" __ { PositionExpr }
   / "#quiet" __ lt e:expression gt { QuietExpr(Box::new(e)) }
   / "#expected" __ lparen s:doubleQuotedString rparen { FailExpr(s) }
-  / "#infix" __ lt atom:expression gt pipe l:identifier comma r:identifier pipe returns t:$(rust_type) lbrace levels:infix_level+ rbrace
-        { InfixExpr{ atom: Box::new(atom), l_arg:l, r_arg:r, ty:t.to_owned(), levels:levels }}
+  / "#infix" __ lt atom:expression gt lbrace levels:infix_level+ rbrace
+        { InfixExpr{ atom: Box::new(atom), levels:levels }}
   / lparen expression:expression rparen { expression }
 
 infix_level -> InfixLevel
@@ -148,8 +148,8 @@ infix_level -> InfixLevel
   { InfixLevel{ assoc: assoc, operators: operators} }
 
 infix_op -> InfixOperator
-  = e:primary lbrace action:rust_expr rbrace
-  { InfixOperator{ operator:Box::new(e), action: action } }
+  = l:identifier op:(var:identifier colon {var})? e:primary r:identifier lbrace action:rust_expr rbrace
+  { InfixOperator{ operator:Box::new(e), action: action, l_arg:l, op_arg:op, r_arg:r } }
 
 /* "Lexical" elements */
 
@@ -185,8 +185,6 @@ rbrace    = "}"  __
 comma     = ","  __
 lt        = "<"  __
 gt        = ">"  __
-pipe      = "|"  __
-
 
 KEYWORD<k> = k !([a-zA-Z0-9_]) __
 USE = KEYWORD<"use">
