@@ -47,7 +47,7 @@ You can use line comments and block comments just as in Rust code, for example:
 ```
 // comment
 name -> String
-  = /* weirdly placed comment */ [0-9]+ { from_str::<u64>(match_str).unwrap() } // comment
+  = /* weirdly placed comment */ n:$([0-9]+) { from_str::<u64>(n).unwrap() } // comment
 ```
 
 ## Usage
@@ -118,7 +118,7 @@ to embed a short PEG grammar inline in your Rust source file. [Example](peg-synt
 
 ### As a standalone code generator
 
-Run `peg input_file.rustpeg` to compile a grammar and generate Rust code on stdout.
+Run `rust-peg input_file.rustpeg` to compile a grammar and generate Rust code on stdout.
 
 ## Tracing
 
