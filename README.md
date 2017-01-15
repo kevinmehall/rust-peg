@@ -129,7 +129,7 @@ Add to your `Cargo.toml`:
 build = "build.rs"
 
 [build-dependencies]
-peg = { version = "0.4" }
+peg = { version = "0.5" }
 ```
 
 Create `build.rs` with:
@@ -169,7 +169,7 @@ Add to your Cargo.toml:
 
 ```toml
 [dependencies]
-peg-syntax-ext = "0.4.0"
+peg-syntax-ext = "0.5.0"
 ```
 
 Add to your crate root:

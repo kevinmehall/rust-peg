@@ -1,6 +1,6 @@
 [package]
 name = "peg-syntax-ext"
-version = "0.4.2"
+version = "0.5.0"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
@@ -11,7 +11,7 @@ This crate provides the syntax extension plugin for use with Rust nightly.
 """
 
 [dependencies]
-peg = { version = "0.4", path = "../" }
+peg = { version = "0.5", path = "../" }
 
 [lib]
 plugin = true
