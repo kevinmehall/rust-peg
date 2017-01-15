@@ -89,3 +89,11 @@ use super::{FOO as F2};
 pub renamed_imports -> (i32, i32) = { (F1, F2) }
 
 pub neg_lookahead_err = !([a][b]) [a][x]
+
+pub infix_arith -> i64 = #infix<number> {
+	#L x "+" y { x + y }
+	   x op:"-" y { x - y }
+	#L x "*" y { x * y }
+	   x "/" y { x / y }
+	#R x "^" y { x.pow(y as u32) }
+}

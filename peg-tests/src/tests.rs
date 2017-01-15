@@ -137,3 +137,10 @@ fn test_neg_lookahead_err() {
 	assert_eq!(err.expected.len(), 1, "expected set includes: {:?}", err.expected);
 	assert_eq!(err.offset, 1);
 }
+
+#[test]
+fn test_infix_arith() {
+	assert_eq!(infix_arith("3+3*3+3"), Ok(15));
+	assert_eq!(infix_arith("2+2^2^2^2/2+2"), Ok(32772));
+	assert_eq!(infix_arith("1024/2/2/2+1"), Ok(129));
+}
