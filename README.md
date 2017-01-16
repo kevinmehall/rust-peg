@@ -205,3 +205,10 @@ $ cargo run --features peg/trace
 [PEG_TRACE] Failed to match rule letter at 8:12
 ...
 ```
+
+# Editor highlighting plugins
+
+Users have created text editor syntax highlighting plugins for the `.rustpeg` syntax:
+
+* [vim plugin](https://github.com/treycordova/rustpeg.vim) by Trey Cordova
+* [vim plugin](https://github.com/rhysd/vim-rustpeg) by rhysd
