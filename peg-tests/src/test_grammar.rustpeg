@@ -97,3 +97,7 @@ pub infix_arith -> i64 = #infix<number> {
 	   x "/" y { x / y }
 	#R x "^" y { x.pow(y as u32) }
 }
+
+issue152 -> i32 // a
+    = "5" { 5 //b
+}
