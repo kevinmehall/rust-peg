@@ -144,3 +144,24 @@ fn test_infix_arith() {
 	assert_eq!(infix_arith("2+2^2^2^2/2+2"), Ok(32772));
 	assert_eq!(infix_arith("1024/2/2/2+1"), Ok(129));
 }
+
+#[test]
+fn test_error_pos() {
+    let err = error_pos("aab\n").unwrap_err();
+    assert_eq!(err.line, 1);
+    assert_eq!(err.column, 3);
+    assert_eq!(err.offset, 2);
+    assert_eq!(err.expected, ["\r", "\n", "a"].iter().map(|x| *x).collect());
+
+    let err = error_pos("aa\naaaa\nbaaa\n").unwrap_err();
+    assert_eq!(err.line, 3);
+    assert_eq!(err.column, 1);
+
+    let err = error_pos("aa\naaaa\naaab\naa").unwrap_err();
+    assert_eq!(err.line, 3);
+    assert_eq!(err.column, 4);
+
+    let err = error_pos("aa\r\naaaa\r\naaab\r\naa").unwrap_err();
+    assert_eq!(err.line, 3);
+    assert_eq!(err.column, 4);
+}

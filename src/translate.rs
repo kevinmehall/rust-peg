@@ -221,17 +221,10 @@ static HELPERS: &'static str = stringify! {
 	}
 
 	fn pos_to_line(input: &str, pos: usize) -> (usize, usize) {
-		let mut remaining = pos;
-		let mut lineno: usize = 1;
-		for line in input.lines() {
-			let line_length = line.len() + 1;
-			if remaining < line_length {
-				return (lineno, remaining + 1);
-			}
-			remaining -= line_length;
-			lineno += 1;
-		}
-		return (lineno, remaining + 1);
+		let before = &input[..pos];
+		let line = before.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;
+		let col = before.chars().rev().take_while(|&c| c != '\n').count() + 1;
+		(line, col)
 	}
 
 	impl<'input> ParseState<'input> {

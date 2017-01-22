@@ -48,12 +48,10 @@ input : & str , state : & mut ParseState , pos : usize ) -> RuleResult < (  )
 let ( _ , next ) = char_range_at ( input , pos ) ; Matched ( next , (  ) ) }
 else { state . mark_failure ( pos , "<character>" ) } } fn pos_to_line (
 input : & str , pos : usize ) -> ( usize , usize ) {
-let mut remaining = pos ; let mut lineno : usize = 1 ; for line in input .
-lines (  ) {
-let line_length = line . len (  ) + 1 ; if remaining < line_length {
-return ( lineno , remaining + 1 ) ; } remaining -= line_length ; lineno += 1 ;
-} return ( lineno , remaining + 1 ) ; } impl < 'input > ParseState < 'input >
-{
+let before = & input [ .. pos ] ; let line = before . as_bytes (  ) . iter (
+) . filter ( | && c | c == b'\n' ) . count (  ) + 1 ; let col = before . chars
+(  ) . rev (  ) . take_while ( | & c | c != '\n' ) . count (  ) + 1 ; (
+line , col ) } impl < 'input > ParseState < 'input > {
 fn mark_failure ( & mut self , pos : usize , expected : & 'static str ) ->
 RuleResult < (  ) > {
 if self . suppress_fail == 0 {

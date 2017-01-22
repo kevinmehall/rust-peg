@@ -101,3 +101,5 @@ pub infix_arith -> i64 = #infix<number> {
 issue152 -> i32 // a
     = "5" { 5 //b
 }
+
+pub error_pos = ("a" / "\n" / "\r")*
