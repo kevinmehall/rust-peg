@@ -40,8 +40,8 @@ If a rule is marked with `pub`, the generated module has a public function that 
   * `expression*<n>` - Match `n` repetitions of `expression` and return the results as a `Vec`
   * `expression*<n,m>` - Match between `n` and `m` repetitions of `expression` and return the results as a `Vec`.
   * `expression*<{foo}>` - Evaluate the Rust expression `foo` returning usize and match that many repetitions of `expression`
-  * `expression ** delim` - Match between `n` and `m` repetitions of `expression` delimited with `delim` and return the results as a `Vec`
-  * `expression **<n,m> delim` - Match zero or more repetitions of `expression` delimited with `delim` and return the results as a `Vec`
+  * `expression ** delim` - Match zero or more repetitions of `expression` delimited with `delim` and return the results as a `Vec`
+  * `expression **<n,m> delim` - Match between `n` and `m` repetitions of `expression` delimited with `delim` and return the results as a `Vec`
   * `expression ++ delim` - Match one or more repetitions of `expression` delimited with `delim` and return the results as a `Vec`
   * `&expression` - Match only if `expression` matches at this position, without consuming any characters
   * `!expression` - Match only if `expression` does not match at this position, without consuming any characters
