@@ -3,13 +3,14 @@ members = ["./peg-syntax-ext", "./peg-tests"]
 
 [package]
 name = "peg"
-version = "0.5.0"
+version = "0.5.1"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
-description = """
-A parser generator built on the Parsing Expression Grammar (PEG) formalism.
-"""
+documentation = "https://github.com/kevinmehall/rust-peg/blob/master/README.md#readme"
+description = "A simple Parsing Expression Grammar (PEG) parser generator."
+keywords = ["peg", "parser", "parsing", "grammar"]
+categories = ["parsing"]
 
 [dependencies]
 quote = "0.3"
