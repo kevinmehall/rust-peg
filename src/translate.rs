@@ -28,10 +28,6 @@ pub struct Grammar {
 }
 
 impl Grammar {
-	pub fn from_items(items: Vec<Item>) -> Grammar {
-		Grammar::from_ast(items).unwrap() // remove after bootstrap commit
-	}
-
 	pub fn from_ast(items: Vec<Item>) -> Result<Grammar, Error> {
 		let mut imports = Vec::new();
 		let mut rules = Vec::new();
