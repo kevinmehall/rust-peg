@@ -2,7 +2,6 @@ use translate::*;
 use std::char;
 
 pub items -> Vec<Item> = __ items:item* { items }
-pub grammar -> Grammar = items:items { Grammar::from_items(items) } // remove after bootstrap commit
 
 rule -> Rule
   = legacy_exported:exportflag cached:cacheflag public:pubflag name:identifier returns: returntype equals expression:expression semicolon? {

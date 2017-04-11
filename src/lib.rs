@@ -16,13 +16,14 @@ mod grammar;
 
 /// Compile a peg grammar to Rust source
 pub fn compile(input: &str) -> Result<String, String> {
-    let grammar_def = match grammar::grammar(&input) {
+    let ast_items = match grammar::items(&input) {
         Ok(g) => g,
         Err(msg) => {
             return Err(format!("Error parsing language specification: {}", msg))
         }
     };
 
+    let grammar_def = translate::Grammar::from_ast(ast_items)?;
     let output_tokens = translate::compile_grammar(&grammar_def);
     Ok(output_tokens?.to_string())
 }
