@@ -114,6 +114,21 @@ ENUM = keyword<"enum">
 
 Templates are inlined every place they are used, and cannot be marked `pub`.
 
+### Context arguments
+
+You can pass parameters throughout the parser by adding a declaration like
+
+```
+#![arguments(filename: &str, interner: &mut Interner)]
+```
+
+to the top of your grammar. All public parse functions will take these additional arguments after
+the input string parameter, and they are available by name in all action code blocks.
+
+For an example see [the test](peg-syntax-ext/tests/grammar_args.rs).
+
+Be careful with mutable arguments. Remember that rule actions can run on parse paths that later fail and do not contribute to the final parse.
+
 ## Usage
 
 ### With a build script
