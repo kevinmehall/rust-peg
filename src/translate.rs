@@ -72,6 +72,18 @@ impl Grammar {
 		}).collect();
 		quote!(#(#args)*)
 	}
+
+	fn check_name(&self, name: &str) -> Result<(), Error> {
+		if name.starts_with("__") {
+			Err(Error{ message: format!("Capture variable `{}` begins with `__`, which is reserved for use by the parser generator", name) })?
+		}
+
+		if self.args.iter().any(|x| x.0 == name) {
+			Err(Error{ message: format!("Capture variable `{}` shadows grammar argument", name) })?
+		}
+
+		Ok(())
+	}
 }
 
 pub enum Item {
@@ -750,6 +762,11 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 				match exprs.first() {
 					Some(ref first) => {
 						let name = first.name.as_ref().map(|s| &s[..]);
+
+						if let Some(name) = name {
+							cx.grammar.check_name(name)?;
+						}
+
 						compile_match_and_then(cx, &*first.expr, name,
 							write_seq(cx, &exprs[1..], code, is_cond)?
 						)
