@@ -348,7 +348,7 @@ fn make_parse_state(rules: &[Rule]) -> Tokens {
 
 fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 	let ref rule_name = rule.name;
-	let name = raw(&format!("parse_{}", rule.name));
+	let name = raw(&format!("__parse_{}", rule.name));
 	let ret_ty = raw(&rule.ret_type);
 	let context = Context {
 		grammar: grammar,
@@ -399,9 +399,9 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 					#cache_trace
 					return entry.clone();
 				}
-				let rule_result = #wrapped_body;
-				__state.#cache_field.insert(__pos, rule_result.clone());
-				rule_result
+				let __rule_result = #wrapped_body;
+				__state.#cache_field.insert(__pos, __rule_result.clone());
+				__rule_result
 			}
 		}
 	} else {
@@ -417,31 +417,31 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> Tokens {
 	let name = raw(&rule.name);
 	let ret_ty = raw(&rule.ret_type);
-	let parse_fn = raw(&format!("parse_{}", rule.name));
+	let parse_fn = raw(&format!("__parse_{}", rule.name));
 	let nl = raw("\n\n"); // make output slightly more readable
 	let extra_args_def = grammar.extra_args_def();
 	let extra_args_call = grammar.extra_args_call();
 
 	quote! {
 		#nl
-		pub fn #name<'input>(input: &'input str #extra_args_def) -> ParseResult<#ret_ty> {
+		pub fn #name<'input>(__input: &'input str #extra_args_def) -> ParseResult<#ret_ty> {
 			#![allow(non_snake_case, unused)]
-			let mut state = ParseState::new();
-			match #parse_fn(input, &mut state, 0 #extra_args_call) {
-				Matched(pos, value) => {
-					if pos == input.len() {
-						return Ok(value)
+			let mut __state = ParseState::new();
+			match #parse_fn(__input, &mut __state, 0 #extra_args_call) {
+				Matched(__pos, __value) => {
+					if __pos == __input.len() {
+						return Ok(__value)
 					}
 				}
 				_ => {}
 			}
-			let (line, col) = pos_to_line(input, state.max_err_pos);
+			let (__line, __col) = pos_to_line(__input, __state.max_err_pos);
 
 			Err(ParseError {
-				line: line,
-				column: col,
-				offset: state.max_err_pos,
-				expected: state.expected,
+				line: __line,
+				column: __col,
+				offset: __state.max_err_pos,
+				expected: __state.expected,
 			})
 		}
 	}
@@ -455,8 +455,8 @@ fn compile_match_and_then(cx: Context, e: &Expr, value_name: Option<&str>, then:
 	};
 
 	Ok(quote! {{
-		let seq_res = #seq_res;
-		match seq_res {
+		let __seq_res = #seq_res;
+		match __seq_res {
 			Matched(__pos, #name_pat) => { #then }
 			Failed => Failed,
 		}
@@ -563,7 +563,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			if let Some(&(template_arg, lexical_context)) = cx.lexical.defs.get(&rule_name[..]) {
 				compile_expr(Context{ lexical: lexical_context, ..cx }, template_arg)?
 			} else if let Some(rule) = cx.grammar.find_rule(rule_name) {
-				let func = raw(&format!("parse_{}", rule_name));
+				let func = raw(&format!("__parse_{}", rule_name));
 				let extra_args_call = cx.grammar.extra_args_call();
 				if cx.result_used || rule.ret_type == "()" {
 					quote!{ #func(__input, __state, __pos #extra_args_call) }
@@ -618,8 +618,8 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 					let next = write_choice(cx, &exprs[1..])?;
 
 					Ok(quote! {{
-						let choice_res = #choice_res;
-						match choice_res {
+						let __choice_res = #choice_res;
+						match __choice_res {
 							Matched(__pos, __value) => Matched(__pos, __value),
 							Failed => #next
 						}
@@ -640,7 +640,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			if cx.result_used {
 				quote!{
 					match #optional_res {
-						Matched(newpos, value) => { Matched(newpos, Some(value)) },
+						Matched(__newpos, __value) => { Matched(__newpos, Some(__value)) },
 						Failed => { Matched(__pos, None) },
 					}
 				}
@@ -667,10 +667,10 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			let match_sep = if let &Some(ref sep) = sep {
 				let sep_inner = compile_expr(cx.result_used(false), &*sep)?;
 				quote! {
-					let __pos = if repeat_value.len() > 0 {
-						let sep_res = #sep_inner;
-						match sep_res {
-							Matched(newpos, _) => { newpos },
+					let __pos = if __repeat_value.len() > 0 {
+						let __sep_res = #sep_inner;
+						match __sep_res {
+							Matched(__newpos, _) => { __newpos },
 							Failed => break,
 						}
 					} else { __pos };
@@ -678,24 +678,24 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			} else { quote!() };
 
 			let result = if cx.result_used {
-				quote!( repeat_value )
+				quote!( __repeat_value )
 			} else {
 				quote!( () )
 			};
 
 			let (repeat_vec, repeat_step) =
 			if cx.result_used || min.is_some() || max.is_some() || sep.is_some() {
-				(Some(quote! { let mut repeat_value = vec!(); }),
-				 Some(quote! { repeat_value.push(value); }))
+				(Some(quote! { let mut __repeat_value = vec!(); }),
+				 Some(quote! { __repeat_value.push(__value); }))
 			} else {
 				(None, None)
 			};
 
-			let max_check = max.map(|max| { quote! { if repeat_value.len() >= #max { break } }});
+			let max_check = max.map(|max| { quote! { if __repeat_value.len() >= #max { break } }});
 
 			let result_check = if let Some(min) = min {
 				quote!{
-					if repeat_value.len() >= #min {
+					if __repeat_value.len() >= #min {
 						Matched(__repeat_pos, #result)
 					} else {
 						Failed
@@ -715,10 +715,10 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 					#match_sep
 					#max_check
 
-					let step_res = #inner;
-					match step_res {
-						Matched(newpos, value) => {
-							__repeat_pos = newpos;
+					let __step_res = #inner;
+					match __step_res {
+						Matched(__newpos, __value) => {
+							__repeat_pos = __newpos;
 							#repeat_step
 						},
 						Failed => {
@@ -798,7 +798,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			quote! {{
 				let str_start = __pos;
 				match #inner {
-					Matched(newpos, _) => { Matched(newpos, &__input[str_start..newpos]) },
+					Matched(__newpos, _) => { Matched(__newpos, &__input[str_start..__newpos]) },
 					Failed => Failed,
 				}
 			}}
