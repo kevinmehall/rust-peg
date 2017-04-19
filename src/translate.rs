@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use quote::Tokens;
 pub use self::Expr::*;
 
+#[derive(Debug)]
 pub struct Error {
 	message: String,
 }
@@ -23,25 +24,65 @@ pub struct Grammar {
 	pub imports: Vec<String>,
 	pub rules: Vec<Rule>,
 	pub templates: HashMap<String, Template>,
+	pub args: Vec<(String, String)>,
 }
 
 impl Grammar {
-	pub fn from_items(items: Vec<Item>) -> Grammar {
+	pub fn from_ast(items: Vec<Item>) -> Result<Grammar, Error> {
 		let mut imports = Vec::new();
 		let mut rules = Vec::new();
 		let mut templates = HashMap::new();
+
+		let mut grammar_args = None;
+
 		for item in items {
 			match item {
 				Item::Use(u) => { imports.push(u); }
 				Item::Rule(rule) => { rules.push(rule); }
 				Item::Template(template) => { templates.insert(template.name.clone(), template); }
+				Item::GrammarArgs(args) => {
+					if grammar_args.is_none() {
+						grammar_args = Some(args);
+					} else {
+						Err(Error{ message: format!("Multiple #![grammar_args] attributes") })?
+					}
+				}
 			}
 		}
-		Grammar{ imports:imports, rules:rules, templates:templates }
+		Ok(Grammar{ imports:imports, rules:rules, templates:templates, args: grammar_args.unwrap_or(vec![]) })
 	}
 
 	fn find_rule(&self, name: &str) -> Option<&Rule> {
 		self.rules.iter().find(|rule| rule.name == name)
+	}
+
+	fn extra_args_def(&self) -> Tokens {
+		let args: Vec<Tokens> = self.args.iter().map(|&(ref name, ref tp)| {
+			let name = raw(name);
+			let tp = raw(tp);
+			quote!(, #name: #tp)
+		}).collect();
+		quote!(#(#args)*)
+	}
+
+	fn extra_args_call(&self) -> Tokens {
+		let args: Vec<Tokens> = self.args.iter().map(|&(ref name, _)| {
+			let name = raw(name);
+			quote!(, #name)
+		}).collect();
+		quote!(#(#args)*)
+	}
+
+	fn check_name(&self, name: &str) -> Result<(), Error> {
+		if name.starts_with("__") {
+			Err(Error{ message: format!("Capture variable `{}` begins with `__`, which is reserved for use by the parser generator", name) })?
+		}
+
+		if self.args.iter().any(|x| x.0 == name) {
+			Err(Error{ message: format!("Capture variable `{}` shadows grammar argument", name) })?
+		}
+
+		Ok(())
 	}
 }
 
@@ -49,6 +90,7 @@ pub enum Item {
 	Use(String),
 	Rule(Rule),
 	Template(Template),
+	GrammarArgs(Vec<(String, String)>)
 }
 
 pub struct Rule {
@@ -252,7 +294,7 @@ pub fn compile_grammar(grammar: &Grammar) -> Result<Tokens, Error> {
 		items.push(compile_rule(grammar, rule)?)
 	}
 	items.extend(grammar.rules.iter().filter(|rule| rule.exported).map(|rule| {
-		compile_rule_export(rule)
+		compile_rule_export(grammar, rule)
 	}));
 
 	let view_items: Vec<_> = grammar.imports.iter().map(|x| raw(x)).collect();
@@ -306,7 +348,7 @@ fn make_parse_state(rules: &[Rule]) -> Tokens {
 
 fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 	let ref rule_name = rule.name;
-	let name = raw(&format!("parse_{}", rule.name));
+	let name = raw(&format!("__parse_{}", rule.name));
 	let ret_ty = raw(&rule.ret_type);
 	let context = Context {
 		grammar: grammar,
@@ -333,6 +375,7 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 	} else { body };
 
 	let nl = raw("\n\n"); // make output slightly more readable
+	let extra_args_def = grammar.extra_args_def();
 
 	Ok(if rule.cached {
 		let cache_field = raw(&format!("{}_cache", rule.name));
@@ -350,20 +393,20 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 		};
 
 		quote! { #nl
-			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize) -> RuleResult<#ret_ty> {
+			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
 				#![allow(non_snake_case, unused)]
 				if let Some(entry) = __state.#cache_field.get(&__pos) {
 					#cache_trace
 					return entry.clone();
 				}
-				let rule_result = #wrapped_body;
-				__state.#cache_field.insert(__pos, rule_result.clone());
-				rule_result
+				let __rule_result = #wrapped_body;
+				__state.#cache_field.insert(__pos, __rule_result.clone());
+				__rule_result
 			}
 		}
 	} else {
 		quote! { #nl
-			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize) -> RuleResult<#ret_ty> {
+			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
 				#![allow(non_snake_case, unused)]
 				#wrapped_body
 			}
@@ -371,31 +414,34 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 	})
 }
 
-fn compile_rule_export(rule: &Rule) -> Tokens {
+fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> Tokens {
 	let name = raw(&rule.name);
 	let ret_ty = raw(&rule.ret_type);
-	let parse_fn = raw(&format!("parse_{}", rule.name));
+	let parse_fn = raw(&format!("__parse_{}", rule.name));
 	let nl = raw("\n\n"); // make output slightly more readable
+	let extra_args_def = grammar.extra_args_def();
+	let extra_args_call = grammar.extra_args_call();
+
 	quote! {
 		#nl
-		pub fn #name<'input>(input: &'input str) -> ParseResult<#ret_ty> {
+		pub fn #name<'input>(__input: &'input str #extra_args_def) -> ParseResult<#ret_ty> {
 			#![allow(non_snake_case, unused)]
-			let mut state = ParseState::new();
-			match #parse_fn(input, &mut state, 0) {
-				Matched(pos, value) => {
-					if pos == input.len() {
-						return Ok(value)
+			let mut __state = ParseState::new();
+			match #parse_fn(__input, &mut __state, 0 #extra_args_call) {
+				Matched(__pos, __value) => {
+					if __pos == __input.len() {
+						return Ok(__value)
 					}
 				}
 				_ => {}
 			}
-			let (line, col) = pos_to_line(input, state.max_err_pos);
+			let (__line, __col) = pos_to_line(__input, __state.max_err_pos);
 
 			Err(ParseError {
-				line: line,
-				column: col,
-				offset: state.max_err_pos,
-				expected: state.expected,
+				line: __line,
+				column: __col,
+				offset: __state.max_err_pos,
+				expected: __state.expected,
 			})
 		}
 	}
@@ -409,8 +455,8 @@ fn compile_match_and_then(cx: Context, e: &Expr, value_name: Option<&str>, then:
 	};
 
 	Ok(quote! {{
-		let seq_res = #seq_res;
-		match seq_res {
+		let __seq_res = #seq_res;
+		match __seq_res {
 			Matched(__pos, #name_pat) => { #then }
 			Failed => Failed,
 		}
@@ -517,12 +563,13 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			if let Some(&(template_arg, lexical_context)) = cx.lexical.defs.get(&rule_name[..]) {
 				compile_expr(Context{ lexical: lexical_context, ..cx }, template_arg)?
 			} else if let Some(rule) = cx.grammar.find_rule(rule_name) {
-				let func = raw(&format!("parse_{}", rule_name));
+				let func = raw(&format!("__parse_{}", rule_name));
+				let extra_args_call = cx.grammar.extra_args_call();
 				if cx.result_used || rule.ret_type == "()" {
-					quote!{ #func(__input, __state, __pos) }
+					quote!{ #func(__input, __state, __pos #extra_args_call) }
 				} else {
 					quote!{
-						match #func(__input, __state, __pos) {
+						match #func(__input, __state, __pos #extra_args_call) {
 							Matched(pos, _) => Matched(pos, ()),
 							Failed => Failed,
 						}
@@ -571,8 +618,8 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 					let next = write_choice(cx, &exprs[1..])?;
 
 					Ok(quote! {{
-						let choice_res = #choice_res;
-						match choice_res {
+						let __choice_res = #choice_res;
+						match __choice_res {
 							Matched(__pos, __value) => Matched(__pos, __value),
 							Failed => #next
 						}
@@ -593,7 +640,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			if cx.result_used {
 				quote!{
 					match #optional_res {
-						Matched(newpos, value) => { Matched(newpos, Some(value)) },
+						Matched(__newpos, __value) => { Matched(__newpos, Some(__value)) },
 						Failed => { Matched(__pos, None) },
 					}
 				}
@@ -620,10 +667,10 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			let match_sep = if let &Some(ref sep) = sep {
 				let sep_inner = compile_expr(cx.result_used(false), &*sep)?;
 				quote! {
-					let __pos = if repeat_value.len() > 0 {
-						let sep_res = #sep_inner;
-						match sep_res {
-							Matched(newpos, _) => { newpos },
+					let __pos = if __repeat_value.len() > 0 {
+						let __sep_res = #sep_inner;
+						match __sep_res {
+							Matched(__newpos, _) => { __newpos },
 							Failed => break,
 						}
 					} else { __pos };
@@ -631,24 +678,24 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			} else { quote!() };
 
 			let result = if cx.result_used {
-				quote!( repeat_value )
+				quote!( __repeat_value )
 			} else {
 				quote!( () )
 			};
 
 			let (repeat_vec, repeat_step) =
 			if cx.result_used || min.is_some() || max.is_some() || sep.is_some() {
-				(Some(quote! { let mut repeat_value = vec!(); }),
-				 Some(quote! { repeat_value.push(value); }))
+				(Some(quote! { let mut __repeat_value = vec!(); }),
+				 Some(quote! { __repeat_value.push(__value); }))
 			} else {
 				(None, None)
 			};
 
-			let max_check = max.map(|max| { quote! { if repeat_value.len() >= #max { break } }});
+			let max_check = max.map(|max| { quote! { if __repeat_value.len() >= #max { break } }});
 
 			let result_check = if let Some(min) = min {
 				quote!{
-					if repeat_value.len() >= #min {
+					if __repeat_value.len() >= #min {
 						Matched(__repeat_pos, #result)
 					} else {
 						Failed
@@ -668,10 +715,10 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 					#match_sep
 					#max_check
 
-					let step_res = #inner;
-					match step_res {
-						Matched(newpos, value) => {
-							__repeat_pos = newpos;
+					let __step_res = #inner;
+					match __step_res {
+						Matched(__newpos, __value) => {
+							__repeat_pos = __newpos;
 							#repeat_step
 						},
 						Failed => {
@@ -715,6 +762,11 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 				match exprs.first() {
 					Some(ref first) => {
 						let name = first.name.as_ref().map(|s| &s[..]);
+
+						if let Some(name) = name {
+							cx.grammar.check_name(name)?;
+						}
+
 						compile_match_and_then(cx, &*first.expr, name,
 							write_seq(cx, &exprs[1..], code, is_cond)?
 						)
@@ -746,7 +798,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			quote! {{
 				let str_start = __pos;
 				match #inner {
-					Matched(newpos, _) => { Matched(newpos, &__input[str_start..newpos]) },
+					Matched(__newpos, _) => { Matched(__newpos, &__input[str_start..__newpos]) },
 					Failed => Failed,
 				}
 			}}
@@ -780,6 +832,8 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			};
 
 			let mut level_code = Vec::new();
+			let extra_args_def = cx.grammar.extra_args_def();
+			let extra_args_call = cx.grammar.extra_args_call();
 
 			for (prec, level) in levels.iter().enumerate() {
 				let prec = prec as i32;
@@ -799,7 +853,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 
 					rules.push(quote!{
 						if let Matched(__pos, #op_arg) = #match_rule {
-							if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos) {
+							if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos #extra_args_call) {
 								let #l_arg = __infix_result;
 								__infix_result = #action;
 								__repeat_pos = __pos;
@@ -824,7 +878,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			};
 
 			quote!{{
-				fn __infix_parse<'input>(__min_prec:i32, __input: &'input str, __state: &mut ParseState<'input>, __pos: usize) -> RuleResult<#ty> {
+				fn __infix_parse<'input>(__min_prec:i32, __input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ty> {
 					if let Matched(__pos, mut __infix_result) = #match_atom {
 						#enter
 						let mut __repeat_pos = __pos;

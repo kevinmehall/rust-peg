@@ -1,9 +1,7 @@
 use translate::*;
 use std::char;
 
-pub grammar -> Grammar = __ items:item* {
-  Grammar::from_items(items)
-}
+pub items -> Vec<Item> = __ items:item* { items }
 
 rule -> Rule
   = legacy_exported:exportflag cached:cacheflag public:pubflag name:identifier returns: returntype equals expression:expression semicolon? {
@@ -26,12 +24,23 @@ template -> Template
   }
 
 item -> Item
-  = u:rust_use  { Item::Use(u) }
-  / r:rule      { Item::Rule(r) }
-  / t: template { Item::Template(t) }
+  = u:rust_use     { Item::Use(u) }
+  / r:rule         { Item::Rule(r) }
+  / t:template     { Item::Template(t) }
+  / grammar_args
+
+  grammar_args -> Item
+    = "#![" __ "arguments" __ lparen args:(grammar_argument**comma) rparen "]" __
+    { Item::GrammarArgs(args) }
+
+    grammar_argument -> (String, String)
+      = i:identifier colon t:type_string { (i, t) }
+
+
+type_string -> String = tp:$rust_type __ { tp.to_owned() }
 
 returntype -> String
-  = returns tp:$rust_type __ { tp.to_owned() }
+  = returns tp:type_string { tp }
   / { "()".to_string() }
 
 rust_identifier = #quiet<[a-zA-Z_][a-zA-Z0-9_]*> / #expected("identifier")
@@ -47,7 +56,7 @@ rust_path = rust_identifier ++ (__ "::" __)
 
 rust_type
   = "[" __ rust_type __ "]"
-  / "&" __ ("'" rust_identifier __)? rust_type
+  / "&" __ ("mut" __)? ("'" rust_identifier __)? rust_type
   / rust_identifier __ "<" __ (("'" rust_identifier) / rust_type) ** (__ "," __) __ ">"
   / rust_identifier __ "::" __ rust_type
   / "(" __ rust_type ** (__ "," __) __ ")"
