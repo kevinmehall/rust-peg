@@ -74,10 +74,6 @@ impl Grammar {
 	}
 
 	fn check_name(&self, name: &str) -> Result<(), Error> {
-		if name.starts_with("__") {
-			Err(Error{ message: format!("Capture variable `{}` begins with `__`, which is reserved for use by the parser generator", name) })?
-		}
-
 		if self.args.iter().any(|x| x.0 == name) {
 			Err(Error{ message: format!("Capture variable `{}` shadows grammar argument", name) })?
 		}
