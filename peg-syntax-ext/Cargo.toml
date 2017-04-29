@@ -1,6 +1,6 @@
 [package]
 name = "peg-syntax-ext"
-version = "0.5.0"
+version = "0.5.2"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
