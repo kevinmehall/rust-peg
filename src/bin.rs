@@ -31,6 +31,7 @@ fn main() {
 			write!(&mut out, "{}", parser).unwrap();
 		}
 		Err(err) => {
+			writeln!(log, "Error compiling rust-peg grammar:").unwrap();
 			writeln!(log, "{}", err).unwrap();
 			process::exit(1);
 		}

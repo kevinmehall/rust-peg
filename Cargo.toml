@@ -11,6 +11,7 @@ documentation = "https://github.com/kevinmehall/rust-peg/blob/master/README.md#r
 description = "A simple Parsing Expression Grammar (PEG) parser generator."
 keywords = ["peg", "parser", "parsing", "grammar"]
 categories = ["parsing"]
+readme = "README.md"
 
 [dependencies]
 quote = "0.3"

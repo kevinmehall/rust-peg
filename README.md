@@ -127,13 +127,16 @@ the input string parameter, and they are available by name in all action code bl
 
 For an example see [the test](peg-syntax-ext/tests/grammar_args.rs).
 
-Be careful with mutable arguments. Remember that rule actions can run on parse paths that later fail and do not contribute to the final parse.
+The arguments will be passed to each internal parse function, so they must be `Copy` or be a `&`
+or `&mut` reference. Be careful with mutable arguments. Remember that rule actions can run on parse
+paths that later fail and do not contribute to the final parse.
 
 ## Usage
 
 ### With a build script
 
-A Cargo build script can compile your PEG grammar to Rust source automatically.
+A Cargo build script can compile your PEG grammar to Rust source automatically. This method works
+on stable Rust.
 
 [Example crate using rust-peg with a build script](peg-tests/)
 
