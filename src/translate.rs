@@ -889,7 +889,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 						Failed
 					}
 				}
-				__infix_parse(0, __input, __state, __pos)
+				__infix_parse(0, __input, __state, __pos #extra_args_call)
 			}}
 		}
 	})
