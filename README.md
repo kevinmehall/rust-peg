@@ -160,6 +160,8 @@ fn main() {
 }
 ```
 
+(If you already have a `build.rs`, just add the `extern crate peg;` and the `peg::cargo_build(...)` call.)
+
 And import the generated code:
 
 ```rust
