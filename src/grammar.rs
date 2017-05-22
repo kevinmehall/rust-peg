@@ -28,9 +28,9 @@ try ! ( write ! ( fmt , ", `{}`" , escape_default ( elem ) ) ) ; } } Ok ( (  )
 fn description ( & self ) -> & str { "parse error" } } fn slice_eq (
 input : & str , state : & mut ParseState , pos : usize , m : & 'static str )
 -> RuleResult < (  ) > {
-# ! [ inline ] # ! [ allow ( dead_code ) ] let l = m . len (  ) ; if input .
-len (  ) >= pos + l && & input . as_bytes (  ) [ pos .. pos + l ] == m .
-as_bytes (  ) { Matched ( pos + l , (  ) ) } else {
+# ! [ inline ( always ) ] # ! [ allow ( dead_code ) ] let l = m . len (  ) ;
+if input . len (  ) >= pos + l && & input . as_bytes (  ) [ pos .. pos + l ]
+== m . as_bytes (  ) { Matched ( pos + l , (  ) ) } else {
 state . mark_failure ( pos , m ) } } fn slice_eq_case_insensitive (
 input : & str , state : & mut ParseState , pos : usize , m : & 'static str )
 -> RuleResult < (  ) > {
@@ -52,12 +52,15 @@ let before = & input [ .. pos ] ; let line = before . as_bytes (  ) . iter (
 ) . filter ( | && c | c == b'\n' ) . count (  ) + 1 ; let col = before . chars
 (  ) . rev (  ) . take_while ( | & c | c != '\n' ) . count (  ) + 1 ; (
 line , col ) } impl < 'input > ParseState < 'input > {
-fn mark_failure ( & mut self , pos : usize , expected : & 'static str ) ->
-RuleResult < (  ) > {
+# [ inline ( never ) ] fn mark_failure_slow_path (
+& mut self , pos : usize , expected : & 'static str ) {
+if pos == self . max_err_pos { self . expected . insert ( expected ) ; } } # [
+inline ( always ) ] fn mark_failure (
+& mut self , pos : usize , expected : & 'static str ) -> RuleResult < (  ) > {
 if self . suppress_fail == 0 {
-if pos > self . max_err_pos {
-self . max_err_pos = pos ; self . expected . clear (  ) ; } if pos == self .
-max_err_pos { self . expected . insert ( expected ) ; } } Failed } } struct ParseState < 'input > { max_err_pos : usize , suppress_fail : usize , expected : :: std :: collections :: HashSet < & 'static str > , _phantom : :: std :: marker :: PhantomData < & 'input ( ) > , primary_cache : :: std :: collections :: HashMap < usize , RuleResult < Expr >> } impl < 'input > ParseState < 'input > { fn new ( ) -> ParseState < 'input > { ParseState { max_err_pos : 0 , suppress_fail : 0 , expected : :: std :: collections :: HashSet :: new ( ) , _phantom : :: std :: marker :: PhantomData , primary_cache : :: std :: collections :: HashMap :: new ( ) } } } 
+if self . reparsing_on_error {
+self . mark_failure_slow_path ( pos , expected ) ; } else if pos > self .
+max_err_pos { self . max_err_pos = pos ; } } Failed } } struct ParseState < 'input > { max_err_pos : usize , suppress_fail : usize , reparsing_on_error : bool , expected : :: std :: collections :: HashSet < & 'static str > , _phantom : :: std :: marker :: PhantomData < & 'input ( ) > , primary_cache : :: std :: collections :: HashMap < usize , RuleResult < Expr >> } impl < 'input > ParseState < 'input > { fn new ( ) -> ParseState < 'input > { ParseState { max_err_pos : 0 , suppress_fail : 0 , reparsing_on_error : false , expected : :: std :: collections :: HashSet :: new ( ) , _phantom : :: std :: marker :: PhantomData , primary_cache : :: std :: collections :: HashMap :: new ( ) } } } 
 
  fn __parse_items < 'input > ( __input : & 'input str , __state : & mut ParseState < 'input > , __pos : usize ) -> RuleResult < Vec<Item> > { # ! [ allow ( non_snake_case , unused ) ] { let __seq_res = __parse___ ( __input , __state , __pos ) ; match __seq_res { Matched ( __pos , _ ) => { { let __seq_res = { let mut __repeat_pos = __pos ; let mut __repeat_value = vec ! ( ) ; loop { let __pos = __repeat_pos ; let __step_res = __parse_item ( __input , __state , __pos ) ; match __step_res { Matched ( __newpos , __value ) => { __repeat_pos = __newpos ; __repeat_value . push ( __value ) ; } , Failed => { break ; } } } Matched ( __repeat_pos , __repeat_value ) } ; match __seq_res { Matched ( __pos , items ) => { Matched ( __pos , {  items  } ) } Failed => Failed , } } } Failed => Failed , } } } 
 
@@ -300,4 +303,4 @@ max_err_pos { self . expected . insert ( expected ) ; } } Failed } } struct Pars
 
  fn __parse_whitespace < 'input > ( __input : & 'input str , __state : & mut ParseState < 'input > , __pos : usize ) -> RuleResult < () > { # ! [ allow ( non_snake_case , unused ) ] if __input . len ( ) > __pos { let ( __ch , __next ) = char_range_at ( __input , __pos ) ; match __ch { ' ' | '\t' | '\u{a0}' | '\u{feff}' | '\u{1680}' | '\u{180e}' | '\u{2000}' ... '\u{200a}' | '\u{202f}' | '\u{205f}' | '\u{3000}' => Matched ( __next , ( ) ) , _ => __state . mark_failure ( __pos , "[ \t\u{a0}\u{feff}\u{1680}\u{180e}\u{2000}-\u{200a}\u{202f}\u{205f}\u{3000}]" ) , } } else { __state . mark_failure ( __pos , "[ \t\u{a0}\u{feff}\u{1680}\u{180e}\u{2000}-\u{200a}\u{202f}\u{205f}\u{3000}]" ) } } 
 
- pub fn items < 'input > ( __input : & 'input str ) -> ParseResult < Vec<Item> > { # ! [ allow ( non_snake_case , unused ) ] let mut __state = ParseState :: new ( ) ; match __parse_items ( __input , & mut __state , 0 ) { Matched ( __pos , __value ) => { if __pos == __input . len ( ) { return Ok ( __value ) } } _ => { } } let ( __line , __col ) = pos_to_line ( __input , __state . max_err_pos ) ; Err ( ParseError { line : __line , column : __col , offset : __state . max_err_pos , expected : __state . expected , } ) }
+ pub fn items < 'input > ( __input : & 'input str ) -> ParseResult < Vec<Item> > { # ! [ allow ( non_snake_case , unused ) ] let mut __state = ParseState :: new ( ) ; match __parse_items ( __input , & mut __state , 0 ) { Matched ( __pos , __value ) => { if __pos == __input . len ( ) { return Ok ( __value ) } } _ => ( ) } let __err_pos = __state . max_err_pos ; __state = ParseState :: new ( ) ; __state . reparsing_on_error = true ; __state . max_err_pos = __err_pos ; __parse_items ( __input , & mut __state , 0 ) ; let ( __line , __col ) = pos_to_line ( __input , __err_pos ) ; Err ( ParseError { line : __line , column : __col , offset : __err_pos , expected : __state . expected , } ) }

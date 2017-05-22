@@ -215,7 +215,7 @@ static HELPERS: &'static str = stringify! {
 	}
 
 	fn slice_eq(input: &str, state: &mut ParseState, pos: usize, m: &'static str) -> RuleResult<()> {
-		#![inline]
+		#![inline(always)]
 		#![allow(dead_code)]
 
 		let l = m.len();
@@ -266,18 +266,22 @@ static HELPERS: &'static str = stringify! {
 	}
 
 	impl<'input> ParseState<'input> {
+		#[inline(never)]
+		fn mark_failure_slow_path(&mut self, pos: usize, expected: &'static str) {
+			if pos == self.max_err_pos {
+				self.expected.insert(expected);
+			}
+		}
+
+		#[inline(always)]
 		fn mark_failure(&mut self, pos: usize, expected: &'static str) -> RuleResult<()> {
 			if self.suppress_fail == 0 {
-				if pos > self.max_err_pos {
+				if self.reparsing_on_error {
+					self.mark_failure_slow_path(pos, expected);
+				} else if pos > self.max_err_pos {
 					self.max_err_pos = pos;
-					self.expected.clear();
-				}
-
-				if pos == self.max_err_pos {
-					self.expected.insert(expected);
 				}
 			}
-
 			Failed
 		}
 	}
@@ -322,6 +326,7 @@ fn make_parse_state(rules: &[Rule]) -> Tokens {
 		struct ParseState<'input> {
 			max_err_pos: usize,
 			suppress_fail: usize,
+			reparsing_on_error: bool,
 			expected: ::std::collections::HashSet<&'static str>,
 			_phantom: ::std::marker::PhantomData<&'input ()>,
 			#(#cache_fields_def),*
@@ -332,6 +337,7 @@ fn make_parse_state(rules: &[Rule]) -> Tokens {
 				ParseState {
 					max_err_pos: 0,
 					suppress_fail: 0,
+					reparsing_on_error: false,
 					expected: ::std::collections::HashSet::new(),
 					_phantom: ::std::marker::PhantomData,
 					#(#cache_fields: ::std::collections::HashMap::new()),*
@@ -429,14 +435,22 @@ fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> Tokens {
 						return Ok(__value)
 					}
 				}
-				_ => {}
+				_ => ()
 			}
-			let (__line, __col) = pos_to_line(__input, __state.max_err_pos);
+
+			let __err_pos = __state.max_err_pos;
+			__state = ParseState::new();
+			__state.reparsing_on_error = true;
+			__state.max_err_pos = __err_pos;
+
+			#parse_fn(__input, &mut __state, 0 #extra_args_call);
+
+			let (__line, __col) = pos_to_line(__input, __err_pos);
 
 			Err(ParseError {
 				line: __line,
 				column: __col,
-				offset: __state.max_err_pos,
+				offset: __err_pos,
 				expected: __state.expected,
 			})
 		}
