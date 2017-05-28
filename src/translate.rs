@@ -840,7 +840,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 
 				let mut rules = Vec::new();
 				for op in &level.operators {
-					let match_rule = compile_expr(cx.result_used(false), &*op.operator)?;
+					let match_rule = compile_expr(cx.result_used(op.op_arg.is_some()), &*op.operator)?;
 					let action = raw(&op.action[..]);
 
 					let l_arg = raw(&op.l_arg[..]);

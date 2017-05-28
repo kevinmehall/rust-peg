@@ -145,6 +145,26 @@ fn test_infix_arith() {
 	assert_eq!(infix_arith("1024/2/2/2+1"), Ok(129));
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum InfixAst {
+    Ident(String),
+    Add(Box<InfixAst>, Box<InfixAst>),
+    Op(String, Box<InfixAst>, Box<InfixAst>)
+}
+
+#[test]
+fn test_infix_ast(){
+	assert_eq!(infix_ast("a + b `x` c").unwrap(),
+		InfixAst::Add(
+			Box::new(InfixAst::Ident("a".to_owned())),
+			Box::new(InfixAst::Op("x".to_owned(),
+				Box::new(InfixAst::Ident("b".to_owned())),
+				Box::new(InfixAst::Ident("c".to_owned()))
+			))
+		)
+	)
+}
+
 #[test]
 fn test_error_pos() {
     let err = error_pos("aab\n").unwrap_err();
