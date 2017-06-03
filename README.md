@@ -213,6 +213,8 @@ to embed a short PEG grammar inline in your Rust source file. [Example](peg-synt
 
 Run `rust-peg input_file.rustpeg` to compile a grammar and generate Rust code on stdout.
 
+If you're using Vim, [rhysd](https://github.com/rhysd) has created a [syntax highlighting plugin](https://github.com/rhysd/vim-rustpeg).
+
 ## Tracing
 
 If you pass the `peg/trace` feature to Cargo when building your project, a trace of the parsing will be output to stdout when running the binary. For example,
