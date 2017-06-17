@@ -143,6 +143,7 @@ fn test_infix_arith() {
 	assert_eq!(infix_arith("3+3*3+3"), Ok(15));
 	assert_eq!(infix_arith("2+2^2^2^2/2+2"), Ok(32772));
 	assert_eq!(infix_arith("1024/2/2/2+1"), Ok(129));
+	assert_eq!(infix_arith("1024/(1+1)/2/2+1"), Ok(129));
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
