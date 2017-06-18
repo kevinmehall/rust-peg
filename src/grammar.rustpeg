@@ -1,7 +1,14 @@
 use translate::*;
 use std::char;
+use codemap::{ self, Spanned };
 
-pub items -> Vec<Item> = __ items:item* { items }
+#![arguments(file_span: codemap::Span)]
+
+spanned<inner>
+  = start:#position node:inner end:#position
+  { codemap::Spanned { node, span: file_span.subspan(start as u64, end as u64) } }
+
+pub items -> Vec<Spanned<Item>> = __ items:spanned<item>* { items }
 
 rule -> Rule
   = legacy_exported:exportflag cached:cacheflag public:pubflag name:identifier returns: returntype equals expression:expression semicolon? {
@@ -62,42 +69,43 @@ rust_type
   / "(" __ rust_type ** (__ "," __) __ ")"
   / rust_identifier
 
-expression -> Expr
+expression -> Spanned<Expr>
   = choice
 
-choice -> Expr
-  = head:sequence tail:(slash s:sequence {s})* {
+choice -> Spanned<Expr>
+  = spanned<head:sequence tail:(slash s:sequence {s})* {
       if tail.len() > 0 {
         let mut list = tail;
         list.insert(0, head);
         ChoiceExpr(list)
       } else {
-        head
+        head.node
       }
-    }
+    }>
 
-sequence -> Expr
-  = elements:labeled* code:action {
+sequence -> Spanned<Expr>
+  = spanned<elements:labeled* code:action {
       ActionExpr(elements, code.0, code.1)
     }
   / elements:prefixed* {
       if elements.len() != 1 {
           SequenceExpr(elements)
       } else {
-          elements.into_iter().next().unwrap()
+          elements.into_iter().next().unwrap().node
       }
-    }
+    }>
 
 labeled -> TaggedExpr
-  = label:identifier colon expression:prefixed {
+  = label:spanned<identifier> colon expression:prefixed {
       TaggedExpr{ name: Some(label), expr: Box::new(expression) }
     }
   / expr: prefixed {
       TaggedExpr{ name: None, expr: Box::new(expr) }
   }
 
-prefixed -> Expr
-  = dollar expression:suffixed {
+prefixed -> Spanned<Expr>
+  = spanned<
+   dollar expression:suffixed {
       MatchStrExpr(Box::new(expression))
     }
   / and expression:suffixed {
@@ -105,11 +113,13 @@ prefixed -> Expr
     }
   / not expression:suffixed {
       NegAssertExpr(Box::new(expression))
-    }
+    }>
   / suffixed
 
-suffixed -> Expr
-  = e:primary question {
+
+suffixed -> Spanned<Expr>
+  = spanned<
+   e:primary question {
        OptionalExpr(Box::new(e))
     }
   / e:primary starstar count:repeatcount sep:primary {
@@ -123,7 +133,7 @@ suffixed -> Expr
     }
   / e:primary plus {
       Repeat(Box::new(e), BoundedRepeat::Plus, None)
-    }
+    }>
   / primary
 
 repeatcount -> BoundedRepeat
@@ -136,8 +146,9 @@ repeatnum -> String
   / lbrace e:rust_expr rbrace {e}
 
 #[cache]
-primary -> Expr
-  = name:identifier !lt !returns !equals {
+primary -> Spanned<Expr>
+  = spanned<
+   name:identifier !lt !returns !equals {
       RuleExpr(name)
     }
   / name:identifier lt args:(expression ** comma) gt !equals {
@@ -151,7 +162,8 @@ primary -> Expr
   / "#expected" __ lparen s:doubleQuotedString rparen { FailExpr(s) }
   / "#infix" __ lt atom:expression gt lbrace levels:infix_level+ rbrace
         { InfixExpr{ atom: Box::new(atom), levels:levels }}
-  / lparen expression:expression rparen { expression }
+  / lparen expression:expression rparen { expression.node }
+  >
 
 infix_level -> InfixLevel
   = assoc:("#L" { InfixAssoc::Left } / "#R" { InfixAssoc::Right} ) __ operators:infix_op+

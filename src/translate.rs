@@ -2,17 +2,8 @@ use std::borrow::ToOwned;
 use std::collections::HashMap;
 use quote::Tokens;
 pub use self::Expr::*;
-
-#[derive(Debug)]
-pub struct Error {
-	message: String,
-}
-
-impl From<Error> for String {
-	fn from(e: Error) -> String {
-		e.message
-	}
-}
+use codemap::Spanned;
+use PegCompiler;
 
 fn raw(s: &str) -> Tokens {
 	let mut t = Tokens::new();
@@ -20,7 +11,7 @@ fn raw(s: &str) -> Tokens {
 	t
 }
 
-pub struct Grammar {
+pub(crate) struct Grammar {
 	pub imports: Vec<String>,
 	pub rules: Vec<Rule>,
 	pub templates: HashMap<String, Template>,
@@ -28,27 +19,50 @@ pub struct Grammar {
 }
 
 impl Grammar {
-	pub fn from_ast(items: Vec<Item>) -> Result<Grammar, Error> {
+	pub fn from_ast(compiler: &mut PegCompiler, items: Vec<Spanned<Item>>) -> Result<Grammar, ()> {
 		let mut imports = Vec::new();
-		let mut rules = Vec::new();
+		let mut rules: Vec<Rule> = Vec::new();
 		let mut templates = HashMap::new();
 
 		let mut grammar_args = None;
 
 		for item in items {
-			match item {
+			match item.node {
 				Item::Use(u) => { imports.push(u); }
-				Item::Rule(rule) => { rules.push(rule); }
-				Item::Template(template) => { templates.insert(template.name.clone(), template); }
+				Item::Rule(rule) => {
+					if rules.iter().any(|existing_rule| existing_rule.name == rule.name) {
+						compiler.span_error(
+							format!("Multiple rules named `{}`", rule.name),
+							item.span,
+							Some("duplicate declaration".to_owned())
+						)
+					}
+
+					rules.push(rule);
+				}
+				Item::Template(template) => {
+					if let Some(prev) = templates.insert(template.name.clone(), template) {
+						compiler.span_error(
+							format!("Multiple templates named `{}`", prev.name),
+							item.span,
+							Some("duplicate declaration".to_owned())
+						)
+					}
+				}
 				Item::GrammarArgs(args) => {
 					if grammar_args.is_none() {
 						grammar_args = Some(args);
 					} else {
-						Err(Error{ message: format!("Multiple #![grammar_args] attributes") })?
+						compiler.span_error(
+							"Grammar contains multiple #![grammar_args] attributes".to_owned(),
+							item.span,
+							Some("duplicate declaration".to_owned())
+						)
 					}
 				}
 			}
 		}
+
 		Ok(Grammar{ imports:imports, rules:rules, templates:templates, args: grammar_args.unwrap_or(vec![]) })
 	}
 
@@ -72,14 +86,6 @@ impl Grammar {
 		}).collect();
 		quote!(#(#args)*)
 	}
-
-	fn check_name(&self, name: &str) -> Result<(), Error> {
-		if self.args.iter().any(|x| x.0 == name) {
-			Err(Error{ message: format!("Capture variable `{}` shadows grammar argument", name) })?
-		}
-
-		Ok(())
-	}
 }
 
 pub enum Item {
@@ -91,7 +97,7 @@ pub enum Item {
 
 pub struct Rule {
 	pub name: String,
-	pub expr: Box<Expr>,
+	pub expr: Box<Spanned<Expr>>,
 	pub ret_type: String,
 	pub exported: bool,
 	pub cached: bool,
@@ -100,7 +106,7 @@ pub struct Rule {
 pub struct Template {
 	pub name: String,
 	pub params: Vec<String>,
-	pub expr: Box<Expr>,
+	pub expr: Box<Spanned<Expr>>,
 }
 
 #[derive(Clone)]
@@ -111,8 +117,8 @@ pub struct CharSetCase {
 
 #[derive(Clone)]
 pub struct TaggedExpr {
-	pub name: Option<String>,
-	pub expr: Box<Expr>,
+	pub name: Option<Spanned<String>>,
+	pub expr: Box<Spanned<Expr>>,
 }
 
 #[derive(Clone)]
@@ -121,19 +127,19 @@ pub enum Expr {
 	LiteralExpr(String,bool),
 	CharSetExpr(bool, Vec<CharSetCase>),
 	RuleExpr(String),
-	SequenceExpr(Vec<Expr>),
-	ChoiceExpr(Vec<Expr>),
-	OptionalExpr(Box<Expr>),
-	Repeat(Box<Expr>, BoundedRepeat, /*sep*/ Option<Box<Expr>>),
-	PosAssertExpr(Box<Expr>),
-	NegAssertExpr(Box<Expr>),
+	SequenceExpr(Vec<Spanned<Expr>>),
+	ChoiceExpr(Vec<Spanned<Expr>>),
+	OptionalExpr(Box<Spanned<Expr>>),
+	Repeat(Box<Spanned<Expr>>, BoundedRepeat, /*sep*/ Option<Box<Spanned<Expr>>>),
+	PosAssertExpr(Box<Spanned<Expr>>),
+	NegAssertExpr(Box<Spanned<Expr>>),
 	ActionExpr(Vec<TaggedExpr>, /*action*/ String, /*cond*/ bool),
-	MatchStrExpr(Box<Expr>),
+	MatchStrExpr(Box<Spanned<Expr>>),
 	PositionExpr,
-	TemplateInvoke(String, Vec<Expr>),
-	QuietExpr(Box<Expr>),
+	TemplateInvoke(String, Vec<Spanned<Expr>>),
+	QuietExpr(Box<Spanned<Expr>>),
 	FailExpr(String),
-	InfixExpr{ atom: Box<Expr>, levels: Vec<InfixLevel> }
+	InfixExpr{ atom: Box<Spanned<Expr>>, levels: Vec<InfixLevel> }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -147,7 +153,7 @@ pub struct InfixLevel {
 
 #[derive(Clone)]
 pub struct InfixOperator {
-	pub operator: Box<Expr>,
+	pub operator: Box<Spanned<Expr>>,
 	pub l_arg: String,
 	pub op_arg: Option<String>,
 	pub r_arg: String,
@@ -283,11 +289,11 @@ static HELPERS: &'static str = stringify! {
 	}
 };
 
-pub fn compile_grammar(grammar: &Grammar) -> Result<Tokens, Error> {
+pub(crate) fn compile_grammar(compiler: &mut PegCompiler, grammar: &Grammar) -> Result<Tokens, ()> {
 	let mut items = vec![make_parse_state(&grammar.rules)];
 
 	for rule in &grammar.rules {
-		items.push(compile_rule(grammar, rule)?)
+		items.push(compile_rule(compiler, grammar, rule))
 	}
 	items.extend(grammar.rules.iter().filter(|rule| rule.exported).map(|rule| {
 		compile_rule_export(grammar, rule)
@@ -342,7 +348,7 @@ fn make_parse_state(rules: &[Rule]) -> Tokens {
 }
 
 
-fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
+fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> Tokens {
 	let ref rule_name = rule.name;
 	let name = raw(&format!("__parse_{}", rule.name));
 	let ret_ty = raw(&rule.ret_type);
@@ -352,7 +358,7 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 		lexical: &LexicalContext { defs: HashMap::new() },
 	};
 
-	let body = compile_expr(context, &*rule.expr)?;
+	let body = compile_expr(compiler, context, &*rule.expr);
 
 	let wrapped_body = if cfg!(feature = "trace") {
 		quote!{{
@@ -373,7 +379,7 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 	let nl = raw("\n\n"); // make output slightly more readable
 	let extra_args_def = grammar.extra_args_def();
 
-	Ok(if rule.cached {
+	if rule.cached {
 		let cache_field = raw(&format!("{}_cache", rule.name));
 
 		let cache_trace = if cfg!(feature = "trace") {
@@ -407,7 +413,7 @@ fn compile_rule(grammar: &Grammar, rule: &Rule) -> Result<Tokens, Error> {
 				#wrapped_body
 			}
 		}
-	})
+	}
 }
 
 fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> Tokens {
@@ -443,20 +449,20 @@ fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> Tokens {
 	}
 }
 
-fn compile_match_and_then(cx: Context, e: &Expr, value_name: Option<&str>, then: Tokens) -> Result<Tokens, Error> {
-	let seq_res = compile_expr(Context{ result_used: value_name.is_some(), ..cx }, e)?;
+fn compile_match_and_then(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>, value_name: Option<&str>, then: Tokens) -> Tokens {
+	let seq_res = compile_expr(compiler, Context{ result_used: value_name.is_some(), ..cx }, e);
 	let name_pat = match value_name {
 		Some(name) => raw(name),
 		None => raw("_")
 	};
 
-	Ok(quote! {{
+	quote! {{
 		let __seq_res = #seq_res;
 		match __seq_res {
 			Matched(__pos, #name_pat) => { #then }
 			Failed => Failed,
 		}
-	}})
+	}}
 }
 
 fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
@@ -487,7 +493,7 @@ fn format_char_set(invert: bool, cases: &[CharSetCase]) -> String {
 }
 
 struct LexicalContext<'a> {
-	defs: HashMap<&'a str, (&'a Expr, &'a LexicalContext<'a>)>
+	defs: HashMap<&'a str, (&'a Spanned<Expr>, &'a LexicalContext<'a>)>
 }
 
 #[derive(Copy, Clone)]
@@ -504,8 +510,8 @@ impl<'a> Context<'a> {
 }
 
 
-fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
-	Ok(match *e {
+fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> Tokens {
+	match e.node {
 		AnyCharExpr => {
 			quote!{ any_char(__input, __state, __pos) }
 		}
@@ -557,7 +563,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 
 		RuleExpr(ref rule_name) => {
 			if let Some(&(template_arg, lexical_context)) = cx.lexical.defs.get(&rule_name[..]) {
-				compile_expr(Context{ lexical: lexical_context, ..cx }, template_arg)?
+				compile_expr(compiler, Context{ lexical: lexical_context, ..cx }, template_arg)
 			} else if let Some(rule) = cx.grammar.find_rule(rule_name) {
 				let func = raw(&format!("__parse_{}", rule_name));
 				let extra_args_call = cx.grammar.extra_args_call();
@@ -572,66 +578,86 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 					}
 				}
 			} else {
-				Err(Error{ message: format!("No rule named `{}`", rule_name) })?
+				compiler.span_error(
+					format!("No rule named `{}`", rule_name),
+					e.span,
+					Some("rule not found".to_owned())
+				);
+				quote!()
 			}
 		}
 
 		TemplateInvoke(ref name, ref params) => {
-			let template = cx.grammar.templates.get(&name[..])
-				.ok_or_else(|| Error { message: format!("No template named `{}``", name) })?;
+			let template = match cx.grammar.templates.get(&name[..]) {
+				Some(x) => x,
+				None => {
+					compiler.span_error(
+						format!("No template named `{}`", name),
+						e.span,
+						Some("template not found".to_owned())
+					);
+					return quote!()
+				}
+			};
 
 			if template.params.len() != params.len() {
-				Err(Error { message: format!("Expected {} arguments to `{}`, found {}", template.params.len(), template.name, params.len())})?
+				compiler.span_error(
+					format!("Expected {} arguments to `{}`, found {}", template.params.len(), template.name, params.len()),
+					e.span,
+					Some("wrong number of arguments".to_owned())
+				);
+				return quote!()
 			}
 
 			let defs = template.params.iter().zip(params.iter())
 				.map(|(name, expr)| (&name[..], (expr, cx.lexical))).collect();
-			compile_expr(Context{ lexical: &LexicalContext { defs: defs }, ..cx }, &template.expr)?
+			compile_expr(compiler, Context{ lexical: &LexicalContext { defs: defs }, ..cx }, &template.expr)
 		}
 
 		SequenceExpr(ref exprs) => {
-			fn write_seq(cx: Context, exprs: &[Expr]) -> Result<Tokens, Error> {
+			fn write_seq(compiler: &mut PegCompiler, cx: Context, exprs: &[Spanned<Expr>]) -> Tokens {
 				if exprs.len() == 1 {
-					compile_expr(cx.result_used(false), &exprs[0])
+					compile_expr(compiler, cx.result_used(false), &exprs[0])
 				} else {
-					compile_match_and_then(cx, &exprs[0], None, write_seq(cx, &exprs[1..])?)
+					let seq = write_seq(compiler, cx, &exprs[1..]);
+					compile_match_and_then(compiler, cx, &exprs[0], None, seq)
 				}
 			}
 
 			if exprs.len() > 0 {
-				write_seq(cx, &exprs)?
+				write_seq(compiler, cx, &exprs)
 			} else {
 				quote!{ Matched(__pos, ()) }
 			}
 		}
 
 		ChoiceExpr(ref exprs) => {
-			fn write_choice(cx: Context, exprs: &[Expr]) -> Result<Tokens, Error>  {
+			fn write_choice(compiler: &mut PegCompiler, cx: Context, exprs: &[Spanned<Expr>]) -> Tokens  {
 				if exprs.len() == 1 {
-					compile_expr(cx, &exprs[0])
+					compile_expr(compiler, cx, &exprs[0])
 				} else {
-					let choice_res = compile_expr(cx, &exprs[0])?;
-					let next = write_choice(cx, &exprs[1..])?;
+					let choice_res = compile_expr(compiler, cx, &exprs[0]);
+					let next = write_choice(compiler, cx, &exprs[1..]);
 
-					Ok(quote! {{
+					quote! {{
 						let __choice_res = #choice_res;
 						match __choice_res {
 							Matched(__pos, __value) => Matched(__pos, __value),
 							Failed => #next
 						}
-					}})
+					}}
 				}
 			}
 
 			if exprs.len() > 0 {
-				write_choice(cx, &exprs)?
+				write_choice(compiler, cx, &exprs)
 			} else {
 				quote!{ Matched(__pos, ()) }
 			}
 		}
 
 		OptionalExpr(ref e) => {
-			let optional_res = compile_expr(cx, e)?;
+			let optional_res = compile_expr(compiler, cx, e);
 
 			if cx.result_used {
 				quote!{
@@ -651,7 +677,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		}
 
 		Repeat(ref e, ref bounds, ref sep) => {
-			let inner = compile_expr(cx, e)?;
+			let inner = compile_expr(compiler, cx, e);
 
 			let (min, max) = match *bounds {
 				BoundedRepeat::None => (None, None),
@@ -661,7 +687,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			};
 
 			let match_sep = if let &Some(ref sep) = sep {
-				let sep_inner = compile_expr(cx.result_used(false), &*sep)?;
+				let sep_inner = compile_expr(compiler, cx.result_used(false), &*sep);
 				quote! {
 					let __pos = if __repeat_value.len() > 0 {
 						let __sep_res = #sep_inner;
@@ -728,7 +754,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		}
 
 		PosAssertExpr(ref e) => {
-			let assert_res = compile_expr(cx, e)?;
+			let assert_res = compile_expr(compiler, cx, e);
 			quote! {{
 				__state.suppress_fail += 1;
 				let __assert_res = #assert_res;
@@ -741,7 +767,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		}
 
 		NegAssertExpr(ref e) => {
-			let assert_res = compile_expr(cx.result_used(false), e)?;
+			let assert_res = compile_expr(compiler, cx.result_used(false), e);
 			quote! {{
 				__state.suppress_fail += 1;
 				let __assert_res = #assert_res;
@@ -754,23 +780,35 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		}
 
 		ActionExpr(ref exprs, ref code, is_cond) => {
-			fn write_seq(cx: Context, exprs: &[TaggedExpr], code: &str, is_cond: bool) -> Result<Tokens, Error> {
+			fn write_seq(compiler: &mut PegCompiler, cx: Context, exprs: &[TaggedExpr], code: &str, is_cond: bool) -> Tokens {
 				match exprs.first() {
 					Some(ref first) => {
-						let name = first.name.as_ref().map(|s| &s[..]);
+						if let Some(name) = first.name.as_ref() {
+							if cx.grammar.args.iter().any(|x| x.0 == name.node) {
+								compiler.span_error(
+									format!("Capture variable `{}` shadows grammar argument", name.node),
+									name.span,
+									Some("prohibited name".to_owned())
+								)
+							}
 
-						if let Some(name) = name {
-							cx.grammar.check_name(name)?;
+							if name.node.starts_with("__") {
+								compiler.span_error(
+									format!("Capture variable `{}` has reserved name", name.node),
+									name.span,
+									Some("prohibited name".to_owned())
+								)
+							}
 						}
 
-						compile_match_and_then(cx, &*first.expr, name,
-							write_seq(cx, &exprs[1..], code, is_cond)?
-						)
+						let name = first.name.as_ref().map(|s| &s[..]);
+						let seq = write_seq(compiler, cx, &exprs[1..], code, is_cond);
+						compile_match_and_then(compiler, cx, &*first.expr, name, seq)
 					}
 					None => {
 						let code_block = raw(code);
 
-						Ok(if is_cond {
+						if is_cond {
 							quote!{
 								match #code_block {
 									Ok(res) => Matched(__pos, res),
@@ -782,15 +820,15 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 							}
 						} else {
 							quote!{ Matched(__pos, #code_block) }
-						})
+						}
 					}
 				}
 			}
 
-			write_seq(cx, &exprs, &code, is_cond)?
+			write_seq(compiler, cx, &exprs, &code, is_cond)
 		}
 		MatchStrExpr(ref expr) => {
-			let inner = compile_expr(cx.result_used(false), expr)?;
+			let inner = compile_expr(compiler, cx.result_used(false), expr);
 			quote! {{
 				let str_start = __pos;
 				match #inner {
@@ -803,7 +841,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			quote! { Matched(__pos, __pos) }
 		}
 		QuietExpr(ref expr) => {
-			let inner = compile_expr(cx, expr)?;
+			let inner = compile_expr(compiler, cx, expr);
 			quote! {{
 				__state.suppress_fail += 1;
 				let res = #inner;
@@ -816,15 +854,21 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 		}
 
 		InfixExpr{ ref atom, ref levels } => {
-			let match_atom = compile_expr(cx, atom)?;
-			let ty = if let RuleExpr(ref atom_rule_name) = **atom {
+			let match_atom = compile_expr(compiler, cx, atom);
+			let ty = if let RuleExpr(ref atom_rule_name) = atom.node {
 				if let Some(rule) = cx.grammar.find_rule(atom_rule_name) {
 					raw(&rule.ret_type[..])
 				} else {
-					Err(Error{ message: format!("No rule named `{}`", atom_rule_name) })?
+					// Error emitted by compile_expr
+					return quote!();
 				}
 			} else {
-				Err(Error{ message: format!("#infix atom must be a rule, not an arbitrary expression (so its return type can be inspected)") })?
+				compiler.span_error(
+					format!("#infix atom must be a rule, not an arbitrary expression (so its return type can be inspected)"),
+					atom.span,
+					Some("not allowed here".to_owned())
+				);
+				return quote!();
 			};
 
 			let mut level_code = Vec::new();
@@ -840,7 +884,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 
 				let mut rules = Vec::new();
 				for op in &level.operators {
-					let match_rule = compile_expr(cx.result_used(op.op_arg.is_some()), &*op.operator)?;
+					let match_rule = compile_expr(compiler, cx.result_used(op.op_arg.is_some()), &*op.operator);
 					let action = raw(&op.action[..]);
 
 					let l_arg = raw(&op.l_arg[..]);
@@ -892,7 +936,7 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 				__infix_parse(0, __input, __state, __pos #extra_args_call)
 			}}
 		}
-	})
+	}
 }
 
 #[test]

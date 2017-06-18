@@ -18,6 +18,7 @@ use rustc_plugin::Registry;
 use std::io::Read;
 use std::fs::File;
 use std::path::Path;
+use std::iter;
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
@@ -31,17 +32,23 @@ pub fn plugin_registrar(reg: &mut Registry) {
 }
 
 fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<TokenTree>) -> Box<MacResult + 's> {
-    let source = match parse_arg(cx, &tts) {
-        Some(source) => source,
+    let (source, span) = match parse_arg(cx, &tts) {
+        Some((source, span)) => (source, span),
         None => return DummyResult::any(sp),
     };
 
-    expand_peg(cx, sp, ident, &source)
+    let loc = cx.codemap().lookup_char_pos(span.lo);
+    let fname = loc.file.name.to_owned();
+
+    // Make PEG line numbers match source line numbers
+    let source = iter::repeat('\n').take(loc.line - 1).collect::<String>() + &source;
+
+    expand_peg(cx, sp, ident, fname, source)
 }
 
 fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<TokenTree>) -> Box<MacResult + 's> {
     let fname = match parse_arg(cx, &tts) {
-        Some(fname) => fname,
+        Some((fname, _)) => fname,
         None => return DummyResult::any(sp),
     };
 
@@ -55,14 +62,14 @@ fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident
 
     cx.codemap().new_filemap(format!("{}", path.display()), "".to_string());
 
-    expand_peg(cx, sp, ident, &source)
+    expand_peg(cx, sp, ident, fname.to_owned(), source)
 }
 
-fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &str) -> Box<MacResult + 'static> {
-    let code = match peg::compile(&source) {
+fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, filename: String, source: String) -> Box<MacResult + 'static> {
+    let code = match peg::compile(filename, source) {
         Ok(code) => code,
-        Err(e) => {
-          cx.span_err(sp, &format!("{}", e));
+        Err(()) => {
+          cx.span_err(sp, "Errors above in rust-peg grammar");
           return DummyResult::any(sp)
         }
     };
@@ -79,7 +86,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
     MacEager::items(SmallVector::one(module))
 }
 
-fn parse_arg(cx: &mut ExtCtxt, tts: &[TokenTree]) -> Option<String> {
+fn parse_arg(cx: &mut ExtCtxt, tts: &[TokenTree]) -> Option<(String, codemap::Span)> {
     use syntax::print::pprust;
 
     let mut parser = parse::new_parser_from_tts(cx.parse_sess(), tts.to_vec());
@@ -95,7 +102,7 @@ fn parse_arg(cx: &mut ExtCtxt, tts: &[TokenTree]) -> Option<String> {
                                     "expected only one string literal");
                         return None
                     }
-                    return Some(n.to_string())
+                    return Some((n.to_string(), spanned.span))
                 }
                 _ => {}
             }
