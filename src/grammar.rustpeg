@@ -8,10 +8,10 @@ spanned<inner>
   = start:#position node:inner end:#position
   { codemap::Spanned { node, span: file_span.subspan(start as u64, end as u64) } }
 
-pub items -> Vec<Spanned<Item>> = __ items:spanned<item>* { items }
+pub items -> Vec<Spanned<Item>> = _ items:spanned<item>**_ _ { items }
 
 rule -> Rule
-  = legacy_exported:exportflag cached:cacheflag public:pubflag name:identifier returns: returntype equals expression:expression semicolon? {
+  = legacy_exported:exportflag _ cached:cacheflag _ public:pubflag _ name:identifier _ returns:returntype _ "=" _ expression:expression (_ ";")? {
       Rule{
         name: name,
         expr: Box::new(expression),
@@ -21,12 +21,12 @@ rule -> Rule
       }
     }
 
-    pubflag -> bool = PUB { true } / "" { false }
-    exportflag -> bool = #quiet<("#[export]" / "#[pub]") __ {true} / "" {false}>
-    cacheflag -> bool = "#[cache]" __ {true} / {false}
+    pubflag -> bool = PUB { true } / { false }
+    exportflag -> bool = #quiet<("#[export]" / "#[pub]") {true} / {false}>
+    cacheflag -> bool = "#[cache]" {true} / {false}
 
 template -> Template
-  = name:identifier lt params:(identifier ** comma) gt equals expression:expression semicolon? {
+  = name:identifier _ "<" _ params:COMMASEP<identifier> _ ">" _ "=" _ expression:expression (_ ";")? {
     Template { name: name, params: params, expr: Box::new(expression) }
   }
 
@@ -37,43 +37,43 @@ item -> Item
   / grammar_args
 
   grammar_args -> Item
-    = "#![" __ "arguments" __ lparen args:(grammar_argument**comma) rparen "]" __
+    = "#![" _ "arguments" _ "(" _ args:COMMASEP<grammar_argument> _ ")" _ "]"
     { Item::GrammarArgs(args) }
 
     grammar_argument -> (String, String)
-      = i:identifier colon t:type_string { (i, t) }
+      = i:identifier _ ":" _ t:type_string { (i, t) }
 
 
-type_string -> String = tp:$rust_type __ { tp.to_owned() }
+type_string -> String = tp:$rust_type _ { tp.to_owned() }
 
 returntype -> String
-  = returns tp:type_string { tp }
+  = "->" _ tp:type_string { tp }
   / { "()".to_string() }
 
 rust_identifier = #quiet<[a-zA-Z_][a-zA-Z0-9_]*> / #expected("identifier")
 
 rust_use -> String
-  = v:$(USE rust_path __ (
-    "::" __ "*" __
-    / "::" __ "{" __ ((rust_identifier __ ("as" __ rust_identifier __ )?) ++ ("," __)) "}" __
-    / ("as" __ rust_identifier)?
-  ) ";") __ { v.to_owned() }
+  = v:$(USE _ rust_path _ (
+    "::" _ "*" _
+    / "::" _ "{" _ ((rust_identifier _ ("as" _ rust_identifier _ )?) ++ ("," _)) "}" _
+    / ("as" _ rust_identifier)?
+  ) ";") { v.to_owned() }
 
-rust_path = rust_identifier ++ (__ "::" __)
+rust_path = rust_identifier ++ (_ "::" _)
 
 rust_type
-  = "[" __ rust_type __ "]"
-  / "&" __ ("mut" __)? ("'" rust_identifier __)? rust_type
-  / rust_identifier __ "<" __ (("'" rust_identifier) / rust_type) ** (__ "," __) __ ">"
-  / rust_identifier __ "::" __ rust_type
-  / "(" __ rust_type ** (__ "," __) __ ")"
+  = "[" _ rust_type _ "]"
+  / "&" _ ("mut" _)? ("'" rust_identifier _)? rust_type
+  / rust_identifier _ "<" _ (("'" rust_identifier) / rust_type) ** (_ "," _) _ ">"
+  / rust_identifier _ "::" _ rust_type
+  / "(" _ rust_type ** (_ "," _) _ ")"
   / rust_identifier
 
 expression -> Spanned<Expr>
   = choice
 
 choice -> Spanned<Expr>
-  = spanned<head:sequence tail:(slash s:sequence {s})* {
+  = spanned<head:sequence tail:(_ "/" _ s:sequence {s})* {
       if tail.len() > 0 {
         let mut list = tail;
         list.insert(0, head);
@@ -84,10 +84,10 @@ choice -> Spanned<Expr>
     }>
 
 sequence -> Spanned<Expr>
-  = spanned<elements:labeled* code:action {
+  = spanned<elements:labeled**_ _ code:action {
       ActionExpr(elements, code.0, code.1)
     }
-  / elements:prefixed* {
+  / elements:prefixed**_ {
       if elements.len() != 1 {
           SequenceExpr(elements)
       } else {
@@ -96,22 +96,22 @@ sequence -> Spanned<Expr>
     }>
 
 labeled -> TaggedExpr
-  = label:spanned<identifier> colon expression:prefixed {
+  = label:spanned<identifier> _ ":" _ expression:prefixed {
       TaggedExpr{ name: Some(label), expr: Box::new(expression) }
     }
-  / expr: prefixed {
+  / expr:prefixed {
       TaggedExpr{ name: None, expr: Box::new(expr) }
   }
 
 prefixed -> Spanned<Expr>
   = spanned<
-   dollar expression:suffixed {
+   "$" _ expression:suffixed {
       MatchStrExpr(Box::new(expression))
     }
-  / and expression:suffixed {
+  / "&" _ expression:suffixed {
       PosAssertExpr(Box::new(expression))
     }
-  / not expression:suffixed {
+  / "!" _ expression:suffixed {
       NegAssertExpr(Box::new(expression))
     }>
   / suffixed
@@ -119,58 +119,58 @@ prefixed -> Spanned<Expr>
 
 suffixed -> Spanned<Expr>
   = spanned<
-   e:primary question {
+   e:primary _ "?" {
        OptionalExpr(Box::new(e))
     }
-  / e:primary starstar count:repeatcount sep:primary {
+  / e:primary _ "**" _ count:repeatcount _ sep:primary {
       Repeat(Box::new(e), count, Some(Box::new(sep)))
     }
-  / e:primary plusplus sep:primary {
+  / e:primary _ "++" _ sep:primary {
       Repeat(Box::new(e), BoundedRepeat::Plus, Some(Box::new(sep)))
     }
-  / e:primary star count:repeatcount {
+  / e:primary _ "*" _ count:repeatcount {
       Repeat(Box::new(e), count, None)
     }
-  / e:primary plus {
+  / e:primary _ "+" {
       Repeat(Box::new(e), BoundedRepeat::Plus, None)
     }>
   / primary
 
 repeatcount -> BoundedRepeat
-  = lt n:repeatnum gt { BoundedRepeat::Exact(n) }
-  / lt min:repeatnum? comma max:repeatnum? gt { BoundedRepeat::Both(min, max) }
-  / "" { BoundedRepeat::None }
+  = "<" _ n:repeatnum _ ">" { BoundedRepeat::Exact(n) }
+  / "<" _ min:repeatnum? _ "," _ max:repeatnum? _ ">" { BoundedRepeat::Both(min, max) }
+  / { BoundedRepeat::None }
 
 repeatnum -> String
-  = i:integer __ { i.to_string() }
-  / lbrace e:rust_expr rbrace {e}
+  = i:integer { i.to_string() }
+  / "{" _ e:rust_expr _ "}" {e}
 
 #[cache]
 primary -> Spanned<Expr>
   = spanned<
-   name:identifier !lt !returns !equals {
+   name:identifier !(_ ("<" / "->" / "=")) {
       RuleExpr(name)
     }
-  / name:identifier lt args:(expression ** comma) gt !equals {
+  / name:identifier _ "<" _ args:COMMASEP<expression> _ ">" !( _ "=") {
       TemplateInvoke(name, args)
     }
   / literal
   / class
-  / dot { AnyCharExpr }
-  / "#position" __ { PositionExpr }
-  / "#quiet" __ lt e:expression gt { QuietExpr(Box::new(e)) }
-  / "#expected" __ lparen s:doubleQuotedString rparen { FailExpr(s) }
-  / "#infix" __ lt atom:expression gt lbrace levels:infix_level+ rbrace
+  / "." { AnyCharExpr }
+  / "#position" { PositionExpr }
+  / "#quiet" _ "<" _ e:expression _ ">" { QuietExpr(Box::new(e)) }
+  / "#expected" _ "(" _ s:doubleQuotedString _ ")" { FailExpr(s) }
+  / "#infix" _ "<" _ atom:expression _ ">" _ "{" _ levels:infix_level++_ _ "}"
         { InfixExpr{ atom: Box::new(atom), levels:levels }}
-  / lparen expression:expression rparen { expression.node }
+  / "(" _ expression:expression _ ")" { expression.node }
   >
 
 infix_level -> InfixLevel
-  = assoc:("#L" { InfixAssoc::Left } / "#R" { InfixAssoc::Right} ) __ operators:infix_op+
+  = assoc:("#L" { InfixAssoc::Left } / "#R" { InfixAssoc::Right} ) _ operators:infix_op++_
   { InfixLevel{ assoc: assoc, operators: operators} }
 
 infix_op -> InfixOperator
-  = l:identifier op:(var:identifier colon {var})? e:primary r:identifier lbrace action:rust_expr rbrace
+  = l:identifier _ op:(var:identifier _ ":" _ {var})? e:primary _ r:identifier _ "{" _ action:rust_expr _ "}"
   { InfixOperator{ operator:Box::new(e), action: action, l_arg:l, op_arg:op, r_arg:r } }
 
 /* "Lexical" elements */
@@ -179,58 +179,37 @@ rust_expr -> String
    = literal:$((braced / nonBraceCharacters)*) { format!("{{ {} }}", literal) }
 
 action -> (String, /*is conditional match?*/ bool)
-  = "{" cond:"?"? literal:rust_expr "}" __ {
+  = "{" cond:"?"? literal:rust_expr "}" {
      (literal, cond.is_some())
   }
 
 braced = "{" ((braced / nonBraceCharacters)*) "}"
 nonBraceCharacters = [^{}]+
 
-equals    = "="  __
-colon     = ":"  __
-semicolon = ";"  __
-slash     = "/"  __
-and       = "&"  __
-not       = "!"  __
-dollar    = "$"  __
-question  = "?"  __
-star      = "*"  __
-starstar  = "**" __
-plus      = "+"  __
-plusplus  = "++" __
-lparen    = "("  __
-rparen    = ")"  __
-dot       = "."  __
-returns   = "->" __
-lbrace    = "{"  __
-rbrace    = "}"  __
-comma     = ","  __
-lt        = "<"  __
-gt        = ">"  __
-
-KEYWORD<k> = k !([a-zA-Z0-9_]) __
+KEYWORD<k> = k !([a-zA-Z0-9_])
 USE = KEYWORD<"use">
 PUB = KEYWORD<"pub">
 
 keyword = USE / PUB
 
 integer -> usize
-  = i:$([0-9]+) __ { i.parse().unwrap() }
+  = i:$([0-9]+) { i.parse().unwrap() }
 
 identifier -> String
-  = #quiet<!keyword chars:$([a-zA-Z_][a-zA-Z0-9_]*) __ { chars.to_owned() }> / #expected("identifier")
+  = #quiet<!keyword chars:$([a-zA-Z_][a-zA-Z0-9_]*) { chars.to_owned() }> / #expected("identifier")
 
+COMMASEP<t> = list:t**(_ "," _) (_ ",")? { list }
 /*
  * Modeled after ECMA-262, 5th ed., 7.8.4. (syntax & semantics, rules only
  * vaguely).
  */
 literal -> Expr
-  = value:(doubleQuotedString / singleQuotedString) case_insensitive:"i"? __ {
+  = value:(doubleQuotedString / singleQuotedString) case_insensitive:"i"? {
       LiteralExpr(value,case_insensitive.is_some())
     }
 
 string -> String
-  = string:(doubleQuotedString / singleQuotedString) __ { string }
+  = string:(doubleQuotedString / singleQuotedString) { string }
 
 doubleQuotedString -> String
   = '"' s:doubleQuotedCharacter* '"' { s.into_iter().collect() }
@@ -261,7 +240,7 @@ simpleSingleQuotedCharacter -> char
   = !("'" / "\\" / eolChar) c:$. { c.chars().next().unwrap() }
 
 class -> Expr
-  = "[" inverted:"^"? parts:(classCharacterRange / classCharacter)* "]" flags:"i"? __ {
+  = "[" inverted:"^"? parts:(classCharacterRange / classCharacter)* "]" flags:"i"? {
       CharSetExpr(inverted.is_some(), parts)
     }
 
@@ -322,7 +301,7 @@ digit
 hexDigit
   = [0-9a-fA-F]
 
-__ = #quiet<(whitespace / eol / comment)*>
+_ = #quiet<(whitespace / eol / comment)*>
 
 /* Modeled after ECMA-262, 5th ed., 7.4. */
 comment
