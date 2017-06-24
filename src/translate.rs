@@ -561,6 +561,9 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 			} else if let Some(rule) = cx.grammar.find_rule(rule_name) {
 				let func = raw(&format!("__parse_{}", rule_name));
 				let extra_args_call = cx.grammar.extra_args_call();
+				if cx.result_used && rule.ret_type == "()" {
+					return Err(Error{ message: format!("Tried to bind result of rule {}, which returns () - perhaps you forgot a return type?", rule_name)})?
+				}
 				if cx.result_used || rule.ret_type == "()" {
 					quote!{ #func(__input, __state, __pos #extra_args_call) }
 				} else {
