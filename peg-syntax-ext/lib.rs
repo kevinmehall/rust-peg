@@ -37,7 +37,7 @@ fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident,
         None => return DummyResult::any(sp),
     };
 
-    let loc = cx.codemap().lookup_char_pos(span.lo);
+    let loc = cx.codemap().lookup_char_pos(span.lo());
     let fname = loc.file.name.to_owned();
 
     // Make PEG line numbers match source line numbers

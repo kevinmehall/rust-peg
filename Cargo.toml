@@ -16,7 +16,7 @@ readme = "README.md"
 [dependencies]
 quote = "0.3"
 codemap = "0.1"
-codemap-diagnostic = { git="https://github.com/kevinmehall/codemap-diagnostic.git" }
+codemap-diagnostic = "0.1"
 
 [[bin]]
 name = "rust-peg"

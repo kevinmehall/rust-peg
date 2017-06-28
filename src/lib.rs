@@ -14,7 +14,7 @@ use std::process::exit;
 use std::env;
 
 use codemap::{ CodeMap, Span };
-use codemap_diagnostic::{ Diagnostic, Level, SpanLabel, SpanStyle, Emitter, EmitterWriter, ColorConfig };
+use codemap_diagnostic::{ Diagnostic, Level, SpanLabel, SpanStyle, Emitter, ColorConfig };
 
 mod translate;
 mod grammar;
@@ -55,9 +55,11 @@ impl PegCompiler {
     }
 
     fn print_diagnostics(&mut self) {
-        let mut emitter = EmitterWriter::stderr(ColorConfig::Auto, Some(&self.codemap));
-        emitter.emit(&self.diagnostics[..]);
-        self.diagnostics.clear();
+        if !self.diagnostics.is_empty() {
+            let mut emitter = Emitter::stderr(ColorConfig::Auto, Some(&self.codemap));
+            emitter.emit(&self.diagnostics[..]);
+            self.diagnostics.clear();
+        }
     }
 
     fn compile(&mut self, filename: String, input: String) -> Result<String, ()> {
