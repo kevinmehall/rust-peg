@@ -133,7 +133,9 @@ pub enum Expr {
 	TemplateInvoke(String, Vec<Expr>),
 	QuietExpr(Box<Expr>),
 	FailExpr(String),
-	InfixExpr{ atom: Box<Expr>, levels: Vec<InfixLevel> }
+	InfixExpr{ atom: Box<Expr>, levels: Vec<InfixLevel> },
+    RuntimeExpr(String),
+    RuntimeMatchExpr(String)
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -892,6 +894,16 @@ fn compile_expr(cx: Context, e: &Expr) -> Result<Tokens, Error> {
 				__infix_parse(0, __input, __state, __pos #extra_args_call)
 			}}
 		}
+
+        RuntimeExpr(ref code) => {
+            let raw_code = raw(code);
+            quote!{ { #raw_code; Matched(__pos, ()) } }
+        }
+
+        RuntimeMatchExpr(ref code) => {
+            let raw_code = raw(code);
+            quote!{ #raw_code }
+        }
 	})
 }
 
