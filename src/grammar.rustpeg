@@ -146,6 +146,8 @@ primary -> Expr
   / literal
   / class
   / dot { AnyCharExpr }
+  / "#=" lbrace runtime_match:rust_expr rbrace { RuntimeMatchExpr(runtime_match) }
+  / "#" lbrace runtime:rust_expr rbrace { RuntimeExpr(runtime) } 
   / "#position" __ { PositionExpr }
   / "#quiet" __ lt e:expression gt { QuietExpr(Box::new(e)) }
   / "#expected" __ lparen s:doubleQuotedString rparen { FailExpr(s) }
