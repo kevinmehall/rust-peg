@@ -27,6 +27,7 @@ If a rule is marked with `pub`, the generated module has a public function that 
 ### Expressions
 
   * `"literal"` - match a literal string
+  * `"literal"i` - match a literal string ignoring case
   * `[a-zA-Z]`  - match a single character from a set
   * `[^a-zA-Z]` - match a single character not in a set
   * `.` - match any single character
