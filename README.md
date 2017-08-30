@@ -233,3 +233,4 @@ Users have created text editor syntax highlighting plugins for the `.rustpeg` sy
 
 * [vim plugin](https://github.com/treycordova/rustpeg.vim) by Trey Cordova
 * [vim plugin](https://github.com/rhysd/vim-rustpeg) by rhysd
+* [Atom plugin](https://atom.io/packages/language-rustpeg) by MoritzKn
