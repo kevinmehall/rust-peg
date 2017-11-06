@@ -32,6 +32,7 @@ If a rule is marked with `pub`, the generated module has a public function that 
   * `[^a-zA-Z]` - match a single character not in a set
   * `.` - match any single character
   * `some_rule` - match a rule defined elsewhere in the grammar and return its result
+  * `some_rule<(arg1, arg2)>` - locally override context argument with a different value. `_` can be used as a placeholder to keep previous value.
   * `some_template<arg1, arg2>` - Expand a [template rule](#template-rules) with parameters
   * `e1 e2 e3` - Match expressions in sequence
   * `e1 / e2 / e3` - Try to match e1. If the match succeeds, return its result, otherwise try e2, and so on.

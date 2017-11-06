@@ -1,5 +1,6 @@
 use std::borrow::ToOwned;
 use std::collections::HashMap;
+use std::iter;
 use quote::Tokens;
 pub use self::Expr::*;
 use codemap::Spanned;
@@ -79,10 +80,16 @@ impl Grammar {
 		quote!(#(#args)*)
 	}
 
-	fn extra_args_call(&self) -> Tokens {
-		let args: Vec<Tokens> = self.args.iter().map(|&(ref name, _)| {
-			let name = raw(name);
-			quote!(, #name)
+	fn extra_args_call(&self, rule_args: &[String]) -> Tokens {
+        const PLACEHOLDER: &str = "{ _ }";
+        let rule_args = rule_args.iter().map(String::as_str).chain(iter::repeat(PLACEHOLDER));
+		let args: Vec<Tokens> = self.args.iter().zip(rule_args).map(|(&(ref name, _), value_expr)| {
+            let value = if value_expr == PLACEHOLDER {
+                raw(name)
+            } else {
+                raw(value_expr)
+            };
+			quote!(, #value)
 		}).collect();
 		quote!(#(#args)*)
 	}
@@ -126,7 +133,7 @@ pub enum Expr {
 	AnyCharExpr,
 	LiteralExpr(String,bool),
 	CharSetExpr(bool, Vec<CharSetCase>),
-	RuleExpr(String),
+	RuleExpr(String, Vec<String>),
 	SequenceExpr(Vec<Spanned<Expr>>),
 	ChoiceExpr(Vec<Spanned<Expr>>),
 	OptionalExpr(Box<Spanned<Expr>>),
@@ -428,7 +435,7 @@ fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> Tokens {
 	let parse_fn = raw(&format!("__parse_{}", rule.name));
 	let nl = raw("\n\n"); // make output slightly more readable
 	let extra_args_def = grammar.extra_args_def();
-	let extra_args_call = grammar.extra_args_call();
+	let extra_args_call = grammar.extra_args_call(&[]);
 
 	quote! {
 		#nl
@@ -575,12 +582,12 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 			}
 		}
 
-		RuleExpr(ref rule_name) => {
+		RuleExpr(ref rule_name, ref rule_args) => {
 			if let Some(&(template_arg, lexical_context)) = cx.lexical.defs.get(&rule_name[..]) {
 				compile_expr(compiler, Context{ lexical: lexical_context, ..cx }, template_arg)
 			} else if let Some(rule) = cx.grammar.find_rule(rule_name) {
 				let func = raw(&format!("__parse_{}", rule_name));
-				let extra_args_call = cx.grammar.extra_args_call();
+				let extra_args_call = cx.grammar.extra_args_call(rule_args);
 
 				if cx.result_used && rule.ret_type == "()" {
 					compiler.span_warning(
@@ -878,7 +885,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 
 		InfixExpr{ ref atom, ref levels } => {
 			let match_atom = compile_expr(compiler, cx, atom);
-			let ty = if let RuleExpr(ref atom_rule_name) = atom.node {
+			let ty = if let RuleExpr(ref atom_rule_name, _) = atom.node {
 				if let Some(rule) = cx.grammar.find_rule(atom_rule_name) {
 					raw(&rule.ret_type[..])
 				} else {
@@ -896,7 +903,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 
 			let mut level_code = Vec::new();
 			let extra_args_def = cx.grammar.extra_args_def();
-			let extra_args_call = cx.grammar.extra_args_call();
+			let extra_args_call = cx.grammar.extra_args_call(&[]);
 
 			for (prec, level) in levels.iter().enumerate() {
 				let prec = prec as i32;

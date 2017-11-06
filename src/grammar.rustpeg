@@ -149,7 +149,10 @@ repeatnum -> String
 primary -> Spanned<Expr>
   = spanned<
    name:identifier !(_ ("<" / "->" / "=")) {
-      RuleExpr(name)
+      RuleExpr(name, vec![])
+    }
+  / name:identifier _ "<(" _ args:COMMASEP<rust_expr> _ ")>" !(_ "=") {
+      RuleExpr(name, args)
     }
   / name:identifier _ "<" _ args:COMMASEP<expression> _ ">" !( _ "=") {
       TemplateInvoke(name, args)
@@ -176,15 +179,17 @@ infix_op -> InfixOperator
 /* "Lexical" elements */
 
 rust_expr -> String
-   = literal:$((braced / nonBraceCharacters)*) { format!("{{ {} }}", literal) }
+   = literal:$((braced / grouped / rustExprCharacters)*) { format!("{{ {} }}", literal) }
 
 action -> (String, /*is conditional match?*/ bool)
   = "{" cond:"?"? literal:rust_expr "}" {
      (literal, cond.is_some())
   }
 
-braced = "{" ((braced / nonBraceCharacters)*) "}"
-nonBraceCharacters = [^{}]+
+braced = "{" ((braced / grouped / nonBraceCharacters)*) "}"
+grouped = "(" ((braced / grouped / nonBraceCharacters)*) ")"
+nonBraceCharacters = [^{}()]+
+rustExprCharacters = [^{}(),]+
 
 KEYWORD<k> = k !([a-zA-Z0-9_])
 USE = KEYWORD<"use">
