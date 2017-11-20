@@ -13,6 +13,7 @@ fn raw(s: &str) -> Tokens {
 
 pub(crate) struct Grammar {
 	pub imports: Vec<String>,
+	pub subgrammars : Vec<Subgrammar>,
 	pub rules: Vec<Rule>,
 	pub templates: HashMap<String, Template>,
 	pub args: Vec<(String, String)>,
@@ -21,6 +22,7 @@ pub(crate) struct Grammar {
 impl Grammar {
 	pub fn from_ast(compiler: &mut PegCompiler, items: Vec<Spanned<Item>>) -> Result<Grammar, ()> {
 		let mut imports = Vec::new();
+		let mut subgrammars : Vec<Subgrammar>  = Vec::new();
 		let mut rules: Vec<Rule> = Vec::new();
 		let mut templates = HashMap::new();
 
@@ -49,6 +51,17 @@ impl Grammar {
 						)
 					}
 				}
+                Item::Subgrammar(subgrammar) => {
+                    if subgrammars.iter().any(|imported_grammar| imported_grammar.name == subgrammar.name) {
+                        compiler.span_error(
+                            format!("Subgrammar `{}` imported multiple times", subgrammar.name),
+                            item.span,
+                            Some("duplicate import".to_owned())
+                        )
+                    }
+                    
+                    subgrammars.push(subgrammar);
+                }
 				Item::GrammarArgs(args) => {
 					if grammar_args.is_none() {
 						grammar_args = Some(args);
@@ -63,7 +76,7 @@ impl Grammar {
 			}
 		}
 
-		Ok(Grammar{ imports:imports, rules:rules, templates:templates, args: grammar_args.unwrap_or(vec![]) })
+		Ok(Grammar{ imports:imports, subgrammars:subgrammars, rules:rules, templates:templates, args: grammar_args.unwrap_or(vec![]) })
 	}
 
 	fn find_rule(&self, name: &str) -> Option<&Rule> {
@@ -92,6 +105,7 @@ pub enum Item {
 	Use(String),
 	Rule(Rule),
 	Template(Template),
+	Subgrammar(Subgrammar),
 	GrammarArgs(Vec<(String, String)>)
 }
 
@@ -100,6 +114,7 @@ pub struct Rule {
 	pub expr: Box<Spanned<Expr>>,
 	pub ret_type: String,
 	pub exported: bool,
+	pub shared: bool,
 	pub cached: bool,
 }
 
@@ -107,6 +122,11 @@ pub struct Template {
 	pub name: String,
 	pub params: Vec<String>,
 	pub expr: Box<Spanned<Expr>>,
+}
+
+pub struct Subgrammar {
+	pub name: String,
+	pub converter: Option<String>,
 }
 
 #[derive(Clone)]
@@ -127,6 +147,7 @@ pub enum Expr {
 	LiteralExpr(String,bool),
 	CharSetExpr(bool, Vec<CharSetCase>),
 	RuleExpr(String),
+	SubgrammarRuleExpr(String, String),
 	SequenceExpr(Vec<Spanned<Expr>>),
 	ChoiceExpr(Vec<Spanned<Expr>>),
 	OptionalExpr(Box<Spanned<Expr>>),
@@ -609,6 +630,33 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 				quote!()
 			}
 		}
+
+        SubgrammarRuleExpr(ref subgrammar_name, ref rule_name) => {
+            if let Some(ref subgrammar) = cx.grammar.subgrammars.iter().find(|ref sg| &sg.name == subgrammar_name) {
+				let func = raw(&format!("{}::__parse_{}", subgrammar_name, rule_name));
+				let converter = subgrammar.converter.as_ref()
+                    .map(|code| format!(", {}", code))
+                    .unwrap_or("".to_owned());
+				
+                if cx.result_used {
+					quote!{ #func(__input, __state, __pos #converter) }
+				} else {
+					quote!{
+						match #func(__input, __state, __pos #converter) {
+							Matched(pos, _) => Matched(pos, ()),
+							Failed => Failed,
+						}
+					}
+				}
+			} else {
+				compiler.span_error(
+					format!("No subgrammar named `{}` found", subgrammar_name),
+					e.span,
+					Some("subgrammar not found".to_owned())
+				);
+				quote!()
+			}
+        }
 
 		TemplateInvoke(ref name, ref params) => {
 			let template = match cx.grammar.templates.get(&name[..]) {
