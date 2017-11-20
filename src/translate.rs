@@ -405,6 +405,11 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 
 	let nl = raw("\n\n"); // make output slightly more readable
 	let extra_args_def = grammar.extra_args_def();
+    let shared = if rule.shared {
+        raw("pub(crate)")
+    } else {
+        raw("")
+    };
 
 	if rule.cached {
 		let cache_field = raw(&format!("{}_cache", rule.name));
@@ -422,7 +427,7 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 		};
 
 		quote! { #nl
-			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
+			#shared fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
 				#![allow(non_snake_case, unused)]
 				if let Some(entry) = __state.#cache_field.get(&__pos) {
 					#cache_trace
@@ -435,7 +440,7 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 		}
 	} else {
 		quote! { #nl
-			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
+			#shared fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
 				#![allow(non_snake_case, unused)]
 				#wrapped_body
 			}
@@ -633,10 +638,10 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 
         SubgrammarRuleExpr(ref subgrammar_name, ref rule_name) => {
             if let Some(ref subgrammar) = cx.grammar.subgrammars.iter().find(|ref sg| &sg.name == subgrammar_name) {
-				let func = raw(&format!("{}::__parse_{}", subgrammar_name, rule_name));
+				let func = raw(&format!("super::{}::__parse_{}", subgrammar_name, rule_name));
 				let converter = subgrammar.converter.as_ref()
-                    .map(|code| format!(", {}", code))
-                    .unwrap_or("".to_owned());
+                    .map(|code| raw(&format!(", {}", code)))
+                    .unwrap_or(raw(""));
 				
                 if cx.result_used {
 					quote!{ #func(__input, __state, __pos #converter) }
