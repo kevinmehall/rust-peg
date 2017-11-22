@@ -201,7 +201,7 @@ static HELPERS: &'static str = stringify! {
 	}
 
 	#[derive(Clone)]
-	enum RuleResult<T> {
+	pub enum RuleResult<T> {
 		Matched(usize, T),
 		Failed,
 	}
@@ -349,25 +349,40 @@ fn make_parse_state(rules: &[Rule]) -> Tokens {
 		}
 	}
 
+    let cache_field_new = cache_fields.iter();
+    let cache_field_from = cache_fields.iter();
+
 	quote! {
-		struct ParseState<'input> {
-			max_err_pos: usize,
-			suppress_fail: usize,
-			reparsing_on_error: bool,
-			expected: ::std::collections::HashSet<&'static str>,
+		pub(crate) struct ParseState<'input> {
+			pub max_err_pos: usize,
+			pub suppress_fail: usize,
+			pub reparsing_on_error: bool,
+			pub expected: ::std::collections::HashSet<&'static str>,
 			_phantom: ::std::marker::PhantomData<&'input ()>,
 			#(#cache_fields_def),*
 		}
 
 		impl<'input> ParseState<'input> {
+			pub fn from(max_err_pos: usize, suppress_fail: usize, reparsing_on_error: bool, expected: &::std::collections::HashSet<&'static str>) -> ParseState<'input> {
+			    #![allow(unused)]
+				ParseState {
+					max_err_pos: max_err_pos,
+					suppress_fail: suppress_fail,
+					reparsing_on_error: reparsing_on_error,
+					expected: expected.clone(),
+					_phantom: ::std::marker::PhantomData,
+					#(#cache_field_from: ::std::collections::HashMap::new()),*
+				}
+			}
 			fn new() -> ParseState<'input> {
+			    #![allow(unused)]
 				ParseState {
 					max_err_pos: 0,
 					suppress_fail: 0,
 					reparsing_on_error: false,
 					expected: ::std::collections::HashSet::new(),
 					_phantom: ::std::marker::PhantomData,
-					#(#cache_fields: ::std::collections::HashMap::new()),*
+					#(#cache_field_new: ::std::collections::HashMap::new()),*
 				}
 			}
 		}
@@ -639,17 +654,30 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
         SubgrammarRuleExpr(ref subgrammar_name, ref rule_name) => {
             if let Some(ref subgrammar) = cx.grammar.subgrammars.iter().find(|ref sg| &sg.name == subgrammar_name) {
 				let func = raw(&format!("super::{}::__parse_{}", subgrammar_name, rule_name));
+                let subgrammar_module = raw(subgrammar_name);
 				let converter = subgrammar.converter.as_ref()
                     .map(|code| raw(&format!(", {}", code)))
                     .unwrap_or(raw(""));
 				
+                let subgrammar_path = quote!{ super::#subgrammar_module };
+
+                let state_conversion = 
+                    quote! {
+                        &mut #subgrammar_path::ParseState::from(
+                            __state.max_err_pos,
+                            __state.suppress_fail,
+                            __state.reparsing_on_error,
+                            &__state.expected
+                        )
+                    };
+
                 if cx.result_used {
-					quote!{ #func(__input, __state, __pos #converter) }
+					quote!{ #func(__input, #state_conversion, __pos #converter) }
 				} else {
 					quote!{
-						match #func(__input, __state, __pos #converter) {
-							Matched(pos, _) => Matched(pos, ()),
-							Failed => Failed,
+						match #func(__input, #state_conversion, __pos #converter) {
+							#subgrammar_path::RuleResult::Matched(pos, _) => Matched(pos, ()),
+							#subgrammar_path::RuleResult::Failed => Failed,
 						}
 					}
 				}
