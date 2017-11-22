@@ -119,3 +119,12 @@ issue152 -> i32 // a
 }
 
 pub error_pos = ("a" / "\n" / "\r")*
+
+import test_subgrammar
+
+pub subgrammar_rule = test_subgrammar::only_rule
+
+import test_subgrammar_with_args through { 5 }
+
+pub subgrammar_with_args_rule = test_subgrammar_with_args::repeater
+

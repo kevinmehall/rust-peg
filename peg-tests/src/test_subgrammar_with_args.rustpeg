@@ -1,0 +1,4 @@
+#![arguments(my_arg: usize)]
+
+shared repeater -> ()
+  = "a"*<{my_arg}>
