@@ -7,6 +7,7 @@ extern crate peg;
 
 use syntax::ast;
 use syntax::codemap;
+use syntax::codemap::FileName;
 use syntax::ext::base::{ExtCtxt, MacResult, MacEager, DummyResult};
 use syntax::tokenstream::TokenTree;
 use syntax::parse;
@@ -17,7 +18,6 @@ use syntax::util::small_vector::SmallVector;
 use rustc_plugin::Registry;
 use std::io::Read;
 use std::fs::File;
-use std::path::Path;
 use std::iter;
 
 #[plugin_registrar]
@@ -38,7 +38,7 @@ fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident,
     };
 
     let loc = cx.codemap().lookup_char_pos(span.lo());
-    let fname = loc.file.name.to_owned();
+    let fname = loc.file.name.to_string();
 
     // Make PEG line numbers match source line numbers
     let source = iter::repeat('\n').take(loc.line - 1).collect::<String>() + &source;
@@ -52,7 +52,13 @@ fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident
         None => return DummyResult::any(sp),
     };
 
-    let path = Path::new(&cx.codemap().span_to_filename(sp)).parent().unwrap().join(&fname);
+    let path = match cx.codemap().span_to_filename(sp) {
+        FileName::Real(path) => path.parent().unwrap().join(&fname),
+        other => {
+          cx.span_err(sp, &format!("cannot resolve relative path in non-file source `{}`", other));
+          return DummyResult::any(sp)
+        },
+    };
 
     let mut source = String::new();
     if let Err(e) = File::open(&path).map(|mut f| f.read_to_string(&mut source)) {
@@ -60,7 +66,7 @@ fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident
         return DummyResult::any(sp);
     }
 
-    cx.codemap().new_filemap(format!("{}", path.display()), "".to_string());
+    cx.codemap().new_filemap(path.into(), "".to_string());
 
     expand_peg(cx, sp, ident, fname.to_owned(), source)
 }
@@ -74,7 +80,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, filename: 
         }
     };
 
-    let mut p = parse::new_parser_from_source_str(&cx.parse_sess, "<peg expansion>".into(), code);
+    let mut p = parse::new_parser_from_source_str(&cx.parse_sess, FileName::Custom("peg expansion".into()), code);
     let tts = panictry!(p.parse_all_token_trees());
 
     let module = quote_item! { cx,
