@@ -17,6 +17,7 @@ readme = "README.md"
 quote = "0.3"
 codemap = "0.1"
 codemap-diagnostic = "0.1"
+rustfmt-nightly = {version = "0.3.7", optional = true}
 
 [[bin]]
 name = "rust-peg"
@@ -26,3 +27,4 @@ bench = false
 
 [features]
 trace = []
+formatted_output = ["rustfmt-nightly"]
