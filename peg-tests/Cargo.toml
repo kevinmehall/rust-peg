@@ -9,6 +9,3 @@ build = "build.rs"
 
 [build-dependencies]
 peg = { version = "0.5", path = "../" }
-
-[features]
-formatted_output = ["peg/formatted_output"]
