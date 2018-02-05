@@ -10,3 +10,4 @@ script:
   - cargo test
   - (cd peg-tests && cargo test)
   - (test $TRAVIS_RUST_VERSION != "nightly" || (cd peg-syntax-ext && cargo test && cargo bench))
+  - (test $TRAVIS_RUST_VERSION != "nightly" || (cd peg-tests && cargo test --features peg/formatted_output))
