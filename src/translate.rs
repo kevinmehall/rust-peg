@@ -892,6 +892,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 				return quote!();
 			};
 
+			let mut pre_rules = Vec::new();
 			let mut level_code = Vec::new();
 			let extra_args_def = cx.grammar.extra_args_def();
 			let extra_args_call = cx.grammar.extra_args_call();
@@ -903,11 +904,12 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 					InfixAssoc::Right => prec
 				};
 
-				let mut rules = Vec::new();
+				let mut post_rules = Vec::new();
+
 				for op in &level.operators {
 					if op.elements.len() < 2 {
 						compiler.span_error(
-							format!("#infix rule must contain at least a left and right "),
+							format!("#infix rule must contain at least two elements"),
 							op.span,
 							Some("incomplete rule".to_owned())
 						);
@@ -915,53 +917,72 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 					}
 
 					let left_arg = &op.elements[0];
-					if let MarkerExpr = left_arg.expr.node {} else {
-						compiler.span_error(
-							format!("must begin with left operand"),
-							left_arg.expr.span,
-							Some("must be `@`".to_owned())
-						);
-						return quote!();
-					}
+					let l_arg = left_arg.name.as_ref().map(|n| raw(n)).unwrap_or_else(|| quote!(_));
 
 					let right_arg = &op.elements[op.elements.len() - 1];
-					if let MarkerExpr = right_arg.expr.node {} else {
-						compiler.span_error(
-							format!("must end with right operand"),
-							right_arg.expr.span,
-							Some("must be `@`".to_owned())
-						);
-						return quote!();
-					}
+					let r_arg = right_arg.name.as_ref().map(|n| raw(n)).unwrap_or_else(|| quote!(_));
 
 					let action = raw(&op.action[..]);
 
-					let l_arg = left_arg.name.as_ref().map(|n| raw(n)).unwrap_or_else(|| quote!(_));
-					let r_arg = right_arg.name.as_ref().map(|n| raw(n)).unwrap_or_else(|| quote!(_));
-
-					let rule_expr = labeled_seq(compiler, cx, &op.elements[1..op.elements.len()-1], {
-						quote!{
-							if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos #extra_args_call) {
-								let #l_arg = __infix_result;
-								__infix_result = #action;
-								Matched(__pos, ())
-							} else { Failed }
+					match (&left_arg.expr.node, &right_arg.expr.node) {
+						(&MarkerExpr, &MarkerExpr) => { //infix
+							post_rules.push(
+								labeled_seq(compiler, cx, &op.elements[1..op.elements.len()-1], {
+									quote!{
+										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos #extra_args_call) {
+											let #l_arg = __infix_result;
+											__infix_result = #action;
+											Matched(__pos, ())
+										} else { Failed }
+									}
+								})
+							);
 						}
-					});
-
-					rules.push(quote! {
-						if let Matched(__pos, ()) = #rule_expr {
-							__repeat_pos = __pos;
-							continue;
+						(&MarkerExpr, _) => { // postfix
+							post_rules.push(
+								labeled_seq(compiler, cx, &op.elements[1..op.elements.len()], {
+									quote!{
+										let #l_arg = __infix_result;
+										__infix_result = #action;
+										Matched(__pos, ())
+									}
+								})
+							);
 						}
-					})
+						(_, &MarkerExpr) => { // prefix
+							pre_rules.push(
+								labeled_seq(compiler, cx, &op.elements[..op.elements.len()-1], {
+									quote!{
+										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos #extra_args_call) {
+											Matched(__pos, {#action})
+										} else { Failed }
+									}
+								})
+							);
+						}
+						_ => {
+							compiler.span_error(
+								format!("#infix rule must be prefix, postfix, or infix"),
+								op.span,
+								Some("needs to begin and/or end with `@`".to_owned())
+							);
+							return quote!();
+						}
+					};
 				}
 
-				level_code.push(quote!{
-					if #prec >= __min_prec {
-						#(#rules)*
-					}
-				});
+				if !post_rules.is_empty() {
+					level_code.push(quote!{
+						if #prec >= __min_prec {
+							#(
+								if let Matched(__pos, ()) = #post_rules {
+									__repeat_pos = __pos;
+									continue;
+								}
+							)*
+						}
+					});
+				}
 			}
 
 			let (enter, leave) = if cfg!(feature = "trace") {
@@ -973,7 +994,17 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 
 			quote!{{
 				fn __infix_parse<'input>(__min_prec:i32, __input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ty> {
-					if let Matched(__pos, mut __infix_result) = #match_atom {
+					let __initial = (|| {
+						#(
+							if let Matched(__pos, __v) = #pre_rules {
+								return Matched(__pos, __v);
+							}
+						)*
+
+						#match_atom
+					})();
+
+					if let Matched(__pos, mut __infix_result) = __initial {
 						#enter
 						let mut __repeat_pos = __pos;
 						loop {

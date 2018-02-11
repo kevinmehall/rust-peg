@@ -97,9 +97,11 @@ atom -> i64
 pub infix_arith -> i64 = #infix<atom> {
 	#L x:@ "+" y:@ { x + y }
 	   x:@ "-" y:@ { x - y }
+	       "-" v:@ { - v }
 	#L x:@ "*" y:@ { x * y }
 	   x:@ "/" y:@ { x / y }
 	#R x:@ "^" y:@ { x.pow(y as u32) }
+	   v:@ "!"     { (1..v+1).product() }
 }
 
 use super::InfixAst;
