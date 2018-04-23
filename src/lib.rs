@@ -22,6 +22,9 @@ use codemap_diagnostic::{ Diagnostic, Level, SpanLabel, SpanStyle, Emitter, Colo
 mod translate;
 mod grammar;
 
+#[cfg(test)]
+mod test;
+
 struct PegCompiler {
     codemap: CodeMap,
     diagnostics: Vec<codemap_diagnostic::Diagnostic>
