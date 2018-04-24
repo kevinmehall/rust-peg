@@ -229,8 +229,8 @@ impl Expr {
 			},
             SequenceExpr(ref exprs)
 			| TemplateInvoke(_, ref exprs) => {
-                if exprs.len() > 0 {
-                    exprs[0].left_rules_recurse(rules, &exprs[0].span);
+                if let Some(expr) = exprs.first() {
+                    exprs[0].left_rules_recurse(rules, &expr.span);
                 }
             }
             ChoiceExpr(ref choices) => {
@@ -246,8 +246,8 @@ impl Expr {
             | NegAssertExpr(ref expr) => expr.left_rules_recurse(rules, &expr.span),
 			InfixExpr{ ref atom, .. } => atom.left_rules_recurse(rules, &atom.span),
             ActionExpr(ref tagged_actions, _, _) => {
-                if tagged_actions.len() > 0 {
-                    tagged_actions[0].expr.left_rules_recurse(rules, &tagged_actions[0].expr.span);
+                if let Some(action) = tagged_actions.first() {
+                    action.expr.left_rules_recurse(rules, &action.expr.span);
                 }
             }
             _ => {}
