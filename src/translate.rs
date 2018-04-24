@@ -157,19 +157,7 @@ struct LeftRecursion {
 
 impl LeftRecursion {
 	fn format_path(&self) -> String {
-		let mut result = String::new();
-		let mut first = true;
-
-		for rule in self.path.iter() {
-			if !first {
-				result.push_str(" -> ");
-			} else {
-				first = false;
-			}
-			result.push_str(rule);
-		}
-
-		result
+		self.path.join(" -> ")
 	}
 }
 
