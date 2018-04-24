@@ -98,7 +98,7 @@ impl Grammar {
 	fn check_for_left_recursion(rules: &Vec<Rule>) -> Vec<LeftRecursion> {
 		let mut recursions = Vec::new();
 
-		let rule_map: HashMap<String, &Rule> = rules.iter().map(|rule| (rule.name.clone(), rule)).collect();
+		let rule_map: HashMap<&str, &Rule> = rules.iter().map(|rule| (&rule.name[..], rule)).collect();
 		for rule in rules.iter() {
 			LeftRecursionChecker::new(&rule.name, &rule_map).check(rule, &mut recursions)
 		}
@@ -108,14 +108,14 @@ impl Grammar {
 }
 
 struct LeftRecursionChecker<'a> {
-	rule_map: &'a HashMap<String, &'a Rule>,
+	rule_map: &'a HashMap<&'a str, &'a Rule>,
 	rule_name: &'a str,
 	rule_stack: VecDeque<&'a str>,
 	visited_rules: HashSet<&'a str>,
 }
 
 impl <'a> LeftRecursionChecker<'a> {
-	fn new(rule_name: &'a str, rule_map: &'a HashMap<String, &'a Rule>) -> LeftRecursionChecker<'a> {
+	fn new(rule_name: &'a str, rule_map: &'a HashMap<&'a str, &'a Rule>) -> LeftRecursionChecker<'a> {
 		let mut rule_stack = VecDeque::new();
 		rule_stack.push_back(rule_name);
 		LeftRecursionChecker {
