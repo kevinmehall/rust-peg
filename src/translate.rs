@@ -1,5 +1,5 @@
 use std::borrow::ToOwned;
-use std::collections::{ HashMap, VecDeque, HashSet };
+use std::collections::{ HashMap, HashSet };
 use quote::Tokens;
 pub use self::Expr::*;
 use codemap::{ Spanned, Span };
@@ -110,14 +110,14 @@ impl Grammar {
 struct LeftRecursionChecker<'a> {
 	rule_map: &'a HashMap<&'a str, &'a Rule>,
 	rule_name: &'a str,
-	rule_stack: VecDeque<&'a str>,
+	rule_stack: Vec<&'a str>,
 	visited_rules: HashSet<&'a str>,
 }
 
 impl <'a> LeftRecursionChecker<'a> {
 	fn new(rule_name: &'a str, rule_map: &'a HashMap<&'a str, &'a Rule>) -> LeftRecursionChecker<'a> {
-		let mut rule_stack = VecDeque::new();
-		rule_stack.push_back(rule_name);
+		let mut rule_stack = Vec::new();
+		rule_stack.push(rule_name);
 		LeftRecursionChecker {
 			rule_map,
 			rule_name,
@@ -131,18 +131,18 @@ impl <'a> LeftRecursionChecker<'a> {
 
 		for left_rule in left_rules {
 			if self.rule_name == left_rule.node {
-				self.rule_stack.push_back(left_rule.node);
+				self.rule_stack.push(left_rule.node);
 				recursions.push(LeftRecursion{
 					rule_name: self.rule_name.into(),
 					span: left_rule.span,
 					path: self.rule_stack.iter().map(|x| (*x).into()).collect(),
 				});
-				self.rule_stack.pop_back();
+				self.rule_stack.pop();
 			} else if let Some(rule) = self.rule_map.get(left_rule.node) {
 				if self.visited_rules.insert(&rule.name) {
-					self.rule_stack.push_back(&rule.name);
+					self.rule_stack.push(&rule.name);
 					self.check(rule, recursions);
-					self.rule_stack.pop_back();
+					self.rule_stack.pop();
 				}
             }
 		}
