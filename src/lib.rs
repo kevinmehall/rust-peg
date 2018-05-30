@@ -5,9 +5,6 @@ extern crate quote;
 extern crate codemap;
 extern crate codemap_diagnostic;
 
-#[cfg(feature = "formatted_output")]
-extern crate rustfmt_nightly as rustfmt;
-
 use std::io;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
@@ -86,22 +83,9 @@ impl PegCompiler {
         if self.has_error() {
             Err(())
         } else {
-            Ok(format_snippet(output_tokens?.to_string()))
+            Ok(output_tokens?.to_string())
         }
     }
-
-
-}
-
-#[cfg(feature = "formatted_output")]
-fn format_snippet(input: String) -> String {
-    rustfmt::format_snippet(&input, &rustfmt::Config::default())
-        .unwrap_or(input)
-}
-
-#[cfg(not(feature = "formatted_output"))]
-fn format_snippet(input: String) -> String {
-    input
 }
 
 /// Compile a peg grammar to Rust source, printing errors to stderr
