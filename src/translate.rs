@@ -1,14 +1,12 @@
 use std::borrow::ToOwned;
 use std::collections::HashMap;
-use quote::Tokens;
+use proc_macro2::{Ident, Span, TokenStream};
 pub use self::Expr::*;
 use codemap::Spanned;
 use PegCompiler;
 
-fn raw(s: &str) -> Tokens {
-	let mut t = Tokens::new();
-	t.append(s);
-	t
+fn raw(s: &str) -> TokenStream {
+	s.parse().expect("Lexical error")
 }
 
 pub(crate) struct Grammar {
@@ -70,18 +68,18 @@ impl Grammar {
 		self.rules.iter().find(|rule| rule.name == name)
 	}
 
-	fn extra_args_def(&self) -> Tokens {
-		let args: Vec<Tokens> = self.args.iter().map(|&(ref name, ref tp)| {
-			let name = raw(name);
+	fn extra_args_def(&self) -> TokenStream {
+		let args: Vec<TokenStream> = self.args.iter().map(|&(ref name, ref tp)| {
+			let name = Ident::new(name, Span::call_site());
 			let tp = raw(tp);
 			quote!(, #name: #tp)
 		}).collect();
 		quote!(#(#args)*)
 	}
 
-	fn extra_args_call(&self) -> Tokens {
-		let args: Vec<Tokens> = self.args.iter().map(|&(ref name, _)| {
-			let name = raw(name);
+	fn extra_args_call(&self) -> TokenStream {
+		let args: Vec<TokenStream> = self.args.iter().map(|&(ref name, _)| {
+			let name = Ident::new(name, Span::call_site());
 			quote!(, #name)
 		}).collect();
 		quote!(#(#args)*)
@@ -293,7 +291,7 @@ static HELPERS: &'static str = stringify! {
 	}
 };
 
-pub(crate) fn compile_grammar(compiler: &mut PegCompiler, grammar: &Grammar) -> Result<Tokens, ()> {
+pub(crate) fn compile_grammar(compiler: &mut PegCompiler, grammar: &Grammar) -> Result<TokenStream, ()> {
 	let mut items = vec![make_parse_state(&grammar.rules)];
 
 	for rule in &grammar.rules {
@@ -316,12 +314,12 @@ pub(crate) fn compile_grammar(compiler: &mut PegCompiler, grammar: &Grammar) -> 
 	})
 }
 
-fn make_parse_state(rules: &[Rule]) -> Tokens {
-	let mut cache_fields_def: Vec<Tokens> = Vec::new();
-	let mut cache_fields: Vec<Tokens> = Vec::new();
+fn make_parse_state(rules: &[Rule]) -> TokenStream {
+	let mut cache_fields_def: Vec<TokenStream> = Vec::new();
+	let mut cache_fields: Vec<Ident> = Vec::new();
 	for rule in rules {
 		if rule.cached {
-			let name = raw(&format!("{}_cache", rule.name));
+			let name = Ident::new(&format!("{}_cache", rule.name), Span::call_site());
 			let ret_ty = raw(&rule.ret_type);
 			cache_fields_def.push(quote!{ #name: ::std::collections::HashMap<usize, RuleResult<#ret_ty>> });
 			cache_fields.push(name);
@@ -354,9 +352,9 @@ fn make_parse_state(rules: &[Rule]) -> Tokens {
 }
 
 
-fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> Tokens {
+fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> TokenStream {
 	let ref rule_name = rule.name;
-	let name = raw(&format!("__parse_{}", rule.name));
+	let name = Ident::new(&format!("__parse_{}", rule.name), Span::call_site());
 	let ret_ty = raw(&rule.ret_type);
 	let context = Context {
 		grammar: grammar,
@@ -386,7 +384,7 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 	let extra_args_def = grammar.extra_args_def();
 
 	if rule.cached {
-		let cache_field = raw(&format!("{}_cache", rule.name));
+		let cache_field = Ident::new(&format!("{}_cache", rule.name), Span::call_site());
 
 		let cache_trace = if cfg!(feature = "trace") {
 			quote!{
@@ -422,10 +420,10 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 	}
 }
 
-fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> Tokens {
-	let name = raw(&rule.name);
+fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> TokenStream {
+	let name = Ident::new(&rule.name, Span::call_site());
 	let ret_ty = raw(&rule.ret_type);
-	let parse_fn = raw(&format!("__parse_{}", rule.name));
+	let parse_fn = Ident::new(&format!("__parse_{}", rule.name), Span::call_site());
 	let nl = raw("\n\n"); // make output slightly more readable
 	let extra_args_def = grammar.extra_args_def();
 	let extra_args_call = grammar.extra_args_call();
@@ -463,11 +461,11 @@ fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> Tokens {
 	}
 }
 
-fn compile_match_and_then(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>, value_name: Option<&str>, then: Tokens) -> Tokens {
+fn compile_match_and_then(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>, value_name: Option<&str>, then: TokenStream) -> TokenStream {
 	let seq_res = compile_expr(compiler, Context{ result_used: value_name.is_some(), ..cx }, e);
 	let name_pat = match value_name {
-		Some(name) => raw(name),
-		None => raw("_")
+		Some(name) => Some(Ident::new(name, Span::call_site()).into()).into_iter().collect(),
+		None => quote!(_)
 	};
 
 	quote! {{
@@ -524,7 +522,7 @@ impl<'a> Context<'a> {
 }
 
 
-fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> Tokens {
+fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> TokenStream {
 	match e.node {
 		AnyCharExpr => {
 			quote!{ any_char(__input, __state, __pos) }
@@ -579,7 +577,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 			if let Some(&(template_arg, lexical_context)) = cx.lexical.defs.get(&rule_name[..]) {
 				compile_expr(compiler, Context{ lexical: lexical_context, ..cx }, template_arg)
 			} else if let Some(rule) = cx.grammar.find_rule(rule_name) {
-				let func = raw(&format!("__parse_{}", rule_name));
+				let func = Ident::new(&format!("__parse_{}", rule_name), Span::call_site());
 				let extra_args_call = cx.grammar.extra_args_call();
 
 				if cx.result_used && rule.ret_type == "()" {
@@ -638,7 +636,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		}
 
 		SequenceExpr(ref exprs) => {
-			fn write_seq(compiler: &mut PegCompiler, cx: Context, exprs: &[Spanned<Expr>]) -> Tokens {
+			fn write_seq(compiler: &mut PegCompiler, cx: Context, exprs: &[Spanned<Expr>]) -> TokenStream {
 				if exprs.len() == 1 {
 					compile_expr(compiler, cx.result_used(false), &exprs[0])
 				} else {
@@ -655,7 +653,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		}
 
 		ChoiceExpr(ref exprs) => {
-			fn write_choice(compiler: &mut PegCompiler, cx: Context, exprs: &[Spanned<Expr>]) -> Tokens  {
+			fn write_choice(compiler: &mut PegCompiler, cx: Context, exprs: &[Spanned<Expr>]) -> TokenStream  {
 				if exprs.len() == 1 {
 					compile_expr(compiler, cx, &exprs[0])
 				} else {
@@ -803,7 +801,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		}
 
 		ActionExpr(ref exprs, ref code, is_cond) => {
-			fn write_seq(compiler: &mut PegCompiler, cx: Context, exprs: &[TaggedExpr], code: &str, is_cond: bool) -> Tokens {
+			fn write_seq(compiler: &mut PegCompiler, cx: Context, exprs: &[TaggedExpr], code: &str, is_cond: bool) -> TokenStream {
 				match exprs.first() {
 					Some(ref first) => {
 						if let Some(name) = first.name.as_ref() {

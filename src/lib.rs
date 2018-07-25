@@ -2,6 +2,7 @@
 
 #[macro_use]
 extern crate quote;
+extern crate proc_macro2;
 extern crate codemap;
 extern crate codemap_diagnostic;
 
