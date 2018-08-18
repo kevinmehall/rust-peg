@@ -2,6 +2,7 @@
 extern crate rustc_plugin;
 #[macro_use] pub extern crate syntax;
 extern crate rustc_errors as errors;
+extern crate rustc_data_structures;
 
 extern crate peg;
 
@@ -14,7 +15,7 @@ use syntax::parse;
 use syntax::parse::token;
 use syntax::symbol::Symbol;
 use syntax::fold::Folder;
-use syntax::util::small_vector::SmallVector;
+use rustc_data_structures::small_vec::OneVector;
 use rustc_plugin::Registry;
 use std::io::Read;
 use std::fs::File;
@@ -82,7 +83,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
         }
     }.unwrap();
 
-    MacEager::items(SmallVector::one(module))
+    MacEager::items(OneVector::one(module))
 }
 
 fn parse_arg(cx: &mut ExtCtxt, tts: &[TokenTree]) -> Option<String> {
