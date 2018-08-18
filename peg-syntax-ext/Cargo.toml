@@ -14,6 +14,6 @@ This crate provides the syntax extension plugin for use with Rust nightly.
 peg = { version = "0.5", path = "../" }
 
 [lib]
-plugin = true
+proc-macro = true
 name = "peg_syntax_ext"
 path = "lib.rs"

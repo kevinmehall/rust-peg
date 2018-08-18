@@ -1,11 +1,12 @@
-#![feature(plugin, test)]
-#![plugin(peg_syntax_ext)]
+#![feature(test, proc_macro_gen)]
+extern crate peg_syntax_ext;
+use peg_syntax_ext::peg_file;
 
 extern crate test;
 
 use test::Bencher;
 
-peg_file! parser("expr.rustpeg");
+peg_file!(parser("expr.rustpeg"));
 
 #[bench]
 fn expr(b: &mut Bencher) {
