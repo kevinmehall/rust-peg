@@ -14,7 +14,7 @@ use syntax::parse;
 use syntax::parse::token;
 use syntax::symbol::Symbol;
 use syntax::fold::Folder;
-use syntax::util::small_vector::SmallVector;
+use syntax::OneVector;
 use rustc_plugin::Registry;
 use std::io::Read;
 use std::fs::File;
@@ -89,7 +89,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, filename: 
         }
     }.unwrap();
 
-    MacEager::items(SmallVector::one(module))
+    MacEager::items(OneVector::one(module))
 }
 
 fn parse_arg(cx: &mut ExtCtxt, tts: &[TokenTree]) -> Option<(String, codemap::Span)> {
