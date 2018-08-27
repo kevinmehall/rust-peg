@@ -1,5 +1,6 @@
-#![feature(plugin)]
-#![plugin(peg_syntax_ext)]
+#![feature(proc_macro_gen)]
+extern crate peg_syntax_ext;
+use peg_syntax_ext::peg;
 
 use std::collections::HashMap;
 
@@ -47,7 +48,7 @@ pub enum Node {
     Mul(Box<Spanned<Node>>, Box<Spanned<Node>>),
 }
 
-peg! parser(r#"
+peg!(parser r#"
 use super::{Interner, Identifier, Spanned, Node};
 
 #![arguments(file_id: usize, interner: &mut Interner)]

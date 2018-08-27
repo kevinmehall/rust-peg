@@ -1,8 +1,9 @@
-#![feature(plugin)]
-#![plugin(peg_syntax_ext)]
+#![feature(proc_macro_gen)]
+extern crate peg_syntax_ext;
+use peg_syntax_ext::peg;
 use arithmetic::expression;
 
-peg! arithmetic(r#"
+peg!(arithmetic r#"
 #[pub]
 expression -> i64
 	= sum

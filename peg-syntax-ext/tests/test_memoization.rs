@@ -1,7 +1,8 @@
-#![feature(plugin)]
-#![plugin(peg_syntax_ext)]
+#![feature(proc_macro_gen)]
+extern crate peg_syntax_ext;
+use peg_syntax_ext::peg;
 
-peg! memo(r#"
+peg!{memo r#"
 
 #[cache]
 rule -> &'input str
@@ -12,7 +13,7 @@ parse
     = rule '+' rule { () }
     / rule ' ' rule { () }
 
-"#);
+"#}
 
 #[test]
 fn main() {

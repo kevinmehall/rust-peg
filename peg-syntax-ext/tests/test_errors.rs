@@ -1,14 +1,15 @@
-#![feature(plugin)]
-#![plugin(peg_syntax_ext)]
+#![feature(proc_macro_gen)]
+extern crate peg_syntax_ext;
+use peg_syntax_ext::peg;
 
 use parser::parse;
 use parser::ParseError;
 
-peg! parser(r#"
+peg!{parser r#"
 #[pub]
 parse -> usize
     = v:( "a" / "\n" )*   { v.len() }
-"#);
+"#}
 
 #[test]
 fn test_errors() {

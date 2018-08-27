@@ -31,6 +31,7 @@ If a rule is marked with `pub`, the generated module has a public function that 
   * `[a-zA-Z]`  - match a single character from a set
   * `[^a-zA-Z]` - match a single character not in a set
   * `.` - match any single character
+  * `!.` - match EOF (end-of-file)
   * `some_rule` - match a rule defined elsewhere in the grammar and return its result
   * `some_template<arg1, arg2>` - Expand a [template rule](#template-rules) with parameters
   * `e1 e2 e3` - Match expressions in sequence
