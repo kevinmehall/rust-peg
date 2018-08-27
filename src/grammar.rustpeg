@@ -11,17 +11,19 @@ spanned<inner>
 pub items -> Vec<Spanned<Item>> = _ items:spanned<item>**_ _ { items }
 
 rule -> Rule
-  = legacy_exported:exportflag _ cached:cacheflag _ public:pubflag _ name:identifier _ returns:returntype _ "=" _ expression:expression (_ ";")? {
+  = legacy_exported:exportflag _ cached:cacheflag _ public:pubflag _ is_shared:shareflag _ name:identifier _ returns:returntype _ "=" _ expression:expression (_ ";")? {
       Rule{
         name: name,
         expr: Box::new(expression),
         ret_type: returns,
         exported: public || legacy_exported,
+        shared: is_shared,
         cached: cached
       }
     }
 
     pubflag -> bool = PUB { true } / { false }
+    shareflag -> bool = SHARED { true } / { false }
     exportflag -> bool = #quiet<("#[export]" / "#[pub]") {true} / {false}>
     cacheflag -> bool = "#[cache]" {true} / {false}
 
@@ -30,10 +32,14 @@ template -> Template
     Template { name: name, params: params, expr: Box::new(expression) }
   }
 
+subgrammar -> Subgrammar
+  = IMPORT _ grammar_name:identifier converter:( _ THROUGH _ "{" _ code:rust_expr _ "}" { code })?  { Subgrammar { name: grammar_name, converter: converter } }
+
 item -> Item
   = u:rust_use     { Item::Use(u) }
   / r:rule         { Item::Rule(r) }
   / t:template     { Item::Template(t) }
+  / s:subgrammar   { Item::Subgrammar(s) }
   / grammar_args
 
   grammar_args -> Item
@@ -148,8 +154,11 @@ repeatnum -> String
 #[cache]
 primary -> Spanned<Expr>
   = spanned<
-   name:identifier !(_ ("<" / "->" / "=")) {
+   name:identifier !(_ ("<" / "->" / "=" / "::")) {
       RuleExpr(name)
+    }
+  / grammar_name:identifier "::" rule_name:identifier {
+      SubgrammarRuleExpr(grammar_name, rule_name)
     }
   / name:identifier _ "<" _ args:COMMASEP<expression> _ ">" !( _ "=") {
       TemplateInvoke(name, args)
@@ -189,8 +198,11 @@ nonBraceCharacters = [^{}]+
 KEYWORD<k> = k !([a-zA-Z0-9_])
 USE = KEYWORD<"use">
 PUB = KEYWORD<"pub">
+SHARED = KEYWORD<"shared">
+IMPORT = KEYWORD<"import">
+THROUGH = KEYWORD<"through">
 
-keyword = USE / PUB
+keyword = USE / PUB / SHARED / IMPORT / THROUGH
 
 integer -> usize
   = i:$([0-9]+) { i.parse().unwrap() }

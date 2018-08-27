@@ -1,0 +1,3 @@
+shared only_rule -> ()
+  = "this is the only subgrammar rule"
+

@@ -6,6 +6,14 @@ mod test_grammar {
     include!(concat!(env!("OUT_DIR"), "/test_grammar.rs"));
 }
 
+mod test_subgrammar {
+    include!(concat!(env!("OUT_DIR"), "/test_subgrammar.rs"));
+}
+
+mod test_subgrammar_with_args {
+    include!(concat!(env!("OUT_DIR"), "/test_subgrammar_with_args.rs"));
+}
+
 use self::test_grammar::*;
 
 #[test]
@@ -132,6 +140,16 @@ fn test_renamed_imports() {
 }
 
 #[test]
+fn test_subgrammar() {
+    assert!(subgrammar_rule("this is the only subgrammar rule").is_ok())
+}
+
+#[test]
+fn test_subgrammar_with_args() {
+    assert!(subgrammar_with_args_rule("aaaaa").is_ok())
+}
+
+#[test]
 fn test_neg_lookahead_err() {
 	let err = neg_lookahead_err("ac").err().unwrap();
 	assert_eq!(err.expected.len(), 1, "expected set includes: {:?}", err.expected);
@@ -186,3 +204,5 @@ fn test_error_pos() {
     assert_eq!(err.line, 3);
     assert_eq!(err.column, 4);
 }
+
+

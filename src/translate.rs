@@ -11,6 +11,7 @@ fn raw(s: &str) -> TokenStream {
 
 pub(crate) struct Grammar {
 	pub imports: Vec<String>,
+	pub subgrammars : Vec<Subgrammar>,
 	pub rules: Vec<Rule>,
 	pub templates: HashMap<String, Template>,
 	pub args: Vec<(String, String)>,
@@ -19,6 +20,7 @@ pub(crate) struct Grammar {
 impl Grammar {
 	pub fn from_ast(compiler: &mut PegCompiler, items: Vec<Spanned<Item>>) -> Result<Grammar, ()> {
 		let mut imports = Vec::new();
+		let mut subgrammars : Vec<Subgrammar>  = Vec::new();
 		let mut rules: Vec<Rule> = Vec::new();
 		let mut templates = HashMap::new();
 
@@ -47,6 +49,17 @@ impl Grammar {
 						)
 					}
 				}
+                Item::Subgrammar(subgrammar) => {
+                    if subgrammars.iter().any(|imported_grammar| imported_grammar.name == subgrammar.name) {
+                        compiler.span_error(
+                            format!("Subgrammar `{}` imported multiple times", subgrammar.name),
+                            item.span,
+                            Some("duplicate import".to_owned())
+                        )
+                    }
+                    
+                    subgrammars.push(subgrammar);
+                }
 				Item::GrammarArgs(args) => {
 					if grammar_args.is_none() {
 						grammar_args = Some(args);
@@ -61,7 +74,7 @@ impl Grammar {
 			}
 		}
 
-		Ok(Grammar{ imports:imports, rules:rules, templates:templates, args: grammar_args.unwrap_or(vec![]) })
+		Ok(Grammar{ imports:imports, subgrammars:subgrammars, rules:rules, templates:templates, args: grammar_args.unwrap_or(vec![]) })
 	}
 
 	fn find_rule(&self, name: &str) -> Option<&Rule> {
@@ -90,6 +103,7 @@ pub enum Item {
 	Use(String),
 	Rule(Rule),
 	Template(Template),
+	Subgrammar(Subgrammar),
 	GrammarArgs(Vec<(String, String)>)
 }
 
@@ -98,6 +112,7 @@ pub struct Rule {
 	pub expr: Box<Spanned<Expr>>,
 	pub ret_type: String,
 	pub exported: bool,
+	pub shared: bool,
 	pub cached: bool,
 }
 
@@ -105,6 +120,11 @@ pub struct Template {
 	pub name: String,
 	pub params: Vec<String>,
 	pub expr: Box<Spanned<Expr>>,
+}
+
+pub struct Subgrammar {
+	pub name: String,
+	pub converter: Option<String>,
 }
 
 #[derive(Clone)]
@@ -125,6 +145,7 @@ pub enum Expr {
 	LiteralExpr(String,bool),
 	CharSetExpr(bool, Vec<CharSetCase>),
 	RuleExpr(String),
+	SubgrammarRuleExpr(String, String),
 	SequenceExpr(Vec<Spanned<Expr>>),
 	ChoiceExpr(Vec<Spanned<Expr>>),
 	OptionalExpr(Box<Spanned<Expr>>),
@@ -178,7 +199,7 @@ static HELPERS: &'static str = stringify! {
 	}
 
 	#[derive(Clone)]
-	enum RuleResult<T> {
+	pub enum RuleResult<T> {
 		Matched(usize, T),
 		Failed,
 	}
@@ -326,25 +347,40 @@ fn make_parse_state(rules: &[Rule]) -> TokenStream {
 		}
 	}
 
+    let cache_field_new = cache_fields.iter();
+    let cache_field_from = cache_fields.iter();
+
 	quote! {
-		struct ParseState<'input> {
-			max_err_pos: usize,
-			suppress_fail: usize,
-			reparsing_on_error: bool,
-			expected: ::std::collections::HashSet<&'static str>,
+		pub(crate) struct ParseState<'input> {
+			pub max_err_pos: usize,
+			pub suppress_fail: usize,
+			pub reparsing_on_error: bool,
+			pub expected: ::std::collections::HashSet<&'static str>,
 			_phantom: ::std::marker::PhantomData<&'input ()>,
 			#(#cache_fields_def),*
 		}
 
 		impl<'input> ParseState<'input> {
+			pub fn from(max_err_pos: usize, suppress_fail: usize, reparsing_on_error: bool, expected: &::std::collections::HashSet<&'static str>) -> ParseState<'input> {
+			    #![allow(unused)]
+				ParseState {
+					max_err_pos: max_err_pos,
+					suppress_fail: suppress_fail,
+					reparsing_on_error: reparsing_on_error,
+					expected: expected.clone(),
+					_phantom: ::std::marker::PhantomData,
+					#(#cache_field_from: ::std::collections::HashMap::new()),*
+				}
+			}
 			fn new() -> ParseState<'input> {
+			    #![allow(unused)]
 				ParseState {
 					max_err_pos: 0,
 					suppress_fail: 0,
 					reparsing_on_error: false,
 					expected: ::std::collections::HashSet::new(),
 					_phantom: ::std::marker::PhantomData,
-					#(#cache_fields: ::std::collections::HashMap::new()),*
+					#(#cache_field_new: ::std::collections::HashMap::new()),*
 				}
 			}
 		}
@@ -382,6 +418,11 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 
 	let nl = raw("\n\n"); // make output slightly more readable
 	let extra_args_def = grammar.extra_args_def();
+    let shared = if rule.shared {
+        raw("pub(crate)")
+    } else {
+        raw("")
+    };
 
 	if rule.cached {
 		let cache_field = Ident::new(&format!("{}_cache", rule.name), Span::call_site());
@@ -399,7 +440,7 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 		};
 
 		quote! { #nl
-			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
+			#shared fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
 				#![allow(non_snake_case, unused)]
 				if let Some(entry) = __state.#cache_field.get(&__pos) {
 					#cache_trace
@@ -412,7 +453,7 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 		}
 	} else {
 		quote! { #nl
-			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
+			#shared fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
 				#![allow(non_snake_case, unused)]
 				#wrapped_body
 			}
@@ -607,6 +648,46 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 				quote!()
 			}
 		}
+
+        SubgrammarRuleExpr(ref subgrammar_name, ref rule_name) => {
+            if let Some(ref subgrammar) = cx.grammar.subgrammars.iter().find(|ref sg| &sg.name == subgrammar_name) {
+				let func = raw(&format!("super::{}::__parse_{}", subgrammar_name, rule_name));
+                let subgrammar_module = raw(subgrammar_name);
+				let converter = subgrammar.converter.as_ref()
+                    .map(|code| raw(&format!(", {}", code)))
+                    .unwrap_or(raw(""));
+				
+                let subgrammar_path = quote!{ super::#subgrammar_module };
+
+                let state_conversion = 
+                    quote! {
+                        &mut #subgrammar_path::ParseState::from(
+                            __state.max_err_pos,
+                            __state.suppress_fail,
+                            __state.reparsing_on_error,
+                            &__state.expected
+                        )
+                    };
+
+                if cx.result_used {
+					quote!{ #func(__input, #state_conversion, __pos #converter) }
+				} else {
+					quote!{
+						match #func(__input, #state_conversion, __pos #converter) {
+							#subgrammar_path::RuleResult::Matched(pos, _) => Matched(pos, ()),
+							#subgrammar_path::RuleResult::Failed => Failed,
+						}
+					}
+				}
+			} else {
+				compiler.span_error(
+					format!("No subgrammar named `{}` found", subgrammar_name),
+					e.span,
+					Some("subgrammar not found".to_owned())
+				);
+				quote!()
+			}
+        }
 
 		TemplateInvoke(ref name, ref params) => {
 			let template = match cx.grammar.templates.get(&name[..]) {
