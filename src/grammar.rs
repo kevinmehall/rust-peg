@@ -11,20 +11,16 @@ std :: collections :: HashSet < & 'static str > , } pub type ParseResult < T >
 = Result < T , ParseError > ; impl :: std :: fmt :: Display for ParseError {
 fn fmt ( & self , fmt : & mut :: std :: fmt :: Formatter ) -> :: std :: result
 :: Result < (  ) , :: std :: fmt :: Error > {
-try ! (
-write ! ( fmt , "error at {}:{}: expected " , self . line , self . column ) )
-; if self . expected . len (  ) == 0 { try ! ( write ! ( fmt , "EOF" ) ) ; }
-else if self . expected . len (  ) == 1 {
-try ! (
+write ! ( fmt , "error at {}:{}: expected " , self . line , self . column ) ?
+; if self . expected . len (  ) == 0 { write ! ( fmt , "EOF" ) ? ; } else if
+self . expected . len (  ) == 1 {
 write ! (
 fmt , "`{}`" , escape_default (
-self . expected . iter (  ) . next (  ) . unwrap (  ) ) ) ) ; } else {
-let mut iter = self . expected . iter (  ) ; try ! (
-write ! (
-fmt , "one of `{}`" , escape_default ( iter . next (  ) . unwrap (  ) ) ) ) ;
-for elem in iter {
-try ! ( write ! ( fmt , ", `{}`" , escape_default ( elem ) ) ) ; } } Ok ( (  )
-) } } impl :: std :: error :: Error for ParseError {
+self . expected . iter (  ) . next (  ) . unwrap (  ) ) ) ? ; } else {
+let mut iter = self . expected . iter (  ) ; write ! (
+fmt , "one of `{}`" , escape_default ( iter . next (  ) . unwrap (  ) ) ) ? ;
+for elem in iter { write ! ( fmt , ", `{}`" , escape_default ( elem ) ) ? ; }
+} Ok ( (  ) ) } } impl :: std :: error :: Error for ParseError {
 fn description ( & self ) -> & str { "parse error" } } fn slice_eq (
 input : & str , state : & mut ParseState , pos : usize , m : & 'static str )
 -> RuleResult < (  ) > {
