@@ -5,8 +5,7 @@ use parser::parse;
 use parser::ParseError;
 
 peg!{parser r#"
-#[pub]
-parse -> usize
+pub parse -> usize
     = v:( "a" / "\n" )*   { v.len() }
 "#}
 

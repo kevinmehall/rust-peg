@@ -1,9 +1,7 @@
 // JSON grammar (RFC 4627). Note that this only checks for valid JSON and does not build a syntax
 // tree.
 
-
-#[pub]
-json = object / array
+pub json = object / array
 
 ws = [ \t\r\n]*
 begin_array = ws "[" ws

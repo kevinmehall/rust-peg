@@ -11,18 +11,17 @@ spanned<inner>
 pub items -> Vec<Spanned<Item>> = _ items:spanned<item>**_ _ { items }
 
 rule -> Rule
-  = legacy_exported:exportflag _ cached:cacheflag _ public:pubflag _ name:identifier _ returns:returntype _ "=" _ expression:expression (_ ";")? {
+  = cached:cacheflag _ public:pubflag _ name:identifier _ returns:returntype _ "=" _ expression:expression (_ ";")? {
       Rule{
         name: name,
         expr: Box::new(expression),
         ret_type: returns,
-        exported: public || legacy_exported,
+        exported: public,
         cached: cached
       }
     }
 
     pubflag -> bool = PUB { true } / { false }
-    exportflag -> bool = #quiet<("#[export]" / "#[pub]") {true} / {false}>
     cacheflag -> bool = "#[cache]" {true} / {false}
 
 template -> Template

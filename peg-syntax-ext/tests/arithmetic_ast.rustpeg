@@ -1,7 +1,6 @@
 use super::Expression;
 
-#[pub]
-expression -> Expression
+pub expression -> Expression
 	= sum
 
 sum -> Expression

@@ -3,8 +3,7 @@ use peg_syntax_ext::peg;
 
 peg!(parse r#"
 
-#[pub]
-dec_byte -> u8
+pub dec_byte -> u8
     = match_str:$([0-9]*<,3>) {?
         let val: u64 = match_str.parse().unwrap();
 
@@ -20,8 +19,7 @@ dec_byte -> u8
 tag -> &'input str
     = $([a-z]+)
 
-#[pub]
-xml
+pub xml
     = "<" open:tag ">" xml* "</" close:tag ">" {?
         if open == close {
             Ok(())

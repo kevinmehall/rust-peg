@@ -3,8 +3,7 @@ use peg_syntax_ext::peg;
 use arithmetic::expression;
 
 peg!(arithmetic r#"
-#[pub]
-expression -> i64
+pub expression -> i64
 	= sum
 
 sum -> i64

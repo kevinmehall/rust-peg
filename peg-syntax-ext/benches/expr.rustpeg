@@ -1,7 +1,6 @@
 // A grammar for simple arithmetic expression with operator precedences and braces
 
-#[pub]
-expr = eq
+pub expr = eq
 
 #[cache]
 eq = additive "=" eq / additive

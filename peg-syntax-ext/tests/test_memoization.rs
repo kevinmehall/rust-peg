@@ -7,8 +7,7 @@ peg!{memo r#"
 rule -> &'input str
     = s:$([a-z]+) { s }
 
-#[pub]
-parse
+pub parse
     = rule '+' rule { () }
     / rule ' ' rule { () }
 
