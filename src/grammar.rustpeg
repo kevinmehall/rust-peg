@@ -57,6 +57,8 @@ rust_path = rust_identifier ++ (__ "::" __)
 rust_type
   = "[" __ rust_type __ "]"
   / "&" __ ("mut" __)? ("'" rust_identifier __)? rust_type
+  / "dyn" __ rust_type
+  / "impl" __ rust_type
   / rust_identifier __ "<" __ (("'" rust_identifier) / rust_type) ** (__ "," __) __ ">"
   / rust_identifier __ "::" __ rust_type
   / "(" __ rust_type ** (__ "," __) __ ")"
