@@ -11,17 +11,12 @@ spanned<inner>
 pub items -> Vec<Spanned<Item>> = _ items:spanned<item>**_ _ { items }
 
 rule -> Rule
-  = cached:cacheflag _ public:pubflag _ name:identifier _ returns:returntype _ "=" _ expression:expression (_ ";")? {
-      Rule{
-        name: name,
-        expr: Box::new(expression),
-        ret_type: returns,
-        exported: public,
-        cached: cached
-      }
+  = cached:cacheflag _ visibility:rust_visibility _ name:identifier _ ret_type:returntype _ "=" _ expr:expression (_ ";")? {
+      Rule { name, expr, ret_type, visibility, cached }
     }
 
-    pubflag -> bool = PUB { true } / { false }
+    rust_visibility -> Option<String> = (s:$(PUB (_ "(" [^)]+ ")")? / CRATE) { s.to_owned() })?
+
     cacheflag -> bool = "#[cache]" {true} / {false}
 
 template -> Template
@@ -188,8 +183,9 @@ nonBraceCharacters = [^{}]+
 KEYWORD<k> = k !([a-zA-Z0-9_])
 USE = KEYWORD<"use">
 PUB = KEYWORD<"pub">
+CRATE = KEYWORD<"crate">
 
-keyword = USE / PUB
+keyword = USE / PUB / CRATE
 
 integer -> usize
   = i:$([0-9]+) { i.parse().unwrap() }

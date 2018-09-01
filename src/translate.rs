@@ -95,9 +95,9 @@ pub enum Item {
 
 pub struct Rule {
 	pub name: String,
-	pub expr: Box<Spanned<Expr>>,
+	pub expr: Spanned<Expr>,
 	pub ret_type: String,
-	pub exported: bool,
+	pub visibility: Option<String>,
 	pub cached: bool,
 }
 
@@ -297,7 +297,7 @@ pub(crate) fn compile_grammar(compiler: &mut PegCompiler, grammar: &Grammar) -> 
 	for rule in &grammar.rules {
 		items.push(compile_rule(compiler, grammar, rule))
 	}
-	items.extend(grammar.rules.iter().filter(|rule| rule.exported).map(|rule| {
+	items.extend(grammar.rules.iter().filter(|rule| rule.visibility.is_some()).map(|rule| {
 		compile_rule_export(grammar, rule)
 	}));
 
@@ -362,7 +362,7 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 		lexical: &LexicalContext { defs: HashMap::new() },
 	};
 
-	let body = compile_expr(compiler, context, &*rule.expr);
+	let body = compile_expr(compiler, context, &rule.expr);
 
 	let wrapped_body = if cfg!(feature = "trace") {
 		quote!{{
@@ -423,6 +423,7 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> TokenStream {
 	let name = Ident::new(&rule.name, Span::call_site());
 	let ret_ty = raw(&rule.ret_type);
+	let visibility = rule.visibility.as_ref().map(|s| raw(&s));
 	let parse_fn = Ident::new(&format!("__parse_{}", rule.name), Span::call_site());
 	let nl = raw("\n\n"); // make output slightly more readable
 	let extra_args_def = grammar.extra_args_def();
@@ -430,7 +431,7 @@ fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> TokenStream {
 
 	quote! {
 		#nl
-		pub fn #name<'input>(__input: &'input str #extra_args_def) -> ParseResult<#ret_ty> {
+		#visibility fn #name<'input>(__input: &'input str #extra_args_def) -> ParseResult<#ret_ty> {
 			#![allow(non_snake_case, unused)]
 			let mut __state = ParseState::new();
 			match #parse_fn(__input, &mut __state, 0 #extra_args_call) {
