@@ -464,10 +464,7 @@ fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> TokenStream {
 
 fn compile_match_and_then(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>, value_name: Option<&str>, then: TokenStream) -> TokenStream {
 	let seq_res = compile_expr(compiler, Context{ result_used: value_name.is_some(), ..cx }, e);
-	let name_pat = match value_name {
-		Some(name) => Some(Ident::new(name, Span::call_site()).into()).into_iter().collect(),
-		None => quote!(_)
-	};
+	let name_pat = Ident::new(value_name.unwrap_or("_"), Span::call_site());
 
 	quote! {{
 		let __seq_res = #seq_res;
