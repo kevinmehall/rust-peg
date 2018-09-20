@@ -195,7 +195,7 @@ static HELPERS: &'static str = stringify! {
 	impl ::std::fmt::Display for ParseError {
 		fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
 			write!(fmt, "error at {}:{}: expected ", self.line, self.column)?;
-			if self.expected.len() == 0 {
+			if self.expected.is_empty() {
 				write!(fmt, "EOF")?;
 			} else if self.expected.len() == 1 {
 				write!(fmt, "`{}`", escape_default(self.expected.iter().next().unwrap()))?;
@@ -552,10 +552,10 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 				}
 			}).collect();
 
-			let in_set_arm = if conds.len() > 0 {
-				quote!( #(#conds)|* => #in_set, )
-			} else {
+			let in_set_arm = if conds.is_empty() {
 				quote!()
+			} else {
+				quote!( #(#conds)|* => #in_set, )
 			};
 
 			quote!{
@@ -643,10 +643,10 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 				}
 			}
 
-			if exprs.len() > 0 {
-				write_seq(compiler, cx, &exprs)
-			} else {
+			if exprs.is_empty() {
 				quote!{ Matched(__pos, ()) }
+			} else {
+				write_seq(compiler, cx, &exprs)
 			}
 		}
 
@@ -668,10 +668,10 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 				}
 			}
 
-			if exprs.len() > 0 {
-				write_choice(compiler, cx, &exprs)
-			} else {
+			if exprs.is_empty() {
 				quote!{ Matched(__pos, ()) }
+			} else {
+				write_choice(compiler, cx, &exprs)
 			}
 		}
 
@@ -708,13 +708,13 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 			let match_sep = if let &Some(ref sep) = sep {
 				let sep_inner = compile_expr(compiler, cx.result_used(false), &*sep);
 				quote! {
-					let __pos = if __repeat_value.len() > 0 {
+					let __pos = if __repeat_value.is_empty() { __pos } else {
 						let __sep_res = #sep_inner;
 						match __sep_res {
 							Matched(__newpos, _) => { __newpos },
 							Failed => break,
 						}
-					} else { __pos };
+					};
 				}
 			} else { quote!() };
 
