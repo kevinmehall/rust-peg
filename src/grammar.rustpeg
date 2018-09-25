@@ -70,12 +70,12 @@ expression -> Spanned<Expr>
 
 choice -> Spanned<Expr>
   = spanned<head:sequence tail:(_ "/" _ s:sequence {s})* {
-      if tail.len() > 0 {
+      if tail.is_empty() {
+        head.node
+      } else {
         let mut list = tail;
         list.insert(0, head);
         ChoiceExpr(list)
-      } else {
-        head.node
       }
     }>
 
