@@ -1,8 +1,8 @@
 use std::borrow::ToOwned;
-use std::collections::HashMap;
+use std::collections::{ HashMap, HashSet };
 use proc_macro2::{Ident, Span, TokenStream};
 pub use self::Expr::*;
-use codemap::Spanned;
+use codemap::{ Spanned, Span as CodemapSpan };
 use PegCompiler;
 
 fn raw(s: &str) -> TokenStream {
@@ -61,6 +61,14 @@ impl Grammar {
 			}
 		}
 
+		for recursion in Grammar::check_for_left_recursion(&rules) {
+			compiler.span_error(
+				format!("Found illegal left recursion for rule {}: {}", recursion.rule_name, recursion.format_path()),
+				recursion.span,
+				None,
+			)
+		}
+
 		Ok(Grammar{ imports:imports, rules:rules, templates:templates, args: grammar_args.unwrap_or(vec![]) })
 	}
 
@@ -83,6 +91,71 @@ impl Grammar {
 			quote!(, #name)
 		}).collect();
 		quote!(#(#args)*)
+	}
+
+	fn check_for_left_recursion(rules: &Vec<Rule>) -> Vec<LeftRecursion> {
+		let mut recursions = Vec::new();
+
+		let rule_map: HashMap<&str, &Rule> = rules.iter().map(|rule| (&rule.name[..], rule)).collect();
+		for rule in rules.iter() {
+			LeftRecursionChecker::new(&rule.name, &rule_map).check(rule, &mut recursions)
+		}
+
+		recursions
+	}
+}
+
+struct LeftRecursionChecker<'a> {
+	rule_map: &'a HashMap<&'a str, &'a Rule>,
+	rule_name: &'a str,
+	rule_stack: Vec<&'a str>,
+	visited_rules: HashSet<&'a str>,
+}
+
+impl <'a> LeftRecursionChecker<'a> {
+	fn new(rule_name: &'a str, rule_map: &'a HashMap<&'a str, &'a Rule>) -> LeftRecursionChecker<'a> {
+		let mut rule_stack = Vec::new();
+		rule_stack.push(rule_name);
+		LeftRecursionChecker {
+			rule_map,
+			rule_name,
+			rule_stack,
+			visited_rules: HashSet::new(),
+		}
+    }
+
+	fn check(&mut self, rule: &'a Rule, recursions: &mut Vec<LeftRecursion>) {
+		let left_rules = rule.expr.left_rules(&rule.expr.span);
+
+		for left_rule in left_rules {
+			if self.rule_name == left_rule.node {
+				self.rule_stack.push(left_rule.node);
+				recursions.push(LeftRecursion{
+					rule_name: self.rule_name.into(),
+					span: left_rule.span,
+					path: self.rule_stack.iter().map(|x| (*x).into()).collect(),
+				});
+				self.rule_stack.pop();
+			} else if let Some(rule) = self.rule_map.get(left_rule.node) {
+				if self.visited_rules.insert(&rule.name) {
+					self.rule_stack.push(&rule.name);
+					self.check(rule, recursions);
+					self.rule_stack.pop();
+				}
+            }
+		}
+	}
+}
+
+struct LeftRecursion {
+	rule_name: String,
+	path: Vec<String>,
+	span: CodemapSpan,
+}
+
+impl LeftRecursion {
+	fn format_path(&self) -> String {
+		self.path.join(" -> ")
 	}
 }
 
@@ -139,6 +212,46 @@ pub enum Expr {
 	FailExpr(String),
 	InfixExpr{ atom: Box<Spanned<Expr>>, levels: Vec<InfixLevel> },
 	MarkerExpr,
+}
+
+impl Expr {
+	fn left_rules(&self, span: &CodemapSpan) -> HashSet<Spanned<&str>> {
+		let mut rules = HashSet::new();
+		self.left_rules_recurse(&mut rules, span);
+		rules
+	}
+
+	fn left_rules_recurse<'a>(&'a self, rules: &mut HashSet<Spanned<&'a str>>, span: &CodemapSpan) {
+		match *self {
+            RuleExpr(ref rule) => {
+				rules.insert(Spanned{ span: *span, node: rule });
+			},
+            SequenceExpr(ref exprs)
+			| TemplateInvoke(_, ref exprs) => {
+                if let Some(expr) = exprs.first() {
+                    exprs[0].left_rules_recurse(rules, &expr.span);
+                }
+            }
+            ChoiceExpr(ref choices) => {
+                for choice in choices {
+                    choice.left_rules_recurse(rules, &choice.span);
+                }
+            }
+            OptionalExpr(ref expr)
+            | Repeat(ref expr, _, _)
+			| MatchStrExpr(ref expr)
+			| QuietExpr(ref expr)
+            | PosAssertExpr(ref expr)
+            | NegAssertExpr(ref expr) => expr.left_rules_recurse(rules, &expr.span),
+			InfixExpr{ ref atom, .. } => atom.left_rules_recurse(rules, &atom.span),
+            ActionExpr(ref tagged_actions, _, _) => {
+                if let Some(action) = tagged_actions.first() {
+                    action.expr.left_rules_recurse(rules, &action.expr.span);
+                }
+            }
+            _ => {}
+		}
+	}
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
