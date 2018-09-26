@@ -4,12 +4,12 @@ use peg_syntax_ext::peg;
 peg!{memo r#"
 
 #[cache]
-rule -> &'input str
+r -> &'input str
     = s:$([a-z]+) { s }
 
 pub parse
-    = rule '+' rule { () }
-    / rule ' ' rule { () }
+    = r '+' r { () }
+    / r ' ' r { () }
 
 "#}
 

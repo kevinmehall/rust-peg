@@ -10,8 +10,8 @@ spanned<inner>
 
 pub items -> Vec<Spanned<Item>> = _ items:spanned<item>**_ _ { items }
 
-rule -> Rule
-  = cached:cacheflag _ visibility:rust_visibility _ name:identifier _ ret_type:returntype _ "=" _ expr:expression (_ ";")? {
+peg_rule -> Rule
+  = cached:cacheflag _ visibility:rust_visibility _ (RULE _)? name:identifier _ ret_type:returntype _ "=" _ expr:expression (_ ";")? {
       Rule { name, expr, ret_type, visibility, cached }
     }
 
@@ -26,7 +26,7 @@ template -> Template
 
 item -> Item
   = u:rust_use     { Item::Use(u) }
-  / r:rule         { Item::Rule(r) }
+  / r:peg_rule     { Item::Rule(r) }
   / t:template     { Item::Template(t) }
   / grammar_args
 
@@ -186,8 +186,9 @@ KEYWORD<k> = k !([a-zA-Z0-9_])
 USE = KEYWORD<"use">
 PUB = KEYWORD<"pub">
 CRATE = KEYWORD<"crate">
+RULE = KEYWORD<"rule">
 
-keyword = USE / PUB / CRATE
+keyword = USE / PUB / CRATE / RULE
 
 integer -> usize
   = i:$([0-9]+) { i.parse().unwrap() }
