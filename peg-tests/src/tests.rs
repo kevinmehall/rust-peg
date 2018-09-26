@@ -144,6 +144,8 @@ fn test_infix_arith() {
 	assert_eq!(infix_arith("2+2^2^2^2/2+2"), Ok(32772));
 	assert_eq!(infix_arith("1024/2/2/2+1"), Ok(129));
 	assert_eq!(infix_arith("1024/(1+1)/2/2+1"), Ok(129));
+	assert_eq!(infix_arith("-1-2*-2"), Ok(3));
+	assert_eq!(infix_arith("1+3!+1"), Ok(8));
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

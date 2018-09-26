@@ -68,8 +68,8 @@ variable -> Spanned<Node>
     { v.with_node(Node::Variable(v.node)) }
 
 pub arith_ast -> Spanned<Node> = #infix<variable> {
-	#L x op:spanned<"+"> y { op.with_node(Node::Add(Box::new(x), Box::new(y))) }
-	#L x op:spanned<"*"> y { op.with_node(Node::Mul(Box::new(x), Box::new(y))) }
+	#L x:@ op:spanned<"+"> y:@ { op.with_node(Node::Add(Box::new(x), Box::new(y))) }
+	#L x:@ op:spanned<"*"> y:@ { op.with_node(Node::Mul(Box::new(x), Box::new(y))) }
 }
 
 "#);

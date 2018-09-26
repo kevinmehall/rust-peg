@@ -95,11 +95,13 @@ atom -> i64
 	/ number
 
 pub(crate) infix_arith -> i64 = #infix<atom> {
-	#L x "+" y { x + y }
-	   x "-" y { x - y }
-	#L x "*" y { x * y }
-	   x "/" y { x / y }
-	#R x "^" y { x.pow(y as u32) }
+	#L x:@ "+" y:@ { x + y }
+	   x:@ "-" y:@ { x - y }
+	       "-" v:@ { - v }
+	#L x:@ "*" y:@ { x * y }
+	   x:@ "/" y:@ { x / y }
+	#R x:@ "^" y:@ { x.pow(y as u32) }
+	   v:@ "!"     { (1..v+1).product() }
 }
 
 use super::InfixAst;
@@ -110,8 +112,8 @@ infix_atom -> InfixAst = i:ident [ \n]* { InfixAst::Ident(i.to_owned()) }
 plus = "+" [ \n]*
 
 pub infix_ast -> InfixAst = #infix<infix_atom> {
-	#L x plus y { InfixAst::Add(Box::new(x), Box::new(y)) }
-	#L x op:haskell_op y { InfixAst::Op(op, Box::new(x), Box::new(y)) }
+	#L x:@ plus y:@ { InfixAst::Add(Box::new(x), Box::new(y)) }
+	#L x:@ op:haskell_op y:@ { InfixAst::Op(op, Box::new(x), Box::new(y)) }
 }
 
 issue152 -> i32 // a

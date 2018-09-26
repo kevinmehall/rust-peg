@@ -107,19 +107,19 @@ pub struct Template {
 	pub expr: Box<Spanned<Expr>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct CharSetCase {
 	pub start: char,
 	pub end: char
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct TaggedExpr {
 	pub name: Option<Spanned<String>>,
 	pub expr: Box<Spanned<Expr>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Expr {
 	AnyCharExpr,
 	LiteralExpr(String,bool),
@@ -137,28 +137,26 @@ pub enum Expr {
 	TemplateInvoke(String, Vec<Spanned<Expr>>),
 	QuietExpr(Box<Spanned<Expr>>),
 	FailExpr(String),
-	InfixExpr{ atom: Box<Spanned<Expr>>, levels: Vec<InfixLevel> }
+	InfixExpr{ atom: Box<Spanned<Expr>>, levels: Vec<InfixLevel> },
+	MarkerExpr,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum InfixAssoc { Left, Right }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct InfixLevel {
 	pub assoc: InfixAssoc,
-	pub operators: Vec<InfixOperator>,
+	pub operators: Vec<Spanned<InfixOperator>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct InfixOperator {
-	pub operator: Box<Spanned<Expr>>,
-	pub l_arg: String,
-	pub op_arg: Option<String>,
-	pub r_arg: String,
+	pub elements: Vec<TaggedExpr>,
 	pub action: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum BoundedRepeat {
 	None,
 	Plus,
@@ -473,6 +471,35 @@ fn compile_match_and_then(compiler: &mut PegCompiler, cx: Context, e: &Spanned<E
 			Failed => Failed,
 		}
 	}}
+}
+
+fn labeled_seq(compiler: &mut PegCompiler, cx: Context, exprs: &[TaggedExpr], inner: TokenStream) -> TokenStream {
+	match exprs.first() {
+		Some(ref first) => {
+			if let Some(name) = first.name.as_ref() {
+				if cx.grammar.args.iter().any(|x| x.0 == name.node) {
+					compiler.span_error(
+						format!("Capture variable `{}` shadows grammar argument", name.node),
+						name.span,
+						Some("prohibited name".to_owned())
+					)
+				}
+
+				if name.node.starts_with("__") {
+					compiler.span_error(
+						format!("Capture variable `{}` has reserved name", name.node),
+						name.span,
+						Some("prohibited name".to_owned())
+					)
+				}
+			}
+
+			let name = first.name.as_ref().map(|s| &s[..]);
+			let seq = labeled_seq(compiler, cx, &exprs[1..], inner);
+			compile_match_and_then(compiler, cx, &*first.expr, name, seq)
+		}
+		None => inner
+	}
 }
 
 fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
@@ -799,52 +826,23 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		}
 
 		ActionExpr(ref exprs, ref code, is_cond) => {
-			fn write_seq(compiler: &mut PegCompiler, cx: Context, exprs: &[TaggedExpr], code: &str, is_cond: bool) -> TokenStream {
-				match exprs.first() {
-					Some(ref first) => {
-						if let Some(name) = first.name.as_ref() {
-							if cx.grammar.args.iter().any(|x| x.0 == name.node) {
-								compiler.span_error(
-									format!("Capture variable `{}` shadows grammar argument", name.node),
-									name.span,
-									Some("prohibited name".to_owned())
-								)
-							}
+			labeled_seq(compiler, cx, &exprs, {
+				let code_block = raw(code);
 
-							if name.node.starts_with("__") {
-								compiler.span_error(
-									format!("Capture variable `{}` has reserved name", name.node),
-									name.span,
-									Some("prohibited name".to_owned())
-								)
-							}
-						}
-
-						let name = first.name.as_ref().map(|s| &s[..]);
-						let seq = write_seq(compiler, cx, &exprs[1..], code, is_cond);
-						compile_match_and_then(compiler, cx, &*first.expr, name, seq)
-					}
-					None => {
-						let code_block = raw(code);
-
-						if is_cond {
-							quote!{
-								match #code_block {
-									Ok(res) => Matched(__pos, res),
-									Err(expected) => {
-										__state.mark_failure(__pos, expected);
-										Failed
-									},
-								}
-							}
-						} else {
-							quote!{ Matched(__pos, #code_block) }
+				if is_cond {
+					quote!{
+						match #code_block {
+							Ok(res) => Matched(__pos, res),
+							Err(expected) => {
+								__state.mark_failure(__pos, expected);
+								Failed
+							},
 						}
 					}
+				} else {
+					quote!{ Matched(__pos, #code_block) }
 				}
-			}
-
-			write_seq(compiler, cx, &exprs, &code, is_cond)
+			})
 		}
 		MatchStrExpr(ref expr) => {
 			let inner = compile_expr(compiler, cx.result_used(false), expr);
@@ -890,6 +888,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 				return quote!();
 			};
 
+			let mut pre_rules = Vec::new();
 			let mut level_code = Vec::new();
 			let extra_args_def = cx.grammar.extra_args_def();
 			let extra_args_call = cx.grammar.extra_args_call();
@@ -901,32 +900,85 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 					InfixAssoc::Right => prec
 				};
 
-				let mut rules = Vec::new();
+				let mut post_rules = Vec::new();
+
 				for op in &level.operators {
-					let match_rule = compile_expr(compiler, cx.result_used(op.op_arg.is_some()), &*op.operator);
+					if op.elements.len() < 2 {
+						compiler.span_error(
+							format!("#infix rule must contain at least two elements"),
+							op.span,
+							Some("incomplete rule".to_owned())
+						);
+						return quote!();
+					}
+
+					let left_arg = &op.elements[0];
+					let l_arg = left_arg.name.as_ref().map(|n| raw(n)).unwrap_or_else(|| quote!(_));
+
+					let right_arg = &op.elements[op.elements.len() - 1];
+					let r_arg = right_arg.name.as_ref().map(|n| raw(n)).unwrap_or_else(|| quote!(_));
+
 					let action = raw(&op.action[..]);
 
-					let l_arg = raw(&op.l_arg[..]);
-					let op_arg = op.op_arg.as_ref().map(|x| raw(&x[..])).unwrap_or_else(|| quote!(_));
-					let r_arg = raw(&op.r_arg[..]);
+					match (&left_arg.expr.node, &right_arg.expr.node) {
+						(&MarkerExpr, &MarkerExpr) => { //infix
+							post_rules.push(
+								labeled_seq(compiler, cx, &op.elements[1..op.elements.len()-1], {
+									quote!{
+										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos #extra_args_call) {
+											let #l_arg = __infix_result;
+											__infix_result = #action;
+											Matched(__pos, ())
+										} else { Failed }
+									}
+								})
+							);
+						}
+						(&MarkerExpr, _) => { // postfix
+							post_rules.push(
+								labeled_seq(compiler, cx, &op.elements[1..op.elements.len()], {
+									quote!{
+										let #l_arg = __infix_result;
+										__infix_result = #action;
+										Matched(__pos, ())
+									}
+								})
+							);
+						}
+						(_, &MarkerExpr) => { // prefix
+							pre_rules.push(
+								labeled_seq(compiler, cx, &op.elements[..op.elements.len()-1], {
+									quote!{
+										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos #extra_args_call) {
+											Matched(__pos, {#action})
+										} else { Failed }
+									}
+								})
+							);
+						}
+						_ => {
+							compiler.span_error(
+								format!("#infix rule must be prefix, postfix, or infix"),
+								op.span,
+								Some("needs to begin and/or end with `@`".to_owned())
+							);
+							return quote!();
+						}
+					};
+				}
 
-					rules.push(quote!{
-						if let Matched(__pos, #op_arg) = #match_rule {
-							if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos #extra_args_call) {
-								let #l_arg = __infix_result;
-								__infix_result = #action;
-								__repeat_pos = __pos;
-								continue;
-							}
+				if !post_rules.is_empty() {
+					level_code.push(quote!{
+						if #prec >= __min_prec {
+							#(
+								if let Matched(__pos, ()) = #post_rules {
+									__repeat_pos = __pos;
+									continue;
+								}
+							)*
 						}
 					});
 				}
-
-				level_code.push(quote!{
-					if #prec >= __min_prec {
-						#(#rules)*
-					}
-				});
 			}
 
 			let (enter, leave) = if cfg!(feature = "trace") {
@@ -938,7 +990,17 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 
 			quote!{{
 				fn __infix_parse<'input>(__min_prec:i32, __input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ty> {
-					if let Matched(__pos, mut __infix_result) = #match_atom {
+					let __initial = (|| {
+						#(
+							if let Matched(__pos, __v) = #pre_rules {
+								return Matched(__pos, __v);
+							}
+						)*
+
+						#match_atom
+					})();
+
+					if let Matched(__pos, mut __infix_result) = __initial {
 						#enter
 						let mut __repeat_pos = __pos;
 						loop {
@@ -954,6 +1016,14 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 				}
 				__infix_parse(0, __input, __state, __pos #extra_args_call)
 			}}
+		}
+		MarkerExpr => {
+			compiler.span_error(
+				format!("`@` is only allowed in #infix"),
+				e.span,
+				Some("not allowed here".to_owned())
+			);
+			return quote!();
 		}
 	}
 }

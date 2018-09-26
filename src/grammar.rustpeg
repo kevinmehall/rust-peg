@@ -92,12 +92,9 @@ sequence -> Spanned<Expr>
     }>
 
 labeled -> TaggedExpr
-  = label:spanned<identifier> _ ":" _ expression:prefixed {
-      TaggedExpr{ name: Some(label), expr: Box::new(expression) }
+  = label:(l:spanned<identifier> _ ":" _ {l})? expression:prefixed {
+      TaggedExpr{ name: label, expr: Box::new(expression) }
     }
-  / expr:prefixed {
-      TaggedExpr{ name: None, expr: Box::new(expr) }
-  }
 
 prefixed -> Spanned<Expr>
   = spanned<
@@ -153,6 +150,7 @@ primary -> Spanned<Expr>
   / literal
   / class
   / "." { AnyCharExpr }
+  / "@" { MarkerExpr }
   / "#position" { PositionExpr }
   / "#quiet" _ "<" _ e:expression _ ">" { QuietExpr(Box::new(e)) }
   / "#expected" _ "(" _ s:doubleQuotedString _ ")" { FailExpr(s) }
@@ -162,12 +160,12 @@ primary -> Spanned<Expr>
   >
 
 infix_level -> InfixLevel
-  = assoc:("#L" { InfixAssoc::Left } / "#R" { InfixAssoc::Right} ) _ operators:infix_op++_
+  = assoc:("#L" { InfixAssoc::Left } / "#R" { InfixAssoc::Right} ) _ operators:(spanned<infix_op>)++_
   { InfixLevel{ assoc: assoc, operators: operators} }
 
 infix_op -> InfixOperator
-  = l:identifier _ op:(var:identifier _ ":" _ {var})? e:primary _ r:identifier _ "{" _ action:rust_expr _ "}"
-  { InfixOperator{ operator:Box::new(e), action: action, l_arg:l, op_arg:op, r_arg:r } }
+  = elements:labeled**_ _ "{" _ action:rust_expr _ "}"
+  { InfixOperator{ elements, action } }
 
 /* "Lexical" elements */
 
