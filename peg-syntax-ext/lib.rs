@@ -2,19 +2,19 @@
 extern crate rustc_plugin;
 #[macro_use] pub extern crate syntax;
 extern crate rustc_errors as errors;
+#[macro_use] extern crate smallvec;
 
 extern crate peg;
 
 use syntax::ast;
-use syntax::codemap;
-use syntax::codemap::FileName;
+use syntax::source_map;
+use syntax::source_map::FileName;
 use syntax::ext::base::{ExtCtxt, MacResult, MacEager, DummyResult};
 use syntax::tokenstream::TokenTree;
 use syntax::parse;
 use syntax::parse::token;
 use syntax::symbol::Symbol;
 use syntax::fold::Folder;
-use syntax::OneVector;
 use rustc_plugin::Registry;
 use std::io::Read;
 use std::fs::File;
@@ -30,7 +30,7 @@ pub fn plugin_registrar(reg: &mut Registry) {
             syntax::ext::base::IdentTT(Box::new(expand_peg_file), None, false));
 }
 
-fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<TokenTree>) -> Box<MacResult + 's> {
+fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: source_map::Span, ident: ast::Ident, tts: Vec<TokenTree>) -> Box<MacResult + 's> {
     let source = match parse_arg(cx, &tts) {
         Some(source) => source,
         None => return DummyResult::any(sp),
@@ -39,13 +39,13 @@ fn expand_peg_str<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident,
     expand_peg(cx, sp, ident, &source)
 }
 
-fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, tts: Vec<TokenTree>) -> Box<MacResult + 's> {
+fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: source_map::Span, ident: ast::Ident, tts: Vec<TokenTree>) -> Box<MacResult + 's> {
     let fname = match parse_arg(cx, &tts) {
         Some(fname) => fname,
         None => return DummyResult::any(sp),
     };
 
-    let path = match cx.codemap().span_to_filename(sp) {
+    let path = match cx.source_map().span_to_filename(sp) {
         FileName::Real(path) => path.parent().unwrap().join(&fname),
         other => {
           cx.span_err(sp, &format!("cannot resolve relative path in non-file source `{}`", other));
@@ -59,12 +59,12 @@ fn expand_peg_file<'s>(cx: &'s mut ExtCtxt, sp: codemap::Span, ident: ast::Ident
         return DummyResult::any(sp);
     }
 
-    cx.codemap().new_filemap(path.into(), "".to_string());
+    cx.source_map().new_source_file(path.into(), "".to_string());
 
     expand_peg(cx, sp, ident, &source)
 }
 
-fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &str) -> Box<MacResult + 'static> {
+fn expand_peg(cx: &mut ExtCtxt, sp: source_map::Span, ident: ast::Ident, source: &str) -> Box<MacResult + 'static> {
     let code = match peg::compile(&source) {
         Ok(code) => code,
         Err(e) => {
@@ -82,7 +82,7 @@ fn expand_peg(cx: &mut ExtCtxt, sp: codemap::Span, ident: ast::Ident, source: &s
         }
     }.unwrap();
 
-    MacEager::items(OneVector::one(module))
+    MacEager::items(smallvec![module])
 }
 
 fn parse_arg(cx: &mut ExtCtxt, tts: &[TokenTree]) -> Option<String> {
