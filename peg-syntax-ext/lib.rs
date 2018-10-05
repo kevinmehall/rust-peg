@@ -1,4 +1,4 @@
-#![feature(plugin_registrar, quote, rustc_private, box_patterns)]
+#![feature(plugin_registrar, rustc_private)]
 extern crate rustc_plugin;
 #[macro_use] pub extern crate syntax;
 extern crate rustc_errors as errors;
@@ -10,6 +10,7 @@ use syntax::ast;
 use syntax::source_map;
 use syntax::source_map::FileName;
 use syntax::ext::base::{ExtCtxt, MacResult, MacEager, DummyResult};
+use syntax::ext::build::AstBuilder;
 use syntax::tokenstream::TokenTree;
 use syntax::parse;
 use syntax::parse::token;
@@ -74,15 +75,13 @@ fn expand_peg(cx: &mut ExtCtxt, sp: source_map::Span, ident: ast::Ident, source:
     };
 
     let mut p = parse::new_parser_from_source_str(&cx.parse_sess, FileName::Custom("peg expansion".into()), code);
-    let tts = panictry!(p.parse_all_token_trees());
+    
+    let mut items = vec![];
+    while let Some(item) = panictry!(p.parse_item()) {
+        items.push(item);
+    }
 
-    let module = quote_item! { cx,
-        mod $ident {
-            $tts
-        }
-    }.unwrap();
-
-    MacEager::items(smallvec![module])
+    MacEager::items(smallvec![cx.item_mod(sp, sp, ident, vec![], items)])
 }
 
 fn parse_arg(cx: &mut ExtCtxt, tts: &[TokenTree]) -> Option<String> {
