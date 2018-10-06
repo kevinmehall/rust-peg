@@ -1,13 +1,11 @@
 [package]
 name = "peg-syntax-ext"
-version = "0.5.6"
+version = "0.5.7"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
 description = """
-A parser generator built on the Parsing Expression Grammar (PEG) formalism.
-
-This crate provides the syntax extension plugin for use with Rust nightly.
+Deprecated syntax extension plugin for Rust nightly. See the `peg` crate for other integration options.
 """
 
 [dependencies]
@@ -17,3 +15,6 @@ peg = { version = "0.5", path = "../" }
 plugin = true
 name = "peg_syntax_ext"
 path = "lib.rs"
+
+[badges]
+maintenance = { status = "deprecated" }
