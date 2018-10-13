@@ -1,4 +1,4 @@
-#![feature(test, proc_macro_gen)]
+#![feature(test)]
 extern crate peg_syntax_ext;
 use peg_syntax_ext::peg_file;
 

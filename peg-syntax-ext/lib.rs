@@ -1,4 +1,4 @@
-#![feature(proc_macro_span, proc_macro_gen)]
+#![feature(proc_macro_span)]
 
 extern crate peg;
 extern crate proc_macro;
