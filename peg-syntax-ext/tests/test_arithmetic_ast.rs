@@ -1,5 +1,5 @@
 extern crate peg_syntax_ext;
-use peg_syntax_ext::peg_file;
+use peg_syntax_ext::peg;
 use arithmetic::expression;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -9,7 +9,28 @@ pub enum Expression {
 	Product(Box<Expression>, Box<Expression>),
 }
 
-peg_file!(arithmetic("arithmetic_ast.rustpeg"));
+peg!(arithmetic r#"
+use super::Expression;
+
+pub rule expression -> Expression
+	= sum
+
+rule sum -> Expression
+	= l:product "+" r:product { Expression::Sum(Box::new(l), Box::new(r)) }
+	/ product
+
+rule product -> Expression
+	= l:atom "*" r:atom { Expression::Product(Box::new(l), Box::new(r)) }
+	/ atom
+
+rule atom -> Expression
+	= number
+	/ "(" v:sum ")" { v }
+
+rule number -> Expression
+	= n:$([0-9]+) { Expression::Number(n.parse().unwrap()) }
+
+"#);
 
 #[test]
 fn main() {

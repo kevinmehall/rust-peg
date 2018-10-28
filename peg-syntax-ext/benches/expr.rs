@@ -1,12 +1,26 @@
 #![feature(test)]
 extern crate peg_syntax_ext;
-use peg_syntax_ext::peg_file;
+use peg_syntax_ext::peg;
 
 extern crate test;
 
 use test::Bencher;
 
-peg_file!(parser("expr.rustpeg"));
+peg!(parser r#"
+pub expr = eq
+
+#[cache]
+eq = additive "=" eq / additive
+#[cache]
+additive = multitive "+" additive / multitive
+#[cache]
+multitive = pow "*" multitive / pow
+#[cache]
+pow = atom "^" pow / atom
+
+#[cache]
+atom = [0-9]+ / "(" expr ")"
+"#);
 
 #[bench]
 fn expr(b: &mut Bencher) {

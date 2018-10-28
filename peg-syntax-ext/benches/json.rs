@@ -1,12 +1,53 @@
 #![feature(test)]
 extern crate peg_syntax_ext;
-use peg_syntax_ext::peg_file;
+use peg_syntax_ext::peg;
 
 extern crate test;
 
 use test::Bencher;
 
-peg_file!(parser("json.rustpeg"));
+peg!(parser r#"
+// JSON grammar (RFC 4627). Note that this only checks for valid JSON and does not build a syntax
+// tree.
+
+pub json = object / array
+
+ws = [ \t\r\n]*
+begin_array = ws "[" ws
+begin_object = ws "{" ws
+end_array = ws "]" ws
+end_object = ws "}" ws
+name_separator = ws ":" ws
+value_separator = ws "," ws
+
+value
+    = "false" / "true" / "null" / object / array / number / string
+
+object
+    = begin_object (member (value_separator member)*)? end_object
+
+member
+    = string name_separator value
+
+array
+    = begin_array (value (value_separator value)*)? end_array
+
+number
+    = "-"? int frac? exp? {}
+
+int
+    = "0" / [1-9][0-9]*
+
+exp
+    = ("e" / "E") ("-" / "+")? [0-9]*<1,>
+
+frac
+    = "." [0-9]*<1,>
+
+// note: escaped chars not handled
+string
+    = "\"" (!"\"" .)* "\""
+"#);
 
 #[bench]
 fn json(b: &mut Bencher) {
