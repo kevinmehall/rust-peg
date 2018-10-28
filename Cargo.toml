@@ -1,5 +1,5 @@
 [workspace]
-members = ["./peg-syntax-ext", "./peg-tests", "./peg-codegen"]
+members = ["./peg-syntax-ext", "./peg-codegen"]
 
 [package]
 name = "peg"

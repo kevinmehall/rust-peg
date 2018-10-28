@@ -1,10 +1,133 @@
+extern crate peg;
 use std::collections::HashMap;
 
 const FOO: i32 = 42;
 
-mod test_grammar {
-    include!(concat!(env!("OUT_DIR"), "/test_grammar.rs"));
+peg::peg!(test_grammar r#"
+use std::collections::HashMap;
+use std::borrow::{ToOwned, Cow};
+
+pub consonants
+	= ([a-z]![aeiou])+
+
+pub options -> Option<()>
+	= "abc" v:"def"? {v}
+
+number -> i64
+	= n:$([0-9]+) { n.parse().unwrap() }
+
+pub list -> Vec<i64>
+	= number ** ","
+
+digit -> i64
+	= n:$([0-9]) {n.parse().unwrap() }
+
+pub repeat_n -> Vec<i64>
+	= digit*<4>
+
+pub repeat_min -> Vec<i64>
+	= digit*<2,>
+
+pub repeat_max -> Vec<i64>
+	= digit*<,2>
+
+pub repeat_min_max -> Vec<i64>
+	= digit*<2,3>
+
+pub repeat_sep_3 -> Vec<i64>
+	= digit **<3> ","
+
+pub repeat_variable -> Vec<&'input str>
+	= (count:digit s:$([a-z0-9]*<{count as usize}>) {s})*
+
+pub boundaries -> String
+	= n:$("foo") { n.to_string() }
+
+pub case_insensitive -> String
+	= n:$("foo"i) { n.to_string() }
+
+pub borrowed -> &'input str
+	= $([a-z]+)
+
+pub lifetime_parameter -> Cow<'input, str>
+	= x:$([a-z]+) { x.into() }
+	/ "COW"  { "cow".to_owned().into() }
+
+pub block -> &'input str
+	= x:$([a-z]+) {
+		let result = x;
+		result
+	}
+
+pub keyvals -> HashMap<i64, i64>
+    = kvs:keyval ++ "\n" {
+        let mut rv = HashMap::new();
+        for &(k, v) in kvs.iter() {
+           rv.insert(k, v);
+        };
+        rv
+    }
+
+keyval -> (i64, i64)
+    = k:number ":" + v:number { (k, v) }
+
+pub expect_nothing -> ()
+	= [a-zA-Z]
+
+pub position -> (usize, usize, usize)
+ = start:#position [a]* middle:#position [b]* end:#position { (start, middle, end) }
+
+pub empty_charset = []
+
+pub option_unused_result = "a"? / "b"
+
+pub lookahead_result -> &'input str
+  = v:&($([a-c]*)) "abcd" { v }
+
+parenthesized<foo> = "(" s:foo ")" { s }
+pub parens -> &'input str = parenthesized<$([a-z]*)>
+
+double_parenthesized<x> = parenthesized<parenthesized<x>>
+pub double_parens -> &'input str = double_parenthesized<$([a-z]*)>
+
+use super::FOO as F1;
+use super::{FOO as F2};
+pub renamed_imports -> (i32, i32) = { (F1, F2) }
+
+pub neg_lookahead_err = !([a][b]) [a][x]
+
+atom -> i64
+	= "(" v:infix_arith ")" { v }
+	/ number
+
+pub(crate) infix_arith -> i64 = #infix<atom> {
+	#L x:@ "+" y:@ { x + y }
+	   x:@ "-" y:@ { x - y }
+	       "-" v:@ { - v }
+	#L x:@ "*" y:@ { x * y }
+	   x:@ "/" y:@ { x / y }
+	#R x:@ "^" y:@ { x.pow(y as u32) }
+	   v:@ "!"     { (1..v+1).product() }
 }
+
+use super::InfixAst;
+
+ident -> &'input str = $([a-z]+)
+haskell_op -> String = "`" i:ident "`" [ \n]* { i.to_owned() }
+infix_atom -> InfixAst = i:ident [ \n]* { InfixAst::Ident(i.to_owned()) }
+plus = "+" [ \n]*
+
+pub infix_ast -> InfixAst = #infix<infix_atom> {
+	#L x:@ plus y:@ { InfixAst::Add(Box::new(x), Box::new(y)) }
+	#L x:@ op:haskell_op y:@ { InfixAst::Op(op, Box::new(x), Box::new(y)) }
+}
+
+issue152 -> i32 // a
+    = "5" { 5 //b
+}
+
+pub error_pos = ("a" / "\n" / "\r")*
+"#);
 
 use self::test_grammar::*;
 

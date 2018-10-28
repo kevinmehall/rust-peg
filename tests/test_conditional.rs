@@ -1,7 +1,6 @@
-extern crate peg_syntax_ext;
-use peg_syntax_ext::peg;
+extern crate peg;
 
-peg!(parse r#"
+peg::peg!(parse r#"
 
 pub dec_byte -> u8
     = match_str:$([0-9]*<,3>) {?
