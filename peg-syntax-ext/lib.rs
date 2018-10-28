@@ -1,23 +1,13 @@
-#![feature(proc_macro_span)]
-
 extern crate peg_codegen;
 extern crate proc_macro;
-
-use std::iter;
 
 use proc_macro::{ TokenStream, TokenTree, Span };
 
 #[proc_macro]
 pub fn peg(input: TokenStream) -> TokenStream {
-    let (name, source, span) = parse_peg_args(input);
+    let (name, source, _) = parse_peg_args(input);
 
-    let line = span.start().line;
-    let fname = span.source_file().path().display().to_string();
-
-    // Make PEG line numbers match source line numbers
-    let source = iter::repeat('\n').take(line - 1).collect::<String>() + &source;
-
-    expand_peg(name, fname, source)
+    expand_peg(name, "<peg>".into(), source)
 }
 
 /// Parse a TokenStream of the form `name r#""#`
