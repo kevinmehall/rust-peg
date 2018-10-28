@@ -1,4 +1,4 @@
-#![feature(test)]
+#![feature(test, crate_visibility_modifier)]
 extern crate peg;
 use peg::peg;
 
@@ -7,7 +7,7 @@ extern crate test;
 use test::Bencher;
 
 peg!(parser r#"
-pub expr = eq
+crate expr = eq
 
 #[cache]
 eq = additive "=" eq / additive

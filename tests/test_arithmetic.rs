@@ -1,10 +1,9 @@
-#![feature(crate_visibility_modifier)]
 extern crate peg_syntax_ext;
 use peg_syntax_ext::peg;
 use arithmetic::expression;
 
 peg!(arithmetic r#"
-crate expression -> i64
+pub expression -> i64
 	= sum
 
 sum -> i64
