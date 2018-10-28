@@ -1,9 +1,9 @@
 [workspace]
-members = ["./peg-syntax-ext", "./peg-tests"]
+members = ["./peg-syntax-ext", "./peg-tests", "./peg-codegen"]
 
 [package]
 name = "peg"
-version = "0.5.4"
+version = "0.6.0"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
@@ -14,10 +14,8 @@ categories = ["parsing"]
 readme = "README.md"
 
 [dependencies]
-quote = "0.6"
-proc-macro2 = "0.4.4"
-codemap = "0.1"
-codemap-diagnostic = "0.1"
+peg-codegen = { path = "./peg-codegen", version = "0.6" }
+peg-syntax-ext = { path = "./peg-syntax-ext", version = "0.6" }
 
 [[bin]]
 name = "rust-peg"

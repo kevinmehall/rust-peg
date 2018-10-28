@@ -8,4 +8,4 @@ description = "Tests for the peg crate"
 build = "build.rs"
 
 [build-dependencies]
-peg = { version = "0.5", path = "../" }
+peg = { version = "*", path = "../" }

@@ -1,15 +1,14 @@
 #!/bin/sh
 set -e
 
-git checkout src/grammar.rs
-cargo run -- src/grammar.rustpeg > src/grammar_new.rs
+cargo run -- peg-codegen/grammar.rustpeg > peg-codegen/grammar_new.rs
 
-mv src/grammar.rs src/grammar_old.rs
-cp src/grammar_new.rs src/grammar.rs
+mv peg-codegen/grammar.rs peg-codegen/grammar_old.rs
+cp peg-codegen/grammar_new.rs peg-codegen/grammar.rs
 
-if cargo run -- src/grammar.rustpeg > src/grammar_new.rs
+if cargo run -- peg-codegen/grammar.rustpeg > peg-codegen/grammar_new.rs
 then
-    diff -qs src/grammar.rs src/grammar_new.rs
+    diff -qs peg-codegen/grammar.rs peg-codegen/grammar_new.rs
 else
     echo "Failed"
 fi

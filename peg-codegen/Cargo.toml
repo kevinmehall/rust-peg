@@ -1,0 +1,19 @@
+[package]
+name = "peg-codegen"
+version = "0.6.0"
+authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
+license = "MIT"
+repository = "https://github.com/kevinmehall/rust-peg"
+description = "Compilation of rust-peg grammars. To use rust-peg, see the `peg` crate."
+
+[dependencies]
+quote = "0.6"
+proc-macro2 = "0.4.4"
+codemap = "0.1"
+codemap-diagnostic = "0.1"
+
+[features]
+trace = []
+
+[lib]
+path = "lib.rs"

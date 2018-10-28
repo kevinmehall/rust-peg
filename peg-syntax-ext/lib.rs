@@ -1,6 +1,6 @@
 #![feature(proc_macro_span)]
 
-extern crate peg;
+extern crate peg_codegen;
 extern crate proc_macro;
 
 use std::fs;
@@ -95,7 +95,7 @@ fn parse_peg_file_args(input: TokenStream) -> (String, String, Span) {
 }
 
 fn expand_peg(name: String, filename: String, source: String) -> TokenStream {
-    let code = match peg::compile(filename, source) {
+    let code = match peg_codegen::compile(filename, source) {
         Ok(code) => code,
         Err(()) => panic!("Errors above in rust-peg grammar"),
     };
