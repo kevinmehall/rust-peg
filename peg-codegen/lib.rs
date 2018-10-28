@@ -6,14 +6,6 @@ extern crate proc_macro2;
 extern crate codemap;
 extern crate codemap_diagnostic;
 
-use std::io;
-use std::io::prelude::*;
-use std::path::{Path, PathBuf};
-use std::convert::AsRef;
-use std::fs::File;
-use std::process::exit;
-use std::env;
-
 use codemap::{ CodeMap, Span };
 use codemap_diagnostic::{ Diagnostic, Level, SpanLabel, SpanStyle, Emitter, ColorConfig };
 
@@ -100,35 +92,3 @@ pub fn compile(filename: String, input: String) -> Result<String, ()> {
     result
 }
 
-/// Compile the PEG grammar in the specified filename to cargo's OUT_DIR.
-/// Errors are emitted to stderr and terminate the process.
-pub fn cargo_build<T: AsRef<Path> + ?Sized>(input_path: &T) {
-    let mut stderr = io::stderr();
-    let input_path = input_path.as_ref();
-
-    let mut peg_source = String::new();
-    if let Err(e) = File::open(input_path).and_then(|mut x| x.read_to_string(&mut peg_source)) {
-        writeln!(stderr, "Could not read PEG input file `{}`: {}", input_path.display(), e).unwrap();
-        exit(1);
-    }
-
-    println!("cargo:rerun-if-changed={}", input_path.display());
-
-    let mut compiler = PegCompiler::new();
-    let result = compiler.compile(input_path.to_string_lossy().into_owned(), peg_source);
-    compiler.print_diagnostics();
-
-    let rust_source = match result {
-        Ok(s) => s,
-        Err(()) => {
-            writeln!(stderr, "Error compiling PEG grammar").unwrap();
-            exit(1);
-        }
-    };
-
-    let out_dir: PathBuf = env::var_os("OUT_DIR").unwrap().into();
-    let rust_path = out_dir.join(input_path.file_name().unwrap()).with_extension("rs");
-
-    let mut output_file = File::create(&rust_path).unwrap();
-    output_file.write_all(rust_source.as_bytes()).unwrap();
-}
