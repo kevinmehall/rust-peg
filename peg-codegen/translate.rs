@@ -196,7 +196,7 @@ pub struct TaggedExpr {
 pub enum Expr {
 	AnyCharExpr,
 	LiteralExpr(String,bool),
-	CharSetExpr(bool, Vec<CharSetCase>),
+	PatternExpr(String),
 	RuleExpr(String),
 	SequenceExpr(Vec<Spanned<Expr>>),
 	ChoiceExpr(Vec<Spanned<Expr>>),
@@ -624,24 +624,6 @@ fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
 	}
 }
 
-fn format_char_set(invert: bool, cases: &[CharSetCase]) -> String {
-	let mut r = "[".to_owned();
-
-    if invert {
-        r.push('^');
-    }
-
-	for &CharSetCase{start, end} in cases.iter() {
-		r.push(start);
-		if start != end {
-			r.push('-');
-			r.push(end);
-		}
-	}
-	r.push(']');
-	r
-}
-
 struct LexicalContext<'a> {
 	defs: HashMap<&'a str, (&'a Spanned<Expr>, &'a LexicalContext<'a>)>
 }
@@ -674,29 +656,17 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 			}
 		}
 
-		CharSetExpr(invert, ref cases) => {
-			let expected_set = format_char_set(invert, &cases);
+		PatternExpr(ref pattern) => {
+			let invert = false;
+			let expected_set = pattern;
 
 			let (in_set, not_in_set) = cond_swap(invert, (
 				quote!{ Matched(__next, ()) },
 				quote!{ __state.mark_failure(__pos, #expected_set) },
 			));
 
-			let conds: Vec<_> = cases.iter().map(|case| {
-				let start = case.start;
-				let end = case.end;
-				if start == end {
-					quote!{ #start }
-				} else {
-					quote!{ #start...#end }
-				}
-			}).collect();
-
-			let in_set_arm = if conds.is_empty() {
-				quote!()
-			} else {
-				quote!( #(#conds)|* => #in_set, )
-			};
+			let pat = raw(pattern);
+			let in_set_arm = quote!( #pat => #in_set, );
 
 			quote!{
 				if __input.len() > __pos {
@@ -1141,12 +1111,3 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 	}
 }
 
-#[test]
-fn test_format_char_set() {
-    assert_eq!(format_char_set(false,
-                               &[CharSetCase{start: 'a', end: 'z'},
-                                 CharSetCase{start: '0', end: '9'}]),
-               "[a-z0-9]");
-    assert_eq!(format_char_set(true, &[CharSetCase{start: 'A', end: 'Z'}]),
-               "[^A-Z]");
-}

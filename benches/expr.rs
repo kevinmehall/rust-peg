@@ -19,7 +19,7 @@ multitive = pow "*" multitive / pow
 pow = atom "^" pow / atom
 
 #[cache]
-atom = [0-9]+ / "(" expr ")"
+atom = ['0'..='9']+ / "(" expr ")"
 "#);
 
 #[bench]

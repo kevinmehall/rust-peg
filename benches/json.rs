@@ -12,7 +12,7 @@ peg!(parser r#"
 
 pub json = object / array
 
-ws = [ \t\r\n]*
+ws = [' ' | '\t' | '\r' | '\n']*
 begin_array = ws "[" ws
 begin_object = ws "{" ws
 end_array = ws "]" ws
@@ -36,13 +36,13 @@ number
     = "-"? int frac? exp? {}
 
 int
-    = "0" / [1-9][0-9]*
+    = ['0'] / ['1'..='9']['0'..='9']*
 
 exp
-    = ("e" / "E") ("-" / "+")? [0-9]*<1,>
+    = ("e" / "E") ("-" / "+")? ['0'..='9']*<1,>
 
 frac
-    = "." [0-9]*<1,>
+    = "." ['0'..='9']*<1,>
 
 // note: escaped chars not handled
 string

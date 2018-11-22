@@ -5,7 +5,7 @@ peg!{memo r#"
 
 #[cache]
 r -> &'input str
-    = s:$([a-z]+) { s }
+    = s:$(['a'..='z']+) { s }
 
 pub parse
     = r '+' r { () }

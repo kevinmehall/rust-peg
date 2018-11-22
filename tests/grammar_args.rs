@@ -61,7 +61,7 @@ spanned<X>
     { Spanned { file_id, start, end, node} }
 
 identifier -> Identifier
-    = s:$([a-z]+) { interner.intern(s) }
+    = s:$(['a'..='z']+) { interner.intern(s) }
 
 variable -> Spanned<Node>
     = v:spanned<identifier>

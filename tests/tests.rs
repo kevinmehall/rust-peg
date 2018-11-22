@@ -8,19 +8,19 @@ use std::collections::HashMap;
 use std::borrow::{ToOwned, Cow};
 
 pub consonants
-	= ([a-z]![aeiou])+
+	= (!['a'|'e'|'i'|'o'|'u']['a'..='z'])+
 
 pub options -> Option<()>
 	= "abc" v:"def"? {v}
 
 number -> i64
-	= n:$([0-9]+) { n.parse().unwrap() }
+	= n:$(['0'..='9']+) { n.parse().unwrap() }
 
 pub list -> Vec<i64>
 	= number ** ","
 
 digit -> i64
-	= n:$([0-9]) {n.parse().unwrap() }
+	= n:$(['0'..='9']) {n.parse().unwrap() }
 
 pub repeat_n -> Vec<i64>
 	= digit*<4>
@@ -38,7 +38,7 @@ pub repeat_sep_3 -> Vec<i64>
 	= digit **<3> ","
 
 pub repeat_variable -> Vec<&'input str>
-	= (count:digit s:$([a-z0-9]*<{count as usize}>) {s})*
+	= (count:digit s:$(['a'..='z'|'0'..='9']*<{count as usize}>) {s})*
 
 pub boundaries -> String
 	= n:$("foo") { n.to_string() }
@@ -47,14 +47,14 @@ pub case_insensitive -> String
 	= n:$("foo"i) { n.to_string() }
 
 pub borrowed -> &'input str
-	= $([a-z]+)
+	= $(['a'..='z']+)
 
 pub lifetime_parameter -> Cow<'input, str>
-	= x:$([a-z]+) { x.into() }
+	= x:$(['a'..='z']+) { x.into() }
 	/ "COW"  { "cow".to_owned().into() }
 
 pub block -> &'input str
-	= x:$([a-z]+) {
+	= x:$(['a'..='z']+) {
 		let result = x;
 		result
 	}
@@ -72,29 +72,27 @@ keyval -> (i64, i64)
     = k:number ":" + v:number { (k, v) }
 
 pub expect_nothing -> ()
-	= [a-zA-Z]
+	= ['a'..='z']
 
 pub position -> (usize, usize, usize)
- = start:#position [a]* middle:#position [b]* end:#position { (start, middle, end) }
-
-pub empty_charset = []
+ = start:#position ['a']* middle:#position ['b']* end:#position { (start, middle, end) }
 
 pub option_unused_result = "a"? / "b"
 
 pub lookahead_result -> &'input str
-  = v:&($([a-c]*)) "abcd" { v }
+  = v:&($(['a'..='c']*)) "abcd" { v }
 
 parenthesized<foo> = "(" s:foo ")" { s }
-pub parens -> &'input str = parenthesized<$([a-z]*)>
+pub parens -> &'input str = parenthesized<$(['a'..='z']*)>
 
 double_parenthesized<x> = parenthesized<parenthesized<x>>
-pub double_parens -> &'input str = double_parenthesized<$([a-z]*)>
+pub double_parens -> &'input str = double_parenthesized<$(['a'..='z']*)>
 
 use super::FOO as F1;
 use super::{FOO as F2};
 pub renamed_imports -> (i32, i32) = { (F1, F2) }
 
-pub neg_lookahead_err = !([a][b]) [a][x]
+pub neg_lookahead_err = !(['a']['b']) ['a']['x']
 
 atom -> i64
 	= "(" v:infix_arith ")" { v }
@@ -112,10 +110,10 @@ pub(crate) infix_arith -> i64 = #infix<atom> {
 
 use super::InfixAst;
 
-ident -> &'input str = $([a-z]+)
-haskell_op -> String = "`" i:ident "`" [ \n]* { i.to_owned() }
-infix_atom -> InfixAst = i:ident [ \n]* { InfixAst::Ident(i.to_owned()) }
-plus = "+" [ \n]*
+ident -> &'input str = $(['a'..='z']+)
+haskell_op -> String = "`" i:ident "`" [' '|'\n']* { i.to_owned() }
+infix_atom -> InfixAst = i:ident [' '|'\n']* { InfixAst::Ident(i.to_owned()) }
+plus = "+" [' '|'\n']*
 
 pub infix_ast -> InfixAst = #infix<infix_atom> {
 	#L x:@ plus y:@ { InfixAst::Add(Box::new(x), Box::new(y)) }

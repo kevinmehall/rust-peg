@@ -19,7 +19,7 @@ atom -> i64
 	/ "(" v:sum ")" { v }
 
 number -> i64
-	= n:$([0-9]+) { n.parse().unwrap() }
+	= n:$(['0'..='9']+) { n.parse().unwrap() }
 "#);
 
 #[test]

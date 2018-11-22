@@ -27,7 +27,7 @@ rule atom -> Expression
 	/ "(" v:sum ")" { v }
 
 rule number -> Expression
-	= n:$([0-9]+) { Expression::Number(n.parse().unwrap()) }
+	= n:$(['0'..='9']+) { Expression::Number(n.parse().unwrap()) }
 
 "#);
 
