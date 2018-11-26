@@ -43,9 +43,6 @@ pub repeat_variable -> Vec<&'input str>
 pub boundaries -> String
 	= n:$("foo") { n.to_string() }
 
-pub case_insensitive -> String
-	= n:$("foo"i) { n.to_string() }
-
 pub borrowed -> &'input str
 	= $(['a'..='z']+)
 
@@ -198,7 +195,6 @@ fn test_repeat() {
 // boundaries.. this popped up while parsing unicode
 fn test_boundaries() {
 	assert!(boundaries("f↙↙↙↙").is_err());
-	assert!(case_insensitive("f↙↙↙↙").is_err());
 }
 
 #[test]
@@ -223,17 +219,6 @@ fn test_keyval() {
     expected.insert(1, 3);
     expected.insert(2, 4);
     assert_eq!(keyvals("1:3\n2:4"), Ok(expected));
-}
-
-#[test]
-fn test_case_insensitive() {
-	assert_eq!(case_insensitive("foo").unwrap(), "foo");
-	assert_eq!(case_insensitive("FoO").unwrap(), "FoO");
-	assert_eq!(case_insensitive("fOo").unwrap(), "fOo");
-	assert_eq!(case_insensitive("FOO").unwrap(), "FOO");
-	assert!(case_insensitive("boo").is_err());
-	assert!(case_insensitive(" foo").is_err());
-	assert!(case_insensitive("foo ").is_err());
 }
 
 #[test]

@@ -203,8 +203,8 @@ COMMASEP<t> = list:t**(_ "," _) (_ ",")? { list }
  * vaguely).
  */
 literal -> Expr
-  = value:(doubleQuotedString / singleQuotedString) case_insensitive:"i"? {
-      LiteralExpr(value,case_insensitive.is_some())
+  = value:(doubleQuotedString / singleQuotedString) {
+      LiteralExpr(value)
     }
 
 string -> String

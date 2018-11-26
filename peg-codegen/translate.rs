@@ -195,7 +195,7 @@ pub struct TaggedExpr {
 #[derive(Clone, PartialEq)]
 pub enum Expr {
 	AnyCharExpr,
-	LiteralExpr(String,bool),
+	LiteralExpr(String),
 	PatternExpr(String),
 	RuleExpr(String),
 	SequenceExpr(Vec<Spanned<Expr>>),
@@ -339,26 +339,6 @@ static HELPERS: &'static str = stringify! {
 		} else {
 		  state.mark_failure(pos, m)
 		}
-	}
-
-	fn slice_eq_case_insensitive(input: &str, state: &mut ParseState, pos: usize, m: &'static str) -> RuleResult<()> {
-		#![inline]
-		#![allow(dead_code)]
-
-		let mut used = 0usize;
-		let mut input_iter = input[pos..].chars().flat_map(|x| x.to_uppercase());
-
-		for m_char_upper in m.chars().flat_map(|x| x.to_uppercase()) {
-			used += m_char_upper.len_utf8();
-
-			let input_char_result = input_iter.next();
-
-			if input_char_result.is_none() || input_char_result.unwrap() != m_char_upper {
-				return state.mark_failure(pos, m);
-			}
-		}
-
-		Matched(pos+used, ())
 	}
 
 	fn any_char(input: &str, state: &mut ParseState, pos: usize) -> RuleResult<()> {
@@ -648,12 +628,8 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 			quote!{ any_char(__input, __state, __pos) }
 		}
 
-		LiteralExpr(ref s, case_insensitive) => {
-			if case_insensitive {
-				quote!{ slice_eq_case_insensitive(__input, __state, __pos, #s) }
-			} else {
-				quote!{ slice_eq(__input, __state, __pos, #s) }
-			}
+		LiteralExpr(ref s) => {
+			quote!{ slice_eq(__input, __state, __pos, #s) }
 		}
 
 		PatternExpr(ref pattern) => {
