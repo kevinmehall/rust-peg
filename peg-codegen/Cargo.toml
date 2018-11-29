@@ -11,6 +11,7 @@ quote = "0.6"
 proc-macro2 = "0.4.4"
 codemap = "0.1"
 codemap-diagnostic = "0.1"
+peg-runtime = { version = "0.6", path = "../peg-runtime" }
 
 [features]
 trace = []

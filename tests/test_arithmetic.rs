@@ -1,5 +1,5 @@
-extern crate peg_syntax_ext;
-use peg_syntax_ext::peg;
+extern crate peg;
+use peg::peg;
 use arithmetic::expression;
 
 peg!(arithmetic r#"

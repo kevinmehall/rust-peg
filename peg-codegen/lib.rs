@@ -9,8 +9,12 @@ extern crate codemap_diagnostic;
 use codemap::{ CodeMap, Span };
 use codemap_diagnostic::{ Diagnostic, Level, SpanLabel, SpanStyle, Emitter, ColorConfig };
 
-mod translate;
+// This can't use the `peg` crate as it would be a circular dependency, but the generated code in grammar.rs
+// requires `::peg` paths.
+extern crate peg_runtime as peg;
 mod grammar;
+
+mod translate;
 
 #[cfg(test)]
 mod test;

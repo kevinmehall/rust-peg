@@ -282,18 +282,6 @@ static HELPERS: &'static str = stringify! {
 		s.chars().flat_map(|c| c.escape_default()).collect()
 	}
 
-	fn char_range_at(s: &str, pos: usize) -> (char, usize) {
-		let c = &s[pos..].chars().next().unwrap();
-		let next_pos = pos + c.len_utf8();
-		(*c, next_pos)
-	}
-
-	#[derive(Clone)]
-	enum RuleResult<T> {
-		Matched(usize, T),
-		Failed,
-	}
-
 	#[derive(PartialEq, Eq, Debug, Clone)]
 	pub struct ParseError {
 		pub line: usize,
@@ -329,30 +317,6 @@ static HELPERS: &'static str = stringify! {
 		}
 	}
 
-	fn slice_eq(input: &str, state: &mut ParseState, pos: usize, m: &'static str) -> RuleResult<()> {
-		#![inline(always)]
-		#![allow(dead_code)]
-
-		let l = m.len();
-		if input.len() >= pos + l && &input.as_bytes()[pos..pos+l] == m.as_bytes() {
-		  Matched(pos+l, ())
-		} else {
-		  state.mark_failure(pos, m)
-		}
-	}
-
-	fn any_char(input: &str, state: &mut ParseState, pos: usize) -> RuleResult<()> {
-		#![inline]
-		#![allow(dead_code)]
-
-		if input.len() > pos {
-			let (_, next) = char_range_at(input, pos);
-			Matched(next, ())
-		} else {
-			state.mark_failure(pos, "<character>")
-		}
-	}
-
 	fn pos_to_line(input: &str, pos: usize) -> (usize, usize) {
 		let before = &input[..pos];
 		let line = before.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;
@@ -369,7 +333,7 @@ static HELPERS: &'static str = stringify! {
 		}
 
 		#[inline(always)]
-		fn mark_failure(&mut self, pos: usize, expected: &'static str) -> RuleResult<()> {
+		fn mark_failure(&mut self, pos: usize, expected: &'static str) -> ::peg::RuleResult<usize, ()> {
 			if self.suppress_fail == 0 {
 				if self.reparsing_on_error {
 					self.mark_failure_slow_path(pos, expected);
@@ -396,7 +360,7 @@ pub(crate) fn compile_grammar(compiler: &mut PegCompiler, grammar: &Grammar) -> 
 	let helpers = raw(HELPERS);
 
 	Ok(quote! {
-		use self::RuleResult::{Matched, Failed};
+		use ::peg::RuleResult::{Matched, Failed};
 		#(#view_items)*
 
 		#helpers
@@ -412,7 +376,7 @@ fn make_parse_state(rules: &[Rule]) -> TokenStream {
 		if rule.cached {
 			let name = Ident::new(&format!("{}_cache", rule.name), Span::call_site());
 			let ret_ty = raw(&rule.ret_type);
-			cache_fields_def.push(quote!{ #name: ::std::collections::HashMap<usize, RuleResult<#ret_ty>> });
+			cache_fields_def.push(quote!{ #name: ::std::collections::HashMap<usize, ::peg::RuleResult<usize, #ret_ty>> });
 			cache_fields.push(name);
 		}
 	}
@@ -490,7 +454,7 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 		};
 
 		quote! { #nl
-			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
+			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> ::peg::RuleResult<usize, #ret_ty> {
 				#![allow(non_snake_case, unused)]
 				if let Some(entry) = __state.#cache_field.get(&__pos) {
 					#cache_trace
@@ -503,7 +467,7 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 		}
 	} else {
 		quote! { #nl
-			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ret_ty> {
+			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> ::peg::RuleResult<usize, #ret_ty> {
 				#![allow(non_snake_case, unused)]
 				#wrapped_body
 			}
@@ -625,11 +589,14 @@ impl<'a> Context<'a> {
 fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> TokenStream {
 	match e.node {
 		AnyCharExpr => {
-			quote!{ any_char(__input, __state, __pos) }
+			quote!{ ::peg::ParseElem::parse_elem(__input, __pos) }
 		}
 
 		LiteralExpr(ref s) => {
-			quote!{ slice_eq(__input, __state, __pos, #s) }
+			quote!{ match ::peg::ParseLiteral::parse_string_literal(__input, __pos, #s) {
+				Matched(__pos, __val) => Matched(__pos, __val),
+				Failed => __state.mark_failure(__pos, #s)
+			}}
 		}
 
 		PatternExpr(ref pattern) => {
@@ -645,15 +612,13 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 			let in_set_arm = quote!( #pat => #in_set, );
 
 			quote!{
-				if __input.len() > __pos {
-					let (__ch, __next) = char_range_at(__input, __pos);
-					match __ch {
+				match ::peg::ParseElem::parse_elem(__input, __pos) {
+					Matched(__next, __ch) => match __ch {
 						#in_set_arm
 						_ => #not_in_set,
 					}
-				} else {
-					__state.mark_failure(__pos, #expected_set)
-				}
+					Failed => __state.mark_failure(__pos, #expected_set)
+				}					
 			}
 		}
 
@@ -1048,7 +1013,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 			};
 
 			quote!{{
-				fn __infix_parse<'input>(__min_prec:i32, __input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> RuleResult<#ty> {
+				fn __infix_parse<'input>(__min_prec:i32, __input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> ::peg::RuleResult<usize, #ty> {
 					let __initial = (|| {
 						#(
 							if let Matched(__pos, __v) = #pre_rules {

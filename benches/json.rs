@@ -1,6 +1,6 @@
 #![feature(test)]
-extern crate peg_syntax_ext;
-use peg_syntax_ext::peg;
+extern crate peg;
+use peg::peg;
 
 extern crate test;
 
