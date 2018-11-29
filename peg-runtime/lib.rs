@@ -1,4 +1,7 @@
-mod str;
+use std::fmt::Display;
+
+pub mod str;
+pub mod error;
 
 #[derive(Clone)]
 pub enum RuleResult<P, T> {
@@ -8,7 +11,9 @@ pub enum RuleResult<P, T> {
 
 pub trait Parse<'input> {
     type Position: Clone + PartialOrd;
+    type PositionRepr: Display;
     fn start(&'input self) -> Self::Position;
+    fn position_repr(&'input self, p: Self::Position) -> Self::PositionRepr;
 }
 
 pub trait ParseElem<'input>: Parse<'input> {

@@ -1,9 +1,6 @@
 extern crate peg;
 use peg::peg;
 
-use parser::parse;
-use parser::ParseError;
-
 peg!{parser r#"
 pub parse -> usize
     = v:( "a" / "\n" )*   { v.len() }
@@ -11,16 +8,14 @@ pub parse -> usize
 
 #[test]
 fn test_errors() {
-    assert_eq!(parse(r#"
+    let err = parser::parse(r#"
 aaaa
 aaaaaa
 aaaabaaaa
-"#), Err(ParseError {
-        line: 4,
-        column: 5,
-        offset: 17,
-        expected: vec!["a", "\n"].into_iter().collect(),
-    }));
+"#).unwrap_err();
 
-    println!("Ok");
+    assert_eq!(err.location.line, 4);
+    assert_eq!(err.location.column, 5);
+    assert_eq!(err.location.offset, 17);
+    assert_eq!(err.expected, vec!["a", "\n"].into_iter().collect());
 }

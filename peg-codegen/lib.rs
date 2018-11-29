@@ -70,7 +70,7 @@ impl PegCompiler {
             Err(e) => {
                 self.span_error(
                     "Error parsing language specification".to_owned(),
-                    file.span.subspan(e.offset as u64, e.offset as u64),
+                    file.span.subspan(e.location.offset as u64, e.location.offset as u64),
                     Some(format!("{}", e))
                 );
                 return Err(())

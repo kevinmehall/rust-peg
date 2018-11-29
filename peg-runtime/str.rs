@@ -1,8 +1,30 @@
+use std::fmt::Display;
 use super::{RuleResult, Parse, ParseElem, ParseLiteral, ParseSlice};
+
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct LineCol {
+    pub line: usize,
+    pub column: usize,
+    pub offset: usize,
+}
+
+impl Display for LineCol {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
+        write!(fmt, "{}:{}", self.line, self.column)
+    }
+}
 
 impl<'input> Parse<'input> for str {
     type Position = usize;
+    type PositionRepr = LineCol;
     fn start(&'input self) -> usize { 0 }
+
+    fn position_repr(&'input self, pos: usize) -> LineCol {
+        let before = &self[..pos];
+		let line = before.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;
+		let column = before.chars().rev().take_while(|&c| c != '\n').count() + 1;
+		LineCol { line, column, offset: pos}
+    }
 }
 
 impl<'input> ParseElem<'input> for str {

@@ -277,75 +277,6 @@ pub enum BoundedRepeat {
 	Both(Option<String>, Option<String>),
 }
 
-static HELPERS: &'static str = stringify! {
-	fn escape_default(s: &str) -> String {
-		s.chars().flat_map(|c| c.escape_default()).collect()
-	}
-
-	#[derive(PartialEq, Eq, Debug, Clone)]
-	pub struct ParseError {
-		pub line: usize,
-		pub column: usize,
-		pub offset: usize,
-		pub expected: ::std::collections::HashSet<&'static str>,
-	}
-
-	pub type ParseResult<T> = Result<T, ParseError>;
-	impl ::std::fmt::Display for ParseError {
-		fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
-			write!(fmt, "error at {}:{}: expected ", self.line, self.column)?;
-			if self.expected.is_empty() {
-				write!(fmt, "EOF")?;
-			} else if self.expected.len() == 1 {
-				write!(fmt, "`{}`", escape_default(self.expected.iter().next().unwrap()))?;
-			} else {
-				let mut iter = self.expected.iter();
-
-				write!(fmt, "one of `{}`", escape_default(iter.next().unwrap()))?;
-				for elem in iter {
-					write!(fmt, ", `{}`", escape_default(elem))?;
-				}
-			}
-
-			Ok(())
-		}
-	}
-
-	impl ::std::error::Error for ParseError {
-		fn description(&self) -> &str {
-			"parse error"
-		}
-	}
-
-	fn pos_to_line(input: &str, pos: usize) -> (usize, usize) {
-		let before = &input[..pos];
-		let line = before.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;
-		let col = before.chars().rev().take_while(|&c| c != '\n').count() + 1;
-		(line, col)
-	}
-
-	impl<'input> ParseState<'input> {
-		#[inline(never)]
-		fn mark_failure_slow_path(&mut self, pos: usize, expected: &'static str) {
-			if pos == self.max_err_pos {
-				self.expected.insert(expected);
-			}
-		}
-
-		#[inline(always)]
-		fn mark_failure(&mut self, pos: usize, expected: &'static str) -> ::peg::RuleResult<usize, ()> {
-			if self.suppress_fail == 0 {
-				if self.reparsing_on_error {
-					self.mark_failure_slow_path(pos, expected);
-				} else if pos > self.max_err_pos {
-					self.max_err_pos = pos;
-				}
-			}
-			Failed
-		}
-	}
-};
-
 pub(crate) fn compile_grammar(compiler: &mut PegCompiler, grammar: &Grammar) -> Result<TokenStream, ()> {
 	let mut items = vec![make_parse_state(&grammar.rules)];
 
@@ -357,13 +288,10 @@ pub(crate) fn compile_grammar(compiler: &mut PegCompiler, grammar: &Grammar) -> 
 	}));
 
 	let view_items: Vec<_> = grammar.imports.iter().map(|x| raw(x)).collect();
-	let helpers = raw(HELPERS);
 
 	Ok(quote! {
 		use ::peg::RuleResult::{Matched, Failed};
 		#(#view_items)*
-
-		#helpers
 
 		#(#items)*
 	})
@@ -383,10 +311,7 @@ fn make_parse_state(rules: &[Rule]) -> TokenStream {
 
 	quote! {
 		struct ParseState<'input> {
-			max_err_pos: usize,
-			suppress_fail: usize,
-			reparsing_on_error: bool,
-			expected: ::std::collections::HashSet<&'static str>,
+			err: ::peg::error::ErrorState<usize>,
 			_phantom: ::std::marker::PhantomData<&'input ()>,
 			#(#cache_fields_def),*
 		}
@@ -394,10 +319,7 @@ fn make_parse_state(rules: &[Rule]) -> TokenStream {
 		impl<'input> ParseState<'input> {
 			fn new() -> ParseState<'input> {
 				ParseState {
-					max_err_pos: 0,
-					suppress_fail: 0,
-					reparsing_on_error: false,
-					expected: ::std::collections::HashSet::new(),
+					err: ::peg::error::ErrorState::new(0, false),
 					_phantom: ::std::marker::PhantomData,
 					#(#cache_fields: ::std::collections::HashMap::new()),*
 				}
@@ -421,15 +343,15 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 
 	let wrapped_body = if cfg!(feature = "trace") {
 		quote!{{
-			let (line, col) = pos_to_line(__input, __pos);
-			println!("[PEG_TRACE] Attempting to match rule {} at {}:{} (pos {})", #rule_name, line, col, __pos);
+			let loc = ::peg::Parse::position_repr(__input, pos);
+			println!("[PEG_TRACE] Attempting to match rule {} at {}", #rule_name, loc);
 			let mut __peg_closure = || {
 				#body
 			};
 			let __peg_result = __peg_closure();
 			match __peg_result {
-				Matched(_, _) => println!("[PEG_TRACE] Matched rule {} at {}:{} (pos {})", #rule_name, line, col, __pos),
-				Failed => println!("[PEG_TRACE] Failed to match rule {} at {}:{} (pos {})", #rule_name, line, col, __pos)
+				Matched(_, _) => println!("[PEG_TRACE] Matched rule {} at {}:{}", #rule_name, loc),
+				Failed => println!("[PEG_TRACE] Failed to match rule {} at {}:{}", #rule_name, loc)
 			}
 			__peg_result
 		}}
@@ -443,10 +365,10 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 
 		let cache_trace = if cfg!(feature = "trace") {
 			quote!{
-				let (line, col) = pos_to_line(__input, __pos);
+				let loc = ::peg::Parse::position_repr(__input, pos);
                 match entry {
-                    &Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}:{} (pos {})", #rule_name, line, col, __pos),
-                    &Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}:{} (pos {})", #rule_name, line, col, __pos),
+                    &Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}", #rule_name, loc),
+                    &Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}", #rule_name, loc),
                 };
 			}
 		} else {
@@ -486,7 +408,7 @@ fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> TokenStream {
 
 	quote! {
 		#nl
-		#visibility fn #name<'input>(__input: &'input str #extra_args_def) -> ParseResult<#ret_ty> {
+		#visibility fn #name<'input>(__input: &'input str #extra_args_def) -> Result<#ret_ty, ::peg::error::ParseError<::peg::str::LineCol>> {
 			#![allow(non_snake_case, unused)]
 			let mut __state = ParseState::new();
 			match #parse_fn(__input, &mut __state, 0 #extra_args_call) {
@@ -498,20 +420,18 @@ fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> TokenStream {
 				_ => ()
 			}
 
-			let __err_pos = __state.max_err_pos;
+			let __err_pos = __state.err.max_err_pos;
 			__state = ParseState::new();
-			__state.reparsing_on_error = true;
-			__state.max_err_pos = __err_pos;
+			__state.err.reparsing_on_error = true;
+			__state.err.max_err_pos = __err_pos;
 
 			#parse_fn(__input, &mut __state, 0 #extra_args_call);
 
-			let (__line, __col) = pos_to_line(__input, __err_pos);
+			let loc = ::peg::Parse::position_repr(__input, __err_pos);;
 
-			Err(ParseError {
-				line: __line,
-				column: __col,
-				offset: __err_pos,
-				expected: __state.expected,
+			Err(::peg::error::ParseError {
+				location: loc,
+				expected: __state.err.expected,
 			})
 		}
 	}
@@ -595,7 +515,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		LiteralExpr(ref s) => {
 			quote!{ match ::peg::ParseLiteral::parse_string_literal(__input, __pos, #s) {
 				Matched(__pos, __val) => Matched(__pos, __val),
-				Failed => __state.mark_failure(__pos, #s)
+				Failed => __state.err.mark_failure(__pos, #s)
 			}}
 		}
 
@@ -605,7 +525,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 
 			let (in_set, not_in_set) = cond_swap(invert, (
 				quote!{ Matched(__next, ()) },
-				quote!{ __state.mark_failure(__pos, #expected_set) },
+				quote!{ __state.err.mark_failure(__pos, #expected_set) },
 			));
 
 			let pat = raw(pattern);
@@ -617,7 +537,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 						#in_set_arm
 						_ => #not_in_set,
 					}
-					Failed => __state.mark_failure(__pos, #expected_set)
+					Failed => __state.err.mark_failure(__pos, #expected_set)
 				}					
 			}
 		}
@@ -826,9 +746,9 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		PosAssertExpr(ref e) => {
 			let assert_res = compile_expr(compiler, cx, e);
 			quote! {{
-				__state.suppress_fail += 1;
+				__state.err.suppress_fail += 1;
 				let __assert_res = #assert_res;
-				__state.suppress_fail -= 1;
+				__state.err.suppress_fail -= 1;
 				match __assert_res {
 					Matched(_, __value) => Matched(__pos, __value),
 					Failed => Failed,
@@ -839,9 +759,9 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		NegAssertExpr(ref e) => {
 			let assert_res = compile_expr(compiler, cx.result_used(false), e);
 			quote! {{
-				__state.suppress_fail += 1;
+				__state.err.suppress_fail += 1;
 				let __assert_res = #assert_res;
-				__state.suppress_fail -= 1;
+				__state.err.suppress_fail -= 1;
 				match __assert_res {
 					Failed => Matched(__pos, ()),
 					Matched(..) => Failed,
@@ -858,7 +778,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 						match #code_block {
 							Ok(res) => Matched(__pos, res),
 							Err(expected) => {
-								__state.mark_failure(__pos, expected);
+								__state.err.mark_failure(__pos, expected);
 								Failed
 							},
 						}
@@ -884,14 +804,14 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		QuietExpr(ref expr) => {
 			let inner = compile_expr(compiler, cx, expr);
 			quote! {{
-				__state.suppress_fail += 1;
+				__state.err.suppress_fail += 1;
 				let res = #inner;
-				__state.suppress_fail -= 1;
+				__state.err.suppress_fail -= 1;
 				res
 			}}
 		}
 		FailExpr(ref expected) => {
-			quote!{{ __state.mark_failure(__pos, #expected); Failed }}
+			quote!{{ __state.err.mark_failure(__pos, #expected); Failed }}
 		}
 
 		InfixExpr{ ref atom, ref levels } => {

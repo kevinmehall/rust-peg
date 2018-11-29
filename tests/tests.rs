@@ -241,7 +241,7 @@ fn test_renamed_imports() {
 fn test_neg_lookahead_err() {
 	let err = neg_lookahead_err("ac").err().unwrap();
 	assert_eq!(err.expected.len(), 1, "expected set includes: {:?}", err.expected);
-	assert_eq!(err.offset, 1);
+	assert_eq!(err.location.offset, 1);
 }
 
 #[test]
@@ -277,20 +277,20 @@ fn test_infix_ast(){
 #[test]
 fn test_error_pos() {
     let err = error_pos("aab\n").unwrap_err();
-    assert_eq!(err.line, 1);
-    assert_eq!(err.column, 3);
-    assert_eq!(err.offset, 2);
+    assert_eq!(err.location.line, 1);
+    assert_eq!(err.location.column, 3);
+    assert_eq!(err.location.offset, 2);
     assert_eq!(err.expected, ["\r", "\n", "a"].iter().map(|x| *x).collect());
 
     let err = error_pos("aa\naaaa\nbaaa\n").unwrap_err();
-    assert_eq!(err.line, 3);
-    assert_eq!(err.column, 1);
+    assert_eq!(err.location.line, 3);
+    assert_eq!(err.location.column, 1);
 
     let err = error_pos("aa\naaaa\naaab\naa").unwrap_err();
-    assert_eq!(err.line, 3);
-    assert_eq!(err.column, 4);
+    assert_eq!(err.location.line, 3);
+    assert_eq!(err.location.column, 4);
 
     let err = error_pos("aa\r\naaaa\r\naaab\r\naa").unwrap_err();
-    assert_eq!(err.line, 3);
-    assert_eq!(err.column, 4);
+    assert_eq!(err.location.line, 3);
+    assert_eq!(err.location.column, 4);
 }
