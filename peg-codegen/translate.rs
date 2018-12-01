@@ -814,7 +814,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 			quote! {{
 				let str_start = __pos;
 				match #inner {
-					Matched(__newpos, _) => { Matched(__newpos, &__input[str_start..__newpos]) },
+					Matched(__newpos, _) => { Matched(__newpos, ::peg::ParseSlice::parse_slice(__input, str_start, __newpos)) },
 					Failed => Failed,
 				}
 			}}

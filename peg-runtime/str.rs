@@ -51,10 +51,7 @@ impl<'input> ParseLiteral<'input> for str {
 
 impl<'input> ParseSlice<'input> for str {
     type Slice = &'input str;
-    fn parse_slice(&'input self, pos: usize, f: impl FnOnce(usize) -> RuleResult<usize, ()>) -> RuleResult<usize, &'input str> {
-        match f(pos) {
-            RuleResult::Matched(end_pos, ()) => RuleResult::Matched(end_pos, &self[pos..end_pos]),
-            RuleResult::Failed => RuleResult::Failed,
-        }
+    fn parse_slice(&'input self, p1: usize, p2: usize) -> &'input str {
+        &self[p1..p2]
     }
 }

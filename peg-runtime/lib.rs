@@ -28,6 +28,6 @@ pub trait ParseLiteral<'input>: Parse<'input> {
 
 pub trait ParseSlice<'input>: Parse<'input> {
     type Slice;
-    fn parse_slice(&'input self, pos: Self::Position, f: impl FnOnce(Self::Position) -> RuleResult<Self::Position, ()>) -> RuleResult<Self::Position, Self::Slice>;
+    fn parse_slice(&'input self, p1: Self::Position, p2: Self::Position) -> Self::Slice;
 }
 

@@ -8,12 +8,12 @@ impl<'input, T: 'input> Parse<'input> for [T] {
     fn position_repr(&'input self, pos: usize) -> usize { pos }
 }
 
-impl<'input, T: 'input + Copy> ParseElem<'input> for [T] {
+impl<'input, T: 'input + Clone> ParseElem<'input> for [T] {
     type Element = T;
 
     fn parse_elem(&'input self, pos: usize) -> RuleResult<usize, T> {
         match self[pos..].first() {
-            Some(c) => RuleResult::Matched(pos + 1, *c),
+            Some(c) => RuleResult::Matched(pos + 1, c.clone()),
             None => RuleResult::Failed
         }
     }
@@ -32,10 +32,7 @@ impl<'input> ParseLiteral<'input> for [u8] {
 
 impl<'input, T: 'input> ParseSlice<'input> for [T] {
     type Slice = &'input [T];
-    fn parse_slice(&'input self, pos: usize, f: impl FnOnce(usize) -> RuleResult<usize, ()>) -> RuleResult<usize, &'input [T]> {
-        match f(pos) {
-            RuleResult::Matched(end_pos, ()) => RuleResult::Matched(end_pos, &self[pos..end_pos]),
-            RuleResult::Failed => RuleResult::Failed,
-        }
+    fn parse_slice(&'input self, p1: usize, p2: usize) -> &'input [T] {
+        &self[p1..p2]
     }
 }
