@@ -29,6 +29,7 @@ item -> Item
   / r:peg_rule     { Item::Rule(r) }
   / t:template     { Item::Template(t) }
   / grammar_args
+  / input_type
 
   grammar_args -> Item
     = "#![" _ "arguments" _ "(" _ args:COMMASEP<grammar_argument> _ ")" _ "]"
@@ -36,6 +37,10 @@ item -> Item
 
     grammar_argument -> (String, String)
       = i:identifier _ ":" _ t:type_string { (i, t) }
+
+  input_type -> Item
+    = "type" _ "Input" _ "=" _ tp:type_string _ ";"
+    { Item::InputType(tp) }
 
 
 type_string -> String = tp:$rust_type _ { tp.to_owned() }

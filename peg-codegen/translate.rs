@@ -14,6 +14,7 @@ pub(crate) struct Grammar {
 	pub rules: Vec<Rule>,
 	pub templates: HashMap<String, Template>,
 	pub args: Vec<(String, String)>,
+	pub input_type: String,
 }
 
 impl Grammar {
@@ -23,6 +24,7 @@ impl Grammar {
 		let mut templates = HashMap::new();
 
 		let mut grammar_args = None;
+		let mut input_type = None;
 
 		for item in items {
 			match item.node {
@@ -58,6 +60,17 @@ impl Grammar {
 						)
 					}
 				}
+				Item::InputType(args) => {
+					if grammar_args.is_none() {
+						input_type = Some(args);
+					} else {
+						compiler.span_error(
+							"Grammar contains multiple `type Input = ...` declarations".to_owned(),
+							item.span,
+							Some("duplicate declaration".to_owned())
+						)
+					}
+				}
 			}
 		}
 
@@ -69,7 +82,11 @@ impl Grammar {
 			)
 		}
 
-		Ok(Grammar{ imports:imports, rules:rules, templates:templates, args: grammar_args.unwrap_or(vec![]) })
+		Ok(Grammar{
+			imports, rules, templates,
+			args: grammar_args.unwrap_or(vec![]),
+			input_type: input_type.unwrap_or("str".to_owned()),
+		})
 	}
 
 	fn find_rule(&self, name: &str) -> Option<&Rule> {
@@ -163,7 +180,8 @@ pub enum Item {
 	Use(String),
 	Rule(Rule),
 	Template(Template),
-	GrammarArgs(Vec<(String, String)>)
+	GrammarArgs(Vec<(String, String)>),
+	InputType(String),
 }
 
 pub struct Rule {
@@ -288,10 +306,15 @@ pub(crate) fn compile_grammar(compiler: &mut PegCompiler, grammar: &Grammar) -> 
 	}));
 
 	let view_items: Vec<_> = grammar.imports.iter().map(|x| raw(x)).collect();
+	let input_type = raw(&grammar.input_type);
 
 	Ok(quote! {
 		use ::peg::RuleResult::{Matched, Failed};
 		#(#view_items)*
+
+		type Input = #input_type;
+		type Position<'input> = <Input as ::peg::Parse<'input>>::Position;
+		type PositionRepr<'input> = <Input as ::peg::Parse<'input>>::PositionRepr;
 
 		#(#items)*
 	})
@@ -311,7 +334,6 @@ fn make_parse_state(rules: &[Rule]) -> TokenStream {
 
 	quote! {
 		struct ParseState<'input> {
-			err: ::peg::error::ErrorState<usize>,
 			_phantom: ::std::marker::PhantomData<&'input ()>,
 			#(#cache_fields_def),*
 		}
@@ -319,7 +341,6 @@ fn make_parse_state(rules: &[Rule]) -> TokenStream {
 		impl<'input> ParseState<'input> {
 			fn new() -> ParseState<'input> {
 				ParseState {
-					err: ::peg::error::ErrorState::new(0, false),
 					_phantom: ::std::marker::PhantomData,
 					#(#cache_fields: ::std::collections::HashMap::new()),*
 				}
@@ -376,7 +397,7 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 		};
 
 		quote! { #nl
-			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> ::peg::RuleResult<usize, #ret_ty> {
+			fn #name<'input>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState<Position<'input>>, __pos: Position<'input> #extra_args_def) -> ::peg::RuleResult<usize, #ret_ty> {
 				#![allow(non_snake_case, unused)]
 				if let Some(entry) = __state.#cache_field.get(&__pos) {
 					#cache_trace
@@ -389,7 +410,7 @@ fn compile_rule(compiler: &mut PegCompiler, grammar: &Grammar, rule: &Rule) -> T
 		}
 	} else {
 		quote! { #nl
-			fn #name<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> ::peg::RuleResult<usize, #ret_ty> {
+			fn #name<'input>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState<Position<'input>>, __pos: Position<'input> #extra_args_def) -> ::peg::RuleResult<usize, #ret_ty> {
 				#![allow(non_snake_case, unused)]
 				#wrapped_body
 			}
@@ -408,10 +429,12 @@ fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> TokenStream {
 
 	quote! {
 		#nl
-		#visibility fn #name<'input>(__input: &'input str #extra_args_def) -> Result<#ret_ty, ::peg::error::ParseError<::peg::str::LineCol>> {
+		#visibility fn #name<'input>(__input: &'input Input #extra_args_def) -> Result<#ret_ty, ::peg::error::ParseError<PositionRepr<'input>>> {
 			#![allow(non_snake_case, unused)]
+
+			let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
 			let mut __state = ParseState::new();
-			match #parse_fn(__input, &mut __state, 0 #extra_args_call) {
+			match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call) {
 				Matched(__pos, __value) => {
 					if __pos == __input.len() {
 						return Ok(__value)
@@ -420,18 +443,16 @@ fn compile_rule_export(grammar: &Grammar, rule: &Rule) -> TokenStream {
 				_ => ()
 			}
 
-			let __err_pos = __state.err.max_err_pos;
 			__state = ParseState::new();
-			__state.err.reparsing_on_error = true;
-			__state.err.max_err_pos = __err_pos;
+			__err_state.reparse_for_error();
 
-			#parse_fn(__input, &mut __state, 0 #extra_args_call);
+			#parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call);
 
-			let loc = ::peg::Parse::position_repr(__input, __err_pos);;
+			let loc = ::peg::Parse::position_repr(__input, __err_state.max_err_pos);;
 
 			Err(::peg::error::ParseError {
 				location: loc,
-				expected: __state.err.expected,
+				expected: __err_state.expected,
 			})
 		}
 	}
@@ -515,7 +536,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		LiteralExpr(ref s) => {
 			quote!{ match ::peg::ParseLiteral::parse_string_literal(__input, __pos, #s) {
 				Matched(__pos, __val) => Matched(__pos, __val),
-				Failed => __state.err.mark_failure(__pos, #s)
+				Failed => __err_state.mark_failure(__pos, #s)
 			}}
 		}
 
@@ -525,7 +546,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 
 			let (in_set, not_in_set) = cond_swap(invert, (
 				quote!{ Matched(__next, ()) },
-				quote!{ __state.err.mark_failure(__pos, #expected_set) },
+				quote!{ __err_state.mark_failure(__pos, #expected_set) },
 			));
 
 			let pat = raw(pattern);
@@ -537,7 +558,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 						#in_set_arm
 						_ => #not_in_set,
 					}
-					Failed => __state.err.mark_failure(__pos, #expected_set)
+					Failed => __err_state.mark_failure(__pos, #expected_set)
 				}					
 			}
 		}
@@ -558,10 +579,10 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 				}
 
 				if cx.result_used || rule.ret_type == "()" {
-					quote!{ #func(__input, __state, __pos #extra_args_call) }
+					quote!{ #func(__input, __state, __err_state, __pos #extra_args_call) }
 				} else {
 					quote!{
-						match #func(__input, __state, __pos #extra_args_call) {
+						match #func(__input, __state, __err_state, __pos #extra_args_call) {
 							Matched(pos, _) => Matched(pos, ()),
 							Failed => Failed,
 						}
@@ -746,9 +767,9 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		PosAssertExpr(ref e) => {
 			let assert_res = compile_expr(compiler, cx, e);
 			quote! {{
-				__state.err.suppress_fail += 1;
+				__err_state.suppress_fail += 1;
 				let __assert_res = #assert_res;
-				__state.err.suppress_fail -= 1;
+				__err_state.suppress_fail -= 1;
 				match __assert_res {
 					Matched(_, __value) => Matched(__pos, __value),
 					Failed => Failed,
@@ -759,9 +780,9 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		NegAssertExpr(ref e) => {
 			let assert_res = compile_expr(compiler, cx.result_used(false), e);
 			quote! {{
-				__state.err.suppress_fail += 1;
+				__err_state.suppress_fail += 1;
 				let __assert_res = #assert_res;
-				__state.err.suppress_fail -= 1;
+				__err_state.suppress_fail -= 1;
 				match __assert_res {
 					Failed => Matched(__pos, ()),
 					Matched(..) => Failed,
@@ -778,7 +799,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 						match #code_block {
 							Ok(res) => Matched(__pos, res),
 							Err(expected) => {
-								__state.err.mark_failure(__pos, expected);
+								__err_state.mark_failure(__pos, expected);
 								Failed
 							},
 						}
@@ -804,14 +825,14 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 		QuietExpr(ref expr) => {
 			let inner = compile_expr(compiler, cx, expr);
 			quote! {{
-				__state.err.suppress_fail += 1;
+				__err_state.suppress_fail += 1;
 				let res = #inner;
-				__state.err.suppress_fail -= 1;
+				__err_state.suppress_fail -= 1;
 				res
 			}}
 		}
 		FailExpr(ref expected) => {
-			quote!{{ __state.err.mark_failure(__pos, #expected); Failed }}
+			quote!{{ __err_state.mark_failure(__pos, #expected); Failed }}
 		}
 
 		InfixExpr{ ref atom, ref levels } => {
@@ -869,7 +890,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 							post_rules.push(
 								labeled_seq(compiler, cx, &op.elements[1..op.elements.len()-1], {
 									quote!{
-										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos #extra_args_call) {
+										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __err_state, __pos #extra_args_call) {
 											let #l_arg = __infix_result;
 											__infix_result = #action;
 											Matched(__pos, ())
@@ -893,7 +914,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 							pre_rules.push(
 								labeled_seq(compiler, cx, &op.elements[..op.elements.len()-1], {
 									quote!{
-										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __pos #extra_args_call) {
+										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __err_state, __pos #extra_args_call) {
 											Matched(__pos, {#action})
 										} else { Failed }
 									}
@@ -933,7 +954,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 			};
 
 			quote!{{
-				fn __infix_parse<'input>(__min_prec:i32, __input: &'input str, __state: &mut ParseState<'input>, __pos: usize #extra_args_def) -> ::peg::RuleResult<usize, #ty> {
+				fn __infix_parse<'input>(__min_prec:i32, __input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState<Position<'input>>, __pos: Position<'input> #extra_args_def) -> ::peg::RuleResult<usize, #ty> {
 					let __initial = (|| {
 						#(
 							if let Matched(__pos, __v) = #pre_rules {
@@ -958,7 +979,7 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 						Failed
 					}
 				}
-				__infix_parse(0, __input, __state, __pos #extra_args_call)
+				__infix_parse(0, __input, __state, __err_state, __pos #extra_args_call)
 			}}
 		}
 		MarkerExpr => {

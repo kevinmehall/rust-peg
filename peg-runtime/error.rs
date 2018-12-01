@@ -45,13 +45,18 @@ pub struct ErrorState<P> {
 }
 
 impl<P: PartialOrd> ErrorState<P> {
-    pub fn new(initial_pos: P, reparsing: bool) -> ErrorState<P> {
+    pub fn new(initial_pos: P) -> ErrorState<P> {
         ErrorState {
             max_err_pos: initial_pos,
             suppress_fail: 0,
-            reparsing_on_error: reparsing,
+            reparsing_on_error: false,
             expected: ::std::collections::HashSet::new(),
         }
+    }
+
+    pub fn reparse_for_error(&mut self) {
+        self.suppress_fail = 0;
+        self.reparsing_on_error = true;
     }
 
     #[inline(never)]

@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 pub mod str;
+pub mod slice;
 pub mod error;
 
 #[derive(Clone)]
