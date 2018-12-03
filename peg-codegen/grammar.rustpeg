@@ -156,6 +156,7 @@ primary -> Spanned<Expr>
   / class
   / "." { AnyCharExpr }
   / "@" { MarkerExpr }
+  / "##" _ method:identifier _ "(" args:$((!")" .)*) ")" { MethodExpr(method, args.to_owned()) }
   / "#position" { PositionExpr }
   / "#quiet" _ "<" _ e:expression _ ">" { QuietExpr(Box::new(e)) }
   / "#expected" _ "(" _ s:doubleQuotedString _ ")" { FailExpr(s) }

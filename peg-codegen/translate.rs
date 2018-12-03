@@ -216,6 +216,7 @@ pub enum Expr {
 	LiteralExpr(String),
 	PatternExpr(String),
 	RuleExpr(String),
+	MethodExpr(String, String),
 	SequenceExpr(Vec<Spanned<Expr>>),
 	ChoiceExpr(Vec<Spanned<Expr>>),
 	OptionalExpr(Box<Spanned<Expr>>),
@@ -596,6 +597,12 @@ fn compile_expr(compiler: &mut PegCompiler, cx: Context, e: &Spanned<Expr>) -> T
 				);
 				quote!()
 			}
+		}
+
+		MethodExpr(ref method, ref args) => {
+			let method = raw(method);
+			let args = raw(args);
+			quote!{ __input.#method(__pos, #args) }
 		}
 
 		TemplateInvoke(ref name, ref params) => {
