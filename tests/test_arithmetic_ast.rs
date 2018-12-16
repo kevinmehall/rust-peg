@@ -1,5 +1,5 @@
 extern crate peg;
-use peg::peg;
+use peg::parser;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Expression {
@@ -8,28 +8,28 @@ pub enum Expression {
 	Product(Box<Expression>, Box<Expression>),
 }
 
-peg!(arithmetic r#"
-use super::Expression;
+parser!{grammar arithmetic() for str {
+	use super::Expression;
 
-pub rule expression -> Expression
-	= sum
+	pub rule expression -> Expression
+		= sum
 
-rule sum -> Expression
-	= l:product "+" r:product { Expression::Sum(Box::new(l), Box::new(r)) }
-	/ product
+	rule sum -> Expression
+		= l:product "+" r:product { Expression::Sum(Box::new(l), Box::new(r)) }
+		/ product
 
-rule product -> Expression
-	= l:atom "*" r:atom { Expression::Product(Box::new(l), Box::new(r)) }
-	/ atom
+	rule product -> Expression
+		= l:atom "*" r:atom { Expression::Product(Box::new(l), Box::new(r)) }
+		/ atom
 
-rule atom -> Expression
-	= number
-	/ "(" v:sum ")" { v }
+	rule atom -> Expression
+		= number
+		/ "(" v:sum ")" { v }
 
-rule number -> Expression
-	= n:$(['0'..='9']+) { Expression::Number(n.parse().unwrap()) }
+	rule number -> Expression
+		= n:$(['0'..='9']+) { Expression::Number(n.parse().unwrap()) }
+}}
 
-"#);
 
 #[test]
 fn main() {

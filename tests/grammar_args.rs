@@ -1,5 +1,4 @@
 extern crate peg;
-use peg::peg;
 
 use std::collections::HashMap;
 
@@ -47,32 +46,29 @@ pub enum Node {
     Mul(Box<Spanned<Node>>, Box<Spanned<Node>>),
 }
 
-peg!(parser r#"
-use super::{Interner, Identifier, Spanned, Node};
+peg::parser!( grammar parser(file_id: usize, interner: &mut Interner) for str {
+    use super::{Interner, Identifier, Spanned, Node};
 
-#![arguments(file_id: usize, interner: &mut Interner)]
+    pub rule outer_rule -> Vec<Spanned<Identifier>> = inner_rule**","
 
-pub outer_rule -> Vec<Spanned<Identifier>> = inner_rule**","
+    rule inner_rule -> Spanned<Identifier> = spanned<identifier>
 
-inner_rule -> Spanned<Identifier> = spanned<identifier>
+    rule spanned<X>
+        = start:#position node:X end:#position
+        { Spanned { file_id, start, end, node} }
 
-spanned<X>
-    = start:#position node:X end:#position
-    { Spanned { file_id, start, end, node} }
+    rule identifier -> Identifier
+        = s:$(['a'..='z']+) { interner.intern(s) }
 
-identifier -> Identifier
-    = s:$(['a'..='z']+) { interner.intern(s) }
+    rule variable -> Spanned<Node>
+        = v:spanned<identifier>
+        { v.with_node(Node::Variable(v.node)) }
 
-variable -> Spanned<Node>
-    = v:spanned<identifier>
-    { v.with_node(Node::Variable(v.node)) }
-
-pub arith_ast -> Spanned<Node> = #infix<variable> {
-	#L x:@ op:spanned<"+"> y:@ { op.with_node(Node::Add(Box::new(x), Box::new(y))) }
-	#L x:@ op:spanned<"*"> y:@ { op.with_node(Node::Mul(Box::new(x), Box::new(y))) }
-}
-
-"#);
+    pub rule arith_ast -> Spanned<Node> = #infix<variable> {
+        #L x:@ op:spanned<"+"> y:@ { op.with_node(Node::Add(Box::new(x), Box::new(y))) }
+        #L x:@ op:spanned<"*"> y:@ { op.with_node(Node::Mul(Box::new(x), Box::new(y))) }
+    }
+});
 
 #[test]
 fn test_grammar_args() {

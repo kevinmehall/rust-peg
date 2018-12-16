@@ -1,26 +1,25 @@
 #![feature(test, crate_visibility_modifier)]
 extern crate peg;
-use peg::peg;
 
 extern crate test;
 
 use test::Bencher;
 
-peg!(parser r#"
-crate expr = eq
+peg::parser!(grammar parser() for str {
+crate rule expr = eq
 
 #[cache]
-eq = additive "=" eq / additive
+rule eq = additive "=" eq / additive
 #[cache]
-additive = multitive "+" additive / multitive
+rule additive = multitive "+" additive / multitive
 #[cache]
-multitive = pow "*" multitive / pow
+rule multitive = pow "*" multitive / pow
 #[cache]
-pow = atom "^" pow / atom
+rule pow = atom "^" pow / atom
 
 #[cache]
-atom = ['0'..='9']+ / "(" expr ")"
-"#);
+rule atom = ['0'..='9']+ / "(" expr ")"
+});
 
 #[bench]
 fn expr(b: &mut Bencher) {

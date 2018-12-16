@@ -1,14 +1,12 @@
 extern crate peg;
-use peg::peg;
+use peg::parser;
 
-peg!(byteparser r#"
-type Input = [u8];
-
-pub rule commands -> Vec<&'input[u8]> = command*
-
-rule command -> &'input [u8] = ">" val:$([b' ' ... b'~']+) [0] { val }
-
-"#);
+parser!{
+	grammar byteparser() for [u8] {
+		pub rule commands -> Vec<&'input[u8]> = command*
+		rule command -> &'input [u8] = ">" val:$([b' ' ... b'~']+) [0] { val }
+	}
+}
 
 #[test]
 fn main() {

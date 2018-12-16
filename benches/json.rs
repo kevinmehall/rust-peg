@@ -1,53 +1,52 @@
 #![feature(test)]
 extern crate peg;
-use peg::peg;
 
 extern crate test;
 
 use test::Bencher;
 
-peg!(parser r#"
+peg::parser!(grammar parser() for str {
 // JSON grammar (RFC 4627). Note that this only checks for valid JSON and does not build a syntax
 // tree.
 
-pub json = object / array
+pub rule json = object / array
 
-ws = [' ' | '\t' | '\r' | '\n']*
-begin_array = ws "[" ws
-begin_object = ws "{" ws
-end_array = ws "]" ws
-end_object = ws "}" ws
-name_separator = ws ":" ws
-value_separator = ws "," ws
+rule ws = [' ' | '\t' | '\r' | '\n']*
+rule begin_array = ws "[" ws
+rule begin_object = ws "{" ws
+rule end_array = ws "]" ws
+rule end_object = ws "}" ws
+rule name_separator = ws ":" ws
+rule value_separator = ws "," ws
 
-value
+rule value
     = "false" / "true" / "null" / object / array / number / string
 
-object
+rule object
     = begin_object (member (value_separator member)*)? end_object
 
-member
+rule member
     = string name_separator value
 
-array
+rule array
     = begin_array (value (value_separator value)*)? end_array
 
-number
+rule number
     = "-"? int frac? exp? {}
 
-int
+rule int
     = ['0'] / ['1'..='9']['0'..='9']*
 
-exp
+rule exp
     = ("e" / "E") ("-" / "+")? ['0'..='9']*<1,>
 
-frac
+rule frac
     = "." ['0'..='9']*<1,>
 
 // note: escaped chars not handled
-string
+rule string
     = "\"" (!"\"" .)* "\""
-"#);
+});
 
 #[bench]
 fn json(b: &mut Bencher) {

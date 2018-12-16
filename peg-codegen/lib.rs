@@ -3,96 +3,38 @@
 #[macro_use]
 extern crate quote;
 extern crate proc_macro2;
-extern crate codemap;
-extern crate codemap_diagnostic;
-
-use codemap::{ CodeMap, Span };
-use codemap_diagnostic::{ Diagnostic, Level, SpanLabel, SpanStyle, Emitter, ColorConfig };
+use proc_macro2::TokenStream;
 
 // This can't use the `peg` crate as it would be a circular dependency, but the generated code in grammar.rs
 // requires `::peg` paths.
 extern crate peg_runtime as peg;
-mod grammar;
-
-mod translate;
 
 #[cfg(test)]
 mod test;
+mod ast;
+mod tokens;
+mod grammar;
+mod translate;
+mod analysis;
 
-struct PegCompiler {
-    codemap: CodeMap,
-    diagnostics: Vec<codemap_diagnostic::Diagnostic>
-}
-
-impl PegCompiler {
-    fn new() -> PegCompiler {
-        PegCompiler {
-            codemap: CodeMap::new(),
-            diagnostics: vec![],
+pub fn compile_tokens(input: TokenStream) -> TokenStream {
+    ::std::panic::take_hook();
+    let tokens = tokens::FlatTokenStream::new(input);
+    let grammar = match grammar::peg::peg_grammar(&tokens) {
+        Ok(g) => g,
+        Err(err) => {
+            let msg = err.to_string();
+            return quote_spanned!(err.location.0=> compile_error!(#msg););
         }
+    };
+
+    let mut errors = Vec::new();
+    analysis::check(&grammar, &mut |err| errors.push(err.to_compile_error()));
+    let res = translate::compile_grammar(&grammar);
+
+    quote! {
+        #res
+        #(#errors)*
     }
-
-    fn has_error(&self) -> bool {
-        self.diagnostics.iter().any(|d| d.level == Level::Error || d.level == Level::Bug)
-    }
-
-    fn span_error(&mut self, error: String, span: Span, label: Option<String>) {
-        self.diagnostics.push(Diagnostic {
-            level: Level::Error,
-            message: error,
-            code: None,
-            spans: vec![SpanLabel { span, label, style: SpanStyle::Primary }]
-        });
-    }
-
-    fn span_warning(&mut self, error: String, span: Span, label: Option<String>) {
-        self.diagnostics.push(Diagnostic {
-            level: Level::Warning,
-            message: error,
-            code: None,
-            spans: vec![SpanLabel { span, label, style: SpanStyle::Primary }]
-        });
-    }
-
-    fn print_diagnostics(&mut self) {
-        if !self.diagnostics.is_empty() {
-            let mut emitter = Emitter::stderr(ColorConfig::Auto, Some(&self.codemap));
-            emitter.emit(&self.diagnostics[..]);
-            self.diagnostics.clear();
-        }
-    }
-
-    fn compile(&mut self, filename: String, input: String) -> Result<String, ()> {
-        let file = self.codemap.add_file(filename, input);
-
-        let ast_items = match grammar::items(&file.source(), file.span) {
-            Ok(g) => g,
-            Err(e) => {
-                self.span_error(
-                    "Error parsing language specification".to_owned(),
-                    file.span.subspan(e.location.offset as u64, e.location.offset as u64),
-                    Some(format!("{}", e))
-                );
-                return Err(())
-            }
-        };
-
-        let grammar_def = translate::Grammar::from_ast(self, ast_items)?;
-        let output_tokens = translate::compile_grammar(self, &grammar_def);
-
-        if self.has_error() {
-            Err(())
-        } else {
-            Ok(output_tokens?.to_string())
-        }
-    }
-}
-
-/// Compile a peg grammar to Rust source, printing errors to stderr
-pub fn compile(filename: String, input: String) -> Result<String, ()> {
-    let mut compiler = PegCompiler::new();
-    let result = compiler.compile(filename, input);
-    compiler.print_diagnostics();
-    result
 }
 

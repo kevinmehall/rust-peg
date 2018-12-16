@@ -1,17 +1,14 @@
 extern crate peg;
-use peg::peg;
 
-peg!{memo r#"
+peg::parser!{ grammar memo() for str {
+    #[cache]
+    rule r -> &'input str
+        = s:$(['a'..='z']+) { s }
 
-#[cache]
-r -> &'input str
-    = s:$(['a'..='z']+) { s }
-
-pub parse
-    = r '+' r { () }
-    / r ' ' r { () }
-
-"#}
+    pub rule parse
+        = r "+" r { () }
+        / r " " r { () }
+}}
 
 #[test]
 fn main() {

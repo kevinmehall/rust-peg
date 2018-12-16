@@ -3,60 +3,60 @@ use std::collections::HashMap;
 
 const FOO: i32 = 42;
 
-peg::peg!(test_grammar r#"
+peg::parser!(grammar test_grammar() for str {
 use std::collections::HashMap;
 use std::borrow::{ToOwned, Cow};
 
-pub consonants
+pub rule consonants
 	= (!['a'|'e'|'i'|'o'|'u']['a'..='z'])+
 
-pub options -> Option<()>
+pub rule options -> Option<()>
 	= "abc" v:"def"? {v}
 
-number -> i64
+rule number -> i64
 	= n:$(['0'..='9']+) { n.parse().unwrap() }
 
-pub list -> Vec<i64>
+pub rule list -> Vec<i64>
 	= number ** ","
 
-digit -> i64
+rule digit -> i64
 	= n:$(['0'..='9']) {n.parse().unwrap() }
 
-pub repeat_n -> Vec<i64>
+pub rule repeat_n -> Vec<i64>
 	= digit*<4>
 
-pub repeat_min -> Vec<i64>
+pub rule repeat_min -> Vec<i64>
 	= digit*<2,>
 
-pub repeat_max -> Vec<i64>
+pub rule repeat_max -> Vec<i64>
 	= digit*<,2>
 
-pub repeat_min_max -> Vec<i64>
+pub rule repeat_min_max -> Vec<i64>
 	= digit*<2,3>
 
-pub repeat_sep_3 -> Vec<i64>
+pub rule repeat_sep_3 -> Vec<i64>
 	= digit **<3> ","
 
-pub repeat_variable -> Vec<&'input str>
+pub rule repeat_variable -> Vec<&'input str>
 	= (count:digit s:$(['a'..='z'|'0'..='9']*<{count as usize}>) {s})*
 
-pub boundaries -> String
+pub rule boundaries -> String
 	= n:$("foo") { n.to_string() }
 
-pub borrowed -> &'input str
+pub rule borrowed -> &'input str
 	= $(['a'..='z']+)
 
-pub lifetime_parameter -> Cow<'input, str>
+pub rule lifetime_parameter -> Cow<'input, str>
 	= x:$(['a'..='z']+) { x.into() }
 	/ "COW"  { "cow".to_owned().into() }
 
-pub block -> &'input str
+pub rule block -> &'input str
 	= x:$(['a'..='z']+) {
 		let result = x;
 		result
 	}
 
-pub keyvals -> HashMap<i64, i64>
+pub rule keyvals -> HashMap<i64, i64>
     = kvs:keyval ++ "\n" {
         let mut rv = HashMap::new();
         for &(k, v) in kvs.iter() {
@@ -65,37 +65,37 @@ pub keyvals -> HashMap<i64, i64>
         rv
     }
 
-keyval -> (i64, i64)
+rule keyval -> (i64, i64)
     = k:number ":" + v:number { (k, v) }
 
-pub expect_nothing -> ()
+pub rule expect_nothing -> ()
 	= ['a'..='z']
 
-pub position -> (usize, usize, usize)
+pub rule position -> (usize, usize, usize)
  = start:#position ['a']* middle:#position ['b']* end:#position { (start, middle, end) }
 
-pub option_unused_result = "a"? / "b"
+pub rule option_unused_result = "a"? / "b"
 
-pub lookahead_result -> &'input str
+pub rule lookahead_result -> &'input str
   = v:&($(['a'..='c']*)) "abcd" { v }
 
-parenthesized<foo> = "(" s:foo ")" { s }
-pub parens -> &'input str = parenthesized<$(['a'..='z']*)>
+rule parenthesized<foo> = "(" s:foo ")" { s }
+pub rule parens -> &'input str = parenthesized<$(['a'..='z']*)>
 
-double_parenthesized<x> = parenthesized<parenthesized<x>>
-pub double_parens -> &'input str = double_parenthesized<$(['a'..='z']*)>
+rule double_parenthesized<x> = parenthesized<parenthesized<x>>
+pub rule double_parens -> &'input str = double_parenthesized<$(['a'..='z']*)>
 
 use super::FOO as F1;
 use super::{FOO as F2};
-pub renamed_imports -> (i32, i32) = { (F1, F2) }
+pub rule renamed_imports -> (i32, i32) = { (F1, F2) }
 
-pub neg_lookahead_err = !(['a']['b']) ['a']['x']
+pub rule neg_lookahead_err = !(['a']['b']) ['a']['x']
 
-atom -> i64
+rule atom -> i64
 	= "(" v:infix_arith ")" { v }
 	/ number
 
-pub(crate) infix_arith -> i64 = #infix<atom> {
+pub(crate) rule infix_arith -> i64 = #infix<atom> {
 	#L x:@ "+" y:@ { x + y }
 	   x:@ "-" y:@ { x - y }
 	       "-" v:@ { - v }
@@ -107,22 +107,22 @@ pub(crate) infix_arith -> i64 = #infix<atom> {
 
 use super::InfixAst;
 
-ident -> &'input str = $(['a'..='z']+)
-haskell_op -> String = "`" i:ident "`" [' '|'\n']* { i.to_owned() }
-infix_atom -> InfixAst = i:ident [' '|'\n']* { InfixAst::Ident(i.to_owned()) }
-plus = "+" [' '|'\n']*
+rule ident -> &'input str = $(['a'..='z']+)
+rule haskell_op -> String = "`" i:ident "`" [' '|'\n']* { i.to_owned() }
+rule infix_atom -> InfixAst = i:ident [' '|'\n']* { InfixAst::Ident(i.to_owned()) }
+rule plus = "+" [' '|'\n']*
 
-pub infix_ast -> InfixAst = #infix<infix_atom> {
+pub rule infix_ast -> InfixAst = #infix<infix_atom> {
 	#L x:@ plus y:@ { InfixAst::Add(Box::new(x), Box::new(y)) }
 	#L x:@ op:haskell_op y:@ { InfixAst::Op(op, Box::new(x), Box::new(y)) }
 }
 
-issue152 -> i32 // a
+rule issue152 -> i32 // a
     = "5" { 5 //b
 }
 
-pub error_pos = ("a" / "\n" / "\r")*
-"#);
+pub rule error_pos = ("a" / "\n" / "\r")*
+});
 
 use self::test_grammar::*;
 

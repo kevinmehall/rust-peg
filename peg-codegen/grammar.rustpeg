@@ -1,313 +1,136 @@
-use translate::*;
-use std::char;
-use codemap::{ self, Spanned };
+grammar peg() for FlatTokenStream {
 
-#![arguments(file_span: codemap::Span)]
+use ast::*;
+use self::Expr::*; 
+use tokens::FlatTokenStream;
+use proc_macro2::{ TokenStream, Ident, Literal, Delimiter };
 
-spanned<inner>
-  = start:#position node:inner end:#position
-  { codemap::Spanned { node, span: file_span.subspan(start as u64, end as u64) } }
+pub rule peg_grammar -> Grammar
+    = "grammar" name:IDENT args:grammar_args "for" input_type:$(rust_type) "{" items:item* "}"
+        { Grammar { name, args, input_type, items } }
 
-pub items -> Vec<Spanned<Item>> = _ items:spanned<item>**_ _ { items }
+rule grammar_args -> Vec<(Ident, TokenStream)>
+    = "(" args:COMMASEP<i:IDENT ":" t:$(rust_type) { (i, t) } > ")" { args }
 
-peg_rule -> Rule
-  = cached:cacheflag _ visibility:rust_visibility _ (RULE _)? name:identifier _ ret_type:returntype _ "=" _ expr:expression (_ ";")? {
-      Rule { name, expr, ret_type, visibility, cached }
+rule peg_template -> Template
+    = "rule" name:IDENT "<" params:IDENT**"," ">" "=" expr:expression ";"? {
+        Template { name, params, expr }
     }
 
-    rust_visibility -> Option<String> = (s:$(PUB (_ "(" (![')'].)+ ")")? / CRATE) { s.to_owned() })?
+rule peg_rule -> Rule
+    = cached:cacheflag visibility:rust_visibility "rule" name:IDENT ret_type:("->" t:$(rust_type) {t})? "=" expr:expression ";"?
+        { Rule { name, expr, ret_type, visibility, cached } }
 
-    cacheflag -> bool = "#[cache]" {true} / {false}
+    rule rust_visibility -> Option<TokenStream> = ($("pub" PAREN_GROUP? / "crate"))?
 
-template -> Template
-  = name:identifier _ "<" _ params:COMMASEP<identifier> _ ">" _ "=" _ expression:expression (_ ";")? {
-    Template { name: name, params: params, expr: Box::new(expression) }
-  }
+    rule cacheflag -> bool = "#" "[" "cache" "]" {true} / {false}
 
-item -> Item
-  = u:rust_use     { Item::Use(u) }
-  / r:peg_rule     { Item::Rule(r) }
-  / t:template     { Item::Template(t) }
-  / grammar_args
-  / input_type
+rule item -> Item
+    = u:rust_use     { Item::Use(u) }
+    / r:peg_template { Item::Template(r) }
+    / r:peg_rule     { Item::Rule(r) }
 
-  grammar_args -> Item
-    = "#![" _ "arguments" _ "(" _ args:COMMASEP<grammar_argument> _ ")" _ "]"
-    { Item::GrammarArgs(args) }
+rule rust_use -> TokenStream
+    = v:$("use" rust_path (
+        "::" "*"
+        / "::" "{" ((IDENT ("as" IDENT)?) ++ ",") "}"
+        / ("as" IDENT)?
+    ) ";") { v.to_owned() }
 
-    grammar_argument -> (String, String)
-      = i:identifier _ ":" _ t:type_string { (i, t) }
+rule rust_path = IDENT ++ "::"
 
-  input_type -> Item
-    = "type" _ "Input" _ "=" _ tp:type_string _ ";"
-    { Item::InputType(tp) }
+rule rust_type
+    = BRACKET_GROUP
+    / "&" "mut"? LIFETIME? rust_type
+    / "dyn" rust_type
+    / "impl" rust_type
+    / IDENT "<" (LIFETIME / rust_type) ++ "," ">"
+    / IDENT "::" rust_type
+    / "(" rust_type ** "," ")"
+    / IDENT
 
+rule expression -> Expr = choice
 
-type_string -> String = tp:$rust_type _ { tp.to_owned() }
-
-returntype -> String
-  = "->" _ tp:type_string { tp }
-  / { "()".to_string() }
-
-rust_identifier = #quiet<idStart idContinue*> / #expected("identifier")
-
-rust_use -> String
-  = v:$(USE _ rust_path _ (
-    "::" _ "*" _
-    / "::" _ "{" _ ((rust_identifier _ ("as" _ rust_identifier _ )?) ++ ("," _)) "}" _
-    / ("as" _ rust_identifier)?
-  ) ";") { v.to_owned() }
-
-rust_path = rust_identifier ++ (_ "::" _)
-
-rust_type
-  = "[" _ rust_type _ "]"
-  / "&" _ ("mut" _)? ("'" rust_identifier _)? rust_type
-  / "dyn" _ rust_type
-  / "impl" _ rust_type
-  / rust_identifier _ "<" _ (("'" rust_identifier) / rust_type) ** (_ "," _) _ ">"
-  / rust_identifier _ "::" _ rust_type
-  / "(" _ rust_type ** (_ "," _) _ ")"
-  / rust_identifier
-
-expression -> Spanned<Expr>
-  = choice
-
-choice -> Spanned<Expr>
-  = spanned<head:sequence tail:(_ "/" _ s:sequence {s})* {
-      if tail.is_empty() {
-        head.node
-      } else {
-        let mut list = tail;
-        list.insert(0, head);
-        ChoiceExpr(list)
-      }
-    }>
-
-sequence -> Spanned<Expr>
-  = spanned<elements:labeled**_ _ code:action {
-      ActionExpr(elements, code.0, code.1)
+rule choice -> Expr = s:sequence ++ "/" {
+    if s.len() == 1 {
+        s.into_iter().next().unwrap()
+    } else {
+        ChoiceExpr(s)
     }
-  / elements:prefixed**_ {
-      if elements.len() != 1 {
-          SequenceExpr(elements)
-      } else {
-          elements.into_iter().next().unwrap().node
-      }
-    }>
+}
 
-labeled -> TaggedExpr
-  = label:(l:spanned<identifier> _ ":" _ {l})? expression:prefixed {
-      TaggedExpr{ name: label, expr: Box::new(expression) }
+rule sequence -> Expr
+     = elements:labeled* code:code_block? {
+         if let Some(code) = code {
+            ActionExpr(elements, Some(code.1), code.0)
+         } else if elements.len() != 1 {
+             ActionExpr(elements, None, false)
+         } else {
+             elements.into_iter().next().unwrap().expr
+         }
     }
 
-prefixed -> Spanned<Expr>
-  = spanned<
-   "$" _ expression:suffixed {
-      MatchStrExpr(Box::new(expression))
-    }
-  / "&" _ expression:suffixed {
-      PosAssertExpr(Box::new(expression))
-    }
-  / "!" _ expression:suffixed {
-      NegAssertExpr(Box::new(expression))
-    }>
-  / suffixed
+    rule code_block -> (bool, TokenStream)
+        = "{" is_cond:"?"? code:##group_body() "}" { (is_cond.is_some(), code) }
 
+rule labeled -> TaggedExpr
+    = label:(l:IDENT ":" {l})? expression:prefixed
+        { TaggedExpr{ name: label, expr: expression } }
 
-suffixed -> Spanned<Expr>
-  = spanned<
-   e:primary _ "?" {
-       OptionalExpr(Box::new(e))
-    }
-  / e:primary _ "**" _ count:repeatcount _ sep:primary {
-      Repeat(Box::new(e), count, Some(Box::new(sep)))
-    }
-  / e:primary _ "++" _ sep:primary {
-      Repeat(Box::new(e), BoundedRepeat::Plus, Some(Box::new(sep)))
-    }
-  / e:primary _ "*" _ count:repeatcount {
-      Repeat(Box::new(e), count, None)
-    }
-  / e:primary _ "+" {
-      Repeat(Box::new(e), BoundedRepeat::Plus, None)
-    }>
-  / primary
+rule prefixed -> Expr
+    = "$" expression:suffixed { MatchStrExpr(Box::new(expression)) }
+    / "&" expression:suffixed { PosAssertExpr(Box::new(expression)) }
+    / "!" expression:suffixed { NegAssertExpr(Box::new(expression)) }
+    / suffixed
 
-repeatcount -> BoundedRepeat
-  = "<" _ n:repeatnum _ ">" { BoundedRepeat::Exact(n) }
-  / "<" _ min:repeatnum? _ "," _ max:repeatnum? _ ">" { BoundedRepeat::Both(min, max) }
-  / { BoundedRepeat::None }
+rule suffixed -> Expr
+    = e:primary "?" { OptionalExpr(Box::new(e)) }
+    / e:primary "**" count:repeatcount sep:primary { Repeat(Box::new(e), count, Some(Box::new(sep))) }
+    / e:primary "++" sep:primary { Repeat(Box::new(e), BoundedRepeat::Plus, Some(Box::new(sep))) }
+    / e:primary "*" count:repeatcount { Repeat(Box::new(e), count, None) }
+    / e:primary "+" { Repeat(Box::new(e), BoundedRepeat::Plus, None) }
+    / primary
 
-repeatnum -> String
-  = i:integer { i.to_string() }
-  / "{" _ e:rust_expr _ "}" {e}
+rule repeatcount -> BoundedRepeat
+    = "<" n:repeatnum ">" { BoundedRepeat::Exact(n) }
+    / "<" min:repeatnum? "," max:repeatnum? ">" { BoundedRepeat::Both(min, max) }
+    / { BoundedRepeat::None }
+
+rule repeatnum -> TokenStream = $(INTEGER / BRACE_GROUP)
 
 #[cache]
-primary -> Spanned<Expr>
-  = spanned<
-   name:identifier !(_ ("<" / "->" / "=")) {
-      RuleExpr(name)
-    }
-  / name:identifier _ "<" _ args:COMMASEP<expression> _ ">" !( _ "=") {
-      TemplateInvoke(name, args)
-    }
-  / literal
-  / class
+rule primary -> Expr
+  = name:IDENT "<" args:(expression ** ",") ">" { TemplateInvoke(name, args) }
+  / name:IDENT { RuleExpr(name) }
+  / l:LITERAL { LiteralExpr(l) }
+  / p:BRACKET_GROUP { PatternExpr(p) }
   / "." { AnyCharExpr }
   / "@" { MarkerExpr }
-  / "##" _ method:identifier _ "(" args:$((!")" .)*) ")" { MethodExpr(method, args.to_owned()) }
-  / "#position" { PositionExpr }
-  / "#quiet" _ "<" _ e:expression _ ">" { QuietExpr(Box::new(e)) }
-  / "#expected" _ "(" _ s:doubleQuotedString _ ")" { FailExpr(s) }
-  / "#infix" _ "<" _ atom:expression _ ">" _ "{" _ levels:infix_level++_ _ "}"
+  / "##" method:IDENT args:PAREN_GROUP { MethodExpr(method, args) }
+  / "#" "position" { PositionExpr }
+  / "#" "quiet" "<" e:expression ">" { QuietExpr(Box::new(e)) }
+  / "#" "expected" "(" s:LITERAL ")" { FailExpr(s) }
+  / "#" "infix" "<" atom:expression ">" "{" levels:infix_level+ "}"
         { InfixExpr{ atom: Box::new(atom), levels:levels }}
-  / "(" _ expression:expression _ ")" { expression.node }
-  >
+  / "(" expression:expression ")" { expression }
 
-infix_level -> InfixLevel
-  = assoc:("#L" { InfixAssoc::Left } / "#R" { InfixAssoc::Right} ) _ operators:(spanned<infix_op>)++_
+rule infix_level -> InfixLevel
+  = assoc:("#" "L" { InfixAssoc::Left } / "#" "R" { InfixAssoc::Right} ) operators:infix_op+
   { InfixLevel{ assoc: assoc, operators: operators} }
 
-infix_op -> InfixOperator
-  = elements:labeled**_ _ "{" _ action:rust_expr _ "}"
+rule infix_op -> InfixOperator
+  = elements:labeled* action:BRACE_GROUP
   { InfixOperator{ elements, action } }
 
-/* "Lexical" elements */
+rule COMMASEP<t> = list:t**"," ","? { list }
 
-rust_expr -> String
-   = literal:$((braced / nonBraceCharacters)*) { format!("{{ {} }}", literal) }
+rule KEYWORD = "pub" / "crate" / "rule" / "use" / "type"
+rule IDENT -> Ident = !KEYWORD i:##ident() {i}
+rule LITERAL -> Literal = ##literal()
+rule PAREN_GROUP   -> TokenStream = ##group(Delimiter::Parenthesis)
+rule BRACE_GROUP   -> TokenStream = ##group(Delimiter::Brace)
+rule BRACKET_GROUP -> TokenStream = ##group(Delimiter::Bracket)
+rule LIFETIME = "'" IDENT
+rule INTEGER = LITERAL
 
-action -> (String, /*is conditional match?*/ bool)
-  = "{" cond:"?"? literal:rust_expr "}" {
-     (literal, cond.is_some())
-  }
-
-braced = "{" ((braced / nonBraceCharacters)*) "}"
-nonBraceCharacters = (!['{' | '}' ] .)+
-
-KEYWORD<k> = k !idContinue
-USE = KEYWORD<"use">
-PUB = KEYWORD<"pub">
-CRATE = KEYWORD<"crate">
-RULE = KEYWORD<"rule">
-
-keyword = USE / PUB / CRATE / RULE
-
-integer -> usize
-  = i:$(['0'..='9']+) { i.parse().unwrap() }
-
-idStart = ['a'..='z' | 'A'..='Z' | '_']
-idContinue = ['a'..='z' | 'A'..='Z' | '0'..='9' | '_']
-
-identifier -> String
-  = #quiet<!keyword chars:$(idStart idContinue*) { chars.to_owned() }> / #expected("identifier")
-
-COMMASEP<t> = list:t**(_ "," _) (_ ",")? { list }
-/*
- * Modeled after ECMA-262, 5th ed., 7.8.4. (syntax & semantics, rules only
- * vaguely).
- */
-literal -> Expr
-  = value:(doubleQuotedString / singleQuotedString) {
-      LiteralExpr(value)
-    }
-
-string -> String
-  = string:(doubleQuotedString / singleQuotedString) { string }
-
-doubleQuotedString -> String
-  = '"' s:doubleQuotedCharacter* '"' { s.into_iter().collect() }
-
-doubleQuotedCharacter -> char
-  = simpleDoubleQuotedCharacter
-  / simpleEscapeSequence
-  / zeroEscapeSequence
-  / hex2EscapeSequence
-  / unicodeEscapeSequence
-  / eolEscapeSequence
-
-simpleDoubleQuotedCharacter -> char
-  = !('"' / "\\" / eolChar) c:$. { c.chars().next().unwrap() }
-
-singleQuotedString -> String
-  = "'" s:singleQuotedCharacter* "'" { s.into_iter().collect() }
-
-singleQuotedCharacter -> char
-  = simpleSingleQuotedCharacter
-  / simpleEscapeSequence
-  / zeroEscapeSequence
-  / hex2EscapeSequence
-  / unicodeEscapeSequence
-  / eolEscapeSequence
-
-simpleSingleQuotedCharacter -> char
-  = !("'" / "\\" / eolChar) c:$. { c.chars().next().unwrap() }
-
-class -> Expr
-  = "[" pattern:$((!"]" .)+) "]" {
-      PatternExpr(pattern.to_owned())
-    }
-
-simpleEscapeSequence -> char
-  = "\\" !(digit / "x" / "u" / eolChar) c:$(.) {
-      match c.chars().next().unwrap() {
-        //'b' => '\b',
-        //'f' => '\f',
-        'n' => '\n',
-        'r' => '\r',
-        't' => '\t',
-        //'v' => '\v',
-         x  => x
-      }
-    }
-
-zeroEscapeSequence -> char
-  = "\\0" !digit { 0u8 as char }
-
-hex2EscapeSequence -> char
-  = "\\x" value:$(hexDigit hexDigit) {
-      char::from_u32(u32::from_str_radix(value, 16).unwrap()).unwrap()
-    }
-
-unicodeEscapeSequence -> char
-  = "\\u{" value:$(hexDigit+) "}" {
-      char::from_u32(u32::from_str_radix(value, 16).unwrap()).unwrap()
-    }
-
-eolEscapeSequence -> char
-  = "\\" eol { '\n' }
-
-digit
-  = ['0'..='9']
-
-hexDigit
-  = [ '0'..='9' | 'a'..='f' | 'A'..='F' ]
-
-_ = #quiet<(whitespace / eol / comment)*>
-
-/* Modeled after ECMA-262, 5th ed., 7.4. */
-comment
-  = singleLineComment
-  / multiLineComment
-
-singleLineComment
-  = "//" (!eolChar .)*
-
-multiLineComment
-  = "/*" (!"*/" .)* "*/"
-
-/* Modeled after ECMA-262, 5th ed., 7.3. */
-eol
-  = "\n"
-  / "\r\n"
-  / "\r"
-  / "\u{2028}"
-  / "\u{2029}"
-
-eolChar
-  = ['\n' | '\r' | '\u{2028}' | '\u{2029}']
-
-/* Modeled after ECMA-262, 5th ed., 7.2. */
-whitespace
-  = [' ' | '\t']
+}

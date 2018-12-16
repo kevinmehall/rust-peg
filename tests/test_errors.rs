@@ -1,10 +1,9 @@
 extern crate peg;
-use peg::peg;
 
-peg!{parser r#"
-pub parse -> usize
-    = v:( "a" / "\n" )*   { v.len() }
-"#}
+peg::parser!{ grammar parser() for str {
+    pub rule parse -> usize
+        = v:( "a" / "\n" )* { v.len() }
+}}
 
 #[test]
 fn test_errors() {
