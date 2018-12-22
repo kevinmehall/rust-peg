@@ -42,19 +42,14 @@ impl Diagnostic {
 pub fn check(grammar: &Grammar, emit_error: &mut FnMut(Diagnostic)) {
     let mut rules = HashMap::new();
 
-    for item in &grammar.items {
-        match item {
-            Item::Rule(rule) => {
-                if let Some(prev) = rules.insert(rule.name.to_string(), rule) {
-                    emit_error(Diagnostic::DuplicateRule(rule.name.to_string(), vec![prev.name.span(), rule.name.span()]))
-                }
-            }
-            _ => ()
+    for rule in grammar.iter_rules() {
+        if let Some(prev) = rules.insert(rule.name.to_string(), rule) {
+            emit_error(Diagnostic::DuplicateRule(rule.name.to_string(), vec![prev.name.span(), rule.name.span()]))
         }
     }
 
-   ExpressionVisitor::check(&rules, emit_error);
-   RecursionVisitor::check(&rules, emit_error);
+   ExpressionVisitor::check(grammar, &rules, emit_error);
+   RecursionVisitor::check(grammar, &rules, emit_error);
 }
 
 struct ExpressionVisitor<'a> {
@@ -63,10 +58,10 @@ struct ExpressionVisitor<'a> {
 }
 
 impl<'a> ExpressionVisitor<'a> {
-    fn check(rules: &HashMap<String, &'a Rule>, emit_error: &'a mut FnMut(Diagnostic)) {
+    fn check(grammar: &'a Grammar, rules: &HashMap<String, &'a Rule>, emit_error: &'a mut FnMut(Diagnostic)) {
         let mut visitor = ExpressionVisitor { rules, emit_error };
 
-        for rule in rules.values() {
+        for rule in grammar.iter_rules() {
             visitor.walk_expr(&rule.expr, rule.ret_type.is_some());
         }
     }
@@ -122,7 +117,6 @@ struct RecursionVisitor<'a> {
     stack: Vec<String>,
     emit_error: &'a mut FnMut(Diagnostic),
     rules: &'a HashMap<String, &'a Rule>,
-    cache: HashMap<String, RuleInfo>,
 }
 
 #[derive(Clone)]
@@ -135,31 +129,22 @@ struct RuleInfo {
 
 
 impl<'a> RecursionVisitor<'a> {
-    fn check(rules: &HashMap<String, &'a Rule>, emit_error: &'a mut FnMut(Diagnostic)) {
+    fn check(grammar: &'a Grammar, rules: &HashMap<String, &'a Rule>, emit_error: &'a mut FnMut(Diagnostic)) {
         let mut visitor = RecursionVisitor {
             rules, emit_error,
             stack: Vec::new(),
-            cache: HashMap::new(),
         };
 
-        for rule in rules.keys() {
+        for rule in grammar.iter_rules() {
             visitor.walk_rule(rule);
+            debug_assert!(visitor.stack.is_empty());
         }
     }
 
-    fn walk_rule(&mut self, name: &str) -> RuleInfo {
-        if let Some(cached) = self.cache.get(name) {
-            return cached.clone();
-        }
-
-        let rule = if let Some(rule) = self.rules.get(name) { rule } else {
-            return RuleInfo { nullable: false}
-        };
-        self.stack.push(name.to_owned());
+    fn walk_rule(&mut self, rule: &'a Rule) -> RuleInfo {
+        self.stack.push(rule.name.to_string());
         let res = self.walk_expr(&rule.expr);
-        let name_string = self.stack.pop().unwrap();
-        assert_eq!(name_string, name);
-        self.cache.insert(name_string, res.clone());
+        self.stack.pop().unwrap();
         res
     }
 
@@ -176,7 +161,7 @@ impl<'a> RecursionVisitor<'a> {
                     return RuleInfo { nullable: false };
                 }
 
-                self.walk_rule(&name)
+                self.walk_rule(self.rules.get(&name).expect("missing rule"))
             }
             TemplateInvoke(..) => {
                 // unimplemented
@@ -233,8 +218,3 @@ impl<'a> RecursionVisitor<'a> {
         }
     }
 }
-
-
-
-
-

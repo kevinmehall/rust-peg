@@ -1,39 +1,46 @@
-use ::{ grammar, translate, PegCompiler };
+use crate::{
+	grammar::peg::peg_grammar,
+	analysis::{Diagnostic, check},
+	tokens::FlatTokenStream,
+};
 
-fn compile(src: &str) -> PegCompiler {
-	let mut compiler = PegCompiler::new();
-	let file = compiler.codemap.add_file("input.test".into(), src.into());
+fn diagnostics(src: &str) -> Vec<Diagnostic> {
+	let tokens = src.parse().expect("failed to tokenize");
+	let ast = peg_grammar(&FlatTokenStream::new(tokens)).expect("failed to parse");
 
-	let ast_items = grammar::items(&file.source(), file.span).unwrap();
-	translate::Grammar::from_ast(&mut compiler, ast_items).unwrap();
+	let mut diagnostics = Vec::new();
+	check(&ast, &mut |d| diagnostics.push(d));
 
-    compiler
+	diagnostics
 }
 
 #[test]
 fn test_finds_left_recursion() {
-	let compiler = compile(r#"
-foo
-	= "foo" foo
-	/ bar
+	let d = diagnostics(r#"
+		grammar g() for str {
+			rule foo
+				= "foo" foo
+				/ bar
 
-bar
-	= "bar" bar
-	/ foo
-"#);
+			rule bar
+				= "bar" bar
+				/ foo
+		}
+	"#);
 
-	assert_eq!(compiler.diagnostics[0].message, "Found illegal left recursion for rule foo: foo -> bar -> foo");
-	assert_eq!(compiler.diagnostics[1].message, "Found illegal left recursion for rule bar: bar -> foo -> bar");
-	assert_eq!(compiler.diagnostics.len(), 2);
+	assert_eq!(d.len(), 2);
+	assert_eq!(d[0].msg(), "left recursive rules create an infinite loop: foo -> bar -> foo");
+	assert_eq!(d[1].msg(), "left recursive rules create an infinite loop: bar -> foo -> bar");	
 }
 
 #[test]
 fn test_finds_direct_left_recursion() {
-	let compiler = compile(r#"
-foo
-	= foo
-"#);
+	let d = diagnostics(r#"
+		grammar g() for str {
+			rule foo = foo
+		}
+	"#);
 
-	assert_eq!(compiler.diagnostics[0].message, "Found illegal left recursion for rule foo: foo -> foo");
-	assert_eq!(compiler.diagnostics.len(), 1);
+	assert_eq!(d[0].msg(), "left recursive rules create an infinite loop: foo -> foo");
+	assert_eq!(d.len(), 1);
 }
