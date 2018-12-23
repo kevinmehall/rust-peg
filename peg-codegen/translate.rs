@@ -192,12 +192,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
 			#parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call);
 
-			let loc = ::peg::Parse::position_repr(__input, __err_state.max_err_pos);;
-
-			Err(::peg::error::ParseError {
-				location: loc,
-				expected: __err_state.expected,
-			})
+			Err(__err_state.into_parse_error(__input))
 		}
 	}
 }

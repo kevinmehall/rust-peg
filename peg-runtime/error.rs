@@ -1,25 +1,35 @@
 use std::fmt::{ Display, Debug };
-use crate::RuleResult;
+use crate::{ RuleResult, Parse };
 
 fn escape_default(s: &str) -> String {
     s.chars().flat_map(|c| c.escape_default()).collect()
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct ParseError<L> {
-    pub location: L,
-    pub expected: ::std::collections::HashSet<&'static str>,
+pub struct Expected {
+    expected: ::std::collections::HashSet<&'static str>,
 }
 
-impl<L: Display> Display for ParseError<L> {
+impl Expected {
+    pub fn tokens<'a>(&'a self) -> impl Iterator<Item = &'static str> + 'a {
+        self.expected.iter().map(|x| *x)
+    }
+
+    pub fn eof(&self) -> bool {
+        self.expected.is_empty()
+    }
+}
+
+impl Display for Expected {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
-        write!(fmt, "error at {}: expected ", self.location)?;
-        if self.expected.is_empty() {
+         if self.eof() {
             write!(fmt, "EOF")?;
         } else if self.expected.len() == 1 {
             write!(fmt, "`{}`", escape_default(self.expected.iter().next().unwrap()))?;
         } else {
-            let mut iter = self.expected.iter();
+            let mut errors = self.tokens().collect::<Vec<_>>();
+            errors.sort();
+            let mut iter = errors.into_iter();
 
             write!(fmt, "one of `{}`", escape_default(iter.next().unwrap()))?;
             for elem in iter {
@@ -28,6 +38,18 @@ impl<L: Display> Display for ParseError<L> {
         }
 
         Ok(())
+    }
+}
+
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct ParseError<L> {
+    pub location: L,
+    pub expected: Expected,
+}
+
+impl<L: Display> Display for ParseError<L> {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
+        write!(fmt, "error at {}: expected {}", self.location, self.expected)
     }
 }
 
@@ -76,5 +98,12 @@ impl<P: PartialOrd> ErrorState<P> {
             }
         }
         RuleResult::Failed
+    }
+
+    pub fn into_parse_error<'i, I: Parse<'i> + ?Sized>(self, input: &'i I) -> ParseError<I::PositionRepr> where I::Position: From<P> {
+        ParseError {
+            location: Parse::position_repr(input, self.max_err_pos.into()),
+            expected: Expected { expected: self.expected }
+        }
     }
 }

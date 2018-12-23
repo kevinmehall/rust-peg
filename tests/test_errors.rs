@@ -16,5 +16,5 @@ aaaabaaaa
     assert_eq!(err.location.line, 4);
     assert_eq!(err.location.column, 5);
     assert_eq!(err.location.offset, 17);
-    assert_eq!(err.expected, vec!["a", "\n"].into_iter().collect());
+    assert_eq!(format!("{}", err.expected), "one of `\\n`, `a`");
 }

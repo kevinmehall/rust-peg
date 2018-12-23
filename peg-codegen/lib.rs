@@ -23,7 +23,7 @@ pub fn compile_tokens(input: TokenStream) -> TokenStream {
     let grammar = match grammar::peg::peg_grammar(&tokens) {
         Ok(g) => g,
         Err(err) => {
-            let msg = err.to_string();
+            let msg = format!("expected {}", err.expected);
             return quote_spanned!(err.location.0=> compile_error!(#msg););
         }
     };

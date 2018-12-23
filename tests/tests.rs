@@ -240,7 +240,7 @@ fn test_renamed_imports() {
 #[test]
 fn test_neg_lookahead_err() {
 	let err = neg_lookahead_err("ac").err().unwrap();
-	assert_eq!(err.expected.len(), 1, "expected set includes: {:?}", err.expected);
+	assert_eq!(err.expected.tokens().count(), 1, "expected set includes: {}", err.expected);
 	assert_eq!(err.location.offset, 1);
 }
 
@@ -280,7 +280,7 @@ fn test_error_pos() {
     assert_eq!(err.location.line, 1);
     assert_eq!(err.location.column, 3);
     assert_eq!(err.location.offset, 2);
-    assert_eq!(err.expected, ["\r", "\n", "a"].iter().map(|x| *x).collect());
+    assert_eq!(err.expected.to_string(), "one of `\\n`, `\\r`, `a`");
 
     let err = error_pos("aa\naaaa\nbaaa\n").unwrap_err();
     assert_eq!(err.location.line, 3);
