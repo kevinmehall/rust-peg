@@ -5,7 +5,7 @@ use crate::ast::*;
 
 #[derive(Debug)]
 pub enum Diagnostic {
-    DuplicateRule(String, Vec<Span>),
+    DuplicateRule(String, Span),
     UndefinedRule(String, Span),
     UsedUnitResult(String, Span),
     LeftRecursion(Vec<String>, Span),
@@ -15,7 +15,7 @@ impl Diagnostic {
     pub fn primary_span(&self) -> &Span {
         use self::Diagnostic::*;
         match self {
-            DuplicateRule(_, spans) => spans.first().unwrap(),
+            DuplicateRule(_, span) => span,
             UndefinedRule(_, span) => span,
             UsedUnitResult(_, span) => span,
             LeftRecursion(_, span) => span,
@@ -43,8 +43,8 @@ pub fn check(grammar: &Grammar, emit_error: &mut FnMut(Diagnostic)) {
     let mut rules = HashMap::new();
 
     for rule in grammar.iter_rules() {
-        if let Some(prev) = rules.insert(rule.name.to_string(), rule) {
-            emit_error(Diagnostic::DuplicateRule(rule.name.to_string(), vec![prev.name.span(), rule.name.span()]))
+        if rules.insert(rule.name.to_string(), rule).is_some() {
+            emit_error(Diagnostic::DuplicateRule(rule.name.to_string(), rule.name.span()))
         }
     }
 
@@ -161,7 +161,12 @@ impl<'a> RecursionVisitor<'a> {
                     return RuleInfo { nullable: false };
                 }
 
-                self.walk_rule(self.rules.get(&name).expect("missing rule"))
+                if let Some(rule) = self.rules.get(&name) {
+                    self.walk_rule(rule)
+                } else {
+                    // Missing rule would have already been reported
+                    RuleInfo { nullable: false }
+                }
             }
             TemplateInvoke(..) => {
                 // unimplemented

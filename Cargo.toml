@@ -18,6 +18,9 @@ peg-codegen = { path = "./peg-codegen", version = "0.6" }
 peg-syntax-ext = { path = "./peg-syntax-ext", version = "0.6" }
 peg-runtime = { path = "./peg-runtime", version = "0.6" }
 
+[dev-dependencies]
+compiletest_rs = { version = "0.3.17", features = ["stable"] }
+
 [[bin]]
 name = "rust-peg"
 path = "src/bin.rs"

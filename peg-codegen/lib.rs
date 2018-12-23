@@ -9,8 +9,6 @@ use proc_macro2::TokenStream;
 // requires `::peg` paths.
 extern crate peg_runtime as peg;
 
-#[cfg(test)]
-mod test;
 mod ast;
 mod tokens;
 mod grammar;
