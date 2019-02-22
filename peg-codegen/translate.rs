@@ -182,6 +182,8 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 				Matched(__pos, __value) => {
 					if __pos == __input.len() {
 						return Ok(__value)
+					} else {
+						__err_state.mark_failure(__pos, "EOF");
 					}
 				}
 				_ => ()
@@ -190,7 +192,16 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 			__state = ParseState::new();
 			__err_state.reparse_for_error();
 
-			#parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call);
+			match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call) {
+				Matched(__pos, __value) => {
+					if __pos == __input.len() {
+						panic!("Parser is nondeterministic: succeeded when reparsing for error position");
+					} else {
+						__err_state.mark_failure(__pos, "EOF");
+					}
+				}
+				_ => ()
+			}
 
 			Err(__err_state.into_parse_error(__input))
 		}
@@ -240,9 +251,10 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 		}
 
 		LiteralExpr(ref s) => {
+			let escaped_str = s.to_string();
 			quote!{ match ::peg::ParseLiteral::parse_string_literal(__input, __pos, #s) {
 				Matched(__pos, __val) => Matched(__pos, __val),
-				Failed => __err_state.mark_failure(__pos, #s)
+				Failed => __err_state.mark_failure(__pos, #escaped_str)
 			}}
 		}
 

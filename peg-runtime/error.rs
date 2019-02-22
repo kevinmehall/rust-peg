@@ -1,39 +1,32 @@
-use std::fmt::{ Display, Debug };
+use std::fmt::{ self, Display, Debug };
 use crate::{ RuleResult, Parse };
-
-fn escape_default(s: &str) -> String {
-    s.chars().flat_map(|c| c.escape_default()).collect()
-}
+use std::collections::HashSet;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct Expected {
-    expected: ::std::collections::HashSet<&'static str>,
+pub struct ExpectedSet {
+    expected: HashSet<&'static str>,
 }
 
-impl Expected {
+impl ExpectedSet {
     pub fn tokens<'a>(&'a self) -> impl Iterator<Item = &'static str> + 'a {
         self.expected.iter().map(|x| *x)
     }
-
-    pub fn eof(&self) -> bool {
-        self.expected.is_empty()
-    }
 }
 
-impl Display for Expected {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
-         if self.eof() {
-            write!(fmt, "EOF")?;
+impl Display for ExpectedSet {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+         if self.expected.is_empty() {
+            write!(fmt, "<unreported>")?;
         } else if self.expected.len() == 1 {
-            write!(fmt, "`{}`", escape_default(self.expected.iter().next().unwrap()))?;
+            write!(fmt, "{}", self.expected.iter().next().unwrap())?;
         } else {
             let mut errors = self.tokens().collect::<Vec<_>>();
             errors.sort();
             let mut iter = errors.into_iter();
 
-            write!(fmt, "one of `{}`", escape_default(iter.next().unwrap()))?;
+            write!(fmt, "one of {}", iter.next().unwrap())?;
             for elem in iter {
-                write!(fmt, ", `{}`", escape_default(elem))?;
+                write!(fmt, ", {}", elem)?;
             }
         }
 
@@ -44,7 +37,7 @@ impl Display for Expected {
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct ParseError<L> {
     pub location: L,
-    pub expected: Expected,
+    pub expected: ExpectedSet,
 }
 
 impl<L: Display> Display for ParseError<L> {
@@ -63,7 +56,7 @@ pub struct ErrorState<P> {
     pub max_err_pos: P,
     pub suppress_fail: usize,
     pub reparsing_on_error: bool,
-    pub expected: ::std::collections::HashSet<&'static str>,
+    pub expected: ExpectedSet,
 }
 
 impl<P: PartialOrd> ErrorState<P> {
@@ -72,7 +65,7 @@ impl<P: PartialOrd> ErrorState<P> {
             max_err_pos: initial_pos,
             suppress_fail: 0,
             reparsing_on_error: false,
-            expected: ::std::collections::HashSet::new(),
+            expected: ExpectedSet { expected: HashSet::new() },
         }
     }
 
@@ -84,7 +77,7 @@ impl<P: PartialOrd> ErrorState<P> {
     #[inline(never)]
     pub fn mark_failure_slow_path(&mut self, pos: P, expected: &'static str) {
         if pos == self.max_err_pos {
-            self.expected.insert(expected);
+            self.expected.expected.insert(expected);
         }
     }
 
@@ -103,7 +96,7 @@ impl<P: PartialOrd> ErrorState<P> {
     pub fn into_parse_error<'i, I: Parse<'i> + ?Sized>(self, input: &'i I) -> ParseError<I::PositionRepr> where I::Position: From<P> {
         ParseError {
             location: Parse::position_repr(input, self.max_err_pos.into()),
-            expected: Expected { expected: self.expected }
+            expected: self.expected,
         }
     }
 }

@@ -15,8 +15,8 @@ fn test_eof() {
 
     let err = parser::one_letter("tt").unwrap_err();
     assert_eq!(err.location.line, 1);
-    assert_eq!(err.location.column, 1);
-    assert_eq!(err.location.offset, 0);
+    assert_eq!(err.location.column, 2);
+    assert_eq!(err.location.offset, 1);
     assert_eq!(format!("{}", err.expected), "EOF");
 }
 
@@ -31,7 +31,7 @@ aaaabaaaa
     assert_eq!(err.location.line, 4);
     assert_eq!(err.location.column, 5);
     assert_eq!(err.location.offset, 17);
-    assert_eq!(format!("{}", err.expected), "one of `\\n`, `a`");
+    assert_eq!(format!("{}", err.expected), r#"one of "\n", "a", EOF"#);
 }
 
 #[test]
@@ -40,7 +40,7 @@ fn test_error_pos() {
     assert_eq!(err.location.line, 1);
     assert_eq!(err.location.column, 3);
     assert_eq!(err.location.offset, 2);
-    assert_eq!(err.expected.to_string(), "one of `\\n`, `\\r`, `a`");
+    assert_eq!(err.expected.to_string(), r#"one of "\n", "\r", "a", EOF"#);
 
     let err = parser::error_pos("aa\naaaa\nbaaa\n").unwrap_err();
     assert_eq!(err.location.line, 3);
