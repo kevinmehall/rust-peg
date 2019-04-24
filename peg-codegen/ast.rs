@@ -17,22 +17,12 @@ impl Grammar {
             }
         })
     }
-
-    pub fn find_template(&self, name: &str) -> Option<&Template> {
-        self.items.iter().find_map(|item| {
-            match item {
-                Item::Template(t) if t.name == name => Some(t),
-                _ => None
-            }
-        })
-    }
 }
 
 #[derive(Debug)]
 pub enum Item {
     Use(TokenStream),
     Rule(Rule),
-    Template(Template),
 }
 
 #[derive(Debug)]
@@ -42,13 +32,6 @@ pub struct Rule {
     pub ret_type: Option<TokenStream>,
     pub visibility: Option<TokenStream>,
     pub cached: bool,
-}
-
-#[derive(Debug)]
-pub struct Template {
-    pub name: Ident,
-    pub params: Vec<Ident>,
-    pub expr: Expr,
 }
 
 #[derive(Debug, Clone)]
@@ -63,7 +46,6 @@ pub enum Expr {
     LiteralExpr(Literal),
     PatternExpr(TokenStream),
     RuleExpr(Ident),
-    TemplateInvoke(Ident, Vec<Expr>),
     MethodExpr(Ident, TokenStream),
     ChoiceExpr(Vec<Expr>),
     OptionalExpr(Box<Expr>),

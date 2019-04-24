@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use proc_macro2::{Ident, Span, TokenStream};
 pub use self::Expr::*;
 use crate::ast::*;
@@ -23,14 +22,6 @@ struct Context<'a> {
     extra_args_def: TokenStream,
 }
 
-struct LexicalContext<'a> {
-	defs: HashMap<String, (&'a Expr, &'a LexicalContext<'a>)>
-}
-
-impl<'a> LexicalContext<'a> {
-    fn new() -> LexicalContext<'a> { LexicalContext { defs: HashMap::new() }}
-}
-
 pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     let name = &grammar.name;
 	let mut items = vec![make_parse_state(&grammar)];
@@ -51,7 +42,6 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
                 items.push(compile_rule(context, rule))
             }
-            Item::Template(_) => {}
         }
 		
 	}
@@ -106,7 +96,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 	let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let result_used =  rule.ret_type.is_some();
 
-	let body = compile_expr(context, &rule.expr, &LexicalContext::new(), result_used);
+	let body = compile_expr(context, &rule.expr, result_used);
 
 	let wrapped_body = if cfg!(feature = "trace") {
 		quote!{{
@@ -208,8 +198,8 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 	}
 }
 
-fn compile_match_and_then(context: &Context, e: &Expr, lx: &LexicalContext, value_name: Option<&Ident>, then: TokenStream) -> TokenStream {
-	let seq_res = compile_expr(context, e, lx, value_name.is_some());
+fn compile_match_and_then(context: &Context, e: &Expr, value_name: Option<&Ident>, then: TokenStream) -> TokenStream {
+	let seq_res = compile_expr(context, e, value_name.is_some());
 	let name_pat = match value_name {
         Some(x) => quote!(#x),
         None => quote!(_)
@@ -224,12 +214,12 @@ fn compile_match_and_then(context: &Context, e: &Expr, lx: &LexicalContext, valu
 	}}
 }
 
-fn labeled_seq(context: &Context, exprs: &[TaggedExpr], lx: &LexicalContext, inner: TokenStream) -> TokenStream {
+fn labeled_seq(context: &Context, exprs: &[TaggedExpr], inner: TokenStream) -> TokenStream {
 	match exprs.first() {
 		Some(ref first) => {
 			let name = first.name.as_ref();
-			let seq = labeled_seq(context, &exprs[1..], lx, inner);
-			compile_match_and_then(context, &first.expr, lx, name, seq)
+			let seq = labeled_seq(context, &exprs[1..], inner);
+			compile_match_and_then(context, &first.expr, name, seq)
 		}
 		None => inner
 	}
@@ -244,7 +234,7 @@ fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
 	}
 }
 
-fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: bool) -> TokenStream {
+fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 	match e {
 		AnyCharExpr => {
 			quote!{ ::peg::ParseElem::parse_elem(__input, __pos) }
@@ -282,10 +272,6 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 
 		RuleExpr(ref rule_name) => {
 			let rule_name_str = rule_name.to_string();
-		    if let Some(&(template_arg, lexical_context)) = lx.defs.get(&rule_name_str[..]) {
-				// Rule is actually an argument to an enclosing template
-				return compile_expr(context, template_arg, lexical_context, result_used)
-			}
 
 			let func = Ident::new(&format!("__parse_{}", rule_name), rule_name.span());
 			let extra_args_call = &context.extra_args_call;
@@ -306,34 +292,13 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 			quote!{ __input.#method(__pos, #args) }
 		}
 
-		TemplateInvoke(ref name, ref params) => {
-			let template_name = name.to_string();
-			let template = match context.grammar.find_template(&template_name[..]) {
-				Some(x) => x,
-				None => {
-					let msg = format!("No template named `{}`", name);
-					return quote!(compile_error!(#msg));
-				}
-			};
-
-			if template.params.len() != params.len() {
-				let msg = format!("Expected {} arguments to `{}`, found {}", template.params.len(), template.name, params.len());
-				return quote!(compile_error!(#msg));
-			}
-
-			let defs = template.params.iter().zip(params.iter())
-				.map(|(name, expr)| (name.to_string(), (expr, lx))).collect();
-
-			compile_expr(context, &template.expr, &LexicalContext { defs }, result_used)
-		}
-
 		ChoiceExpr(ref exprs) => {
-			fn write_choice(context: &Context, exprs: &[Expr], lx: &LexicalContext, result_used: bool) -> TokenStream  {
+			fn write_choice(context: &Context, exprs: &[Expr], result_used: bool) -> TokenStream  {
 				if exprs.len() == 1 {
-					compile_expr(context, &exprs[0], lx, result_used)
+					compile_expr(context, &exprs[0], result_used)
 				} else {
-					let choice_res = compile_expr(context, &exprs[0], lx, result_used);
-					let next = write_choice(context, &exprs[1..], lx, result_used);
+					let choice_res = compile_expr(context, &exprs[0], result_used);
+					let next = write_choice(context, &exprs[1..], result_used);
 
 					quote! {{
 						let __choice_res = #choice_res;
@@ -348,12 +313,12 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 			if exprs.is_empty() {
 				quote!{ Matched(__pos, ()) }
 			} else {
-				write_choice(context, &exprs, lx, result_used)
+				write_choice(context, &exprs, result_used)
 			}
 		}
 
 		OptionalExpr(ref e) => {
-			let optional_res = compile_expr(context, e, lx, result_used);
+			let optional_res = compile_expr(context, e, result_used);
 
 			if result_used {
 				quote!{
@@ -373,7 +338,7 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 		}
 
 		Repeat(ref e, ref bounds, ref sep) => {
-			let inner = compile_expr(context, e, lx, result_used);
+			let inner = compile_expr(context, e, result_used);
 
 			let (min, max) = match *bounds {
 				BoundedRepeat::None => (None, None),
@@ -383,7 +348,7 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 			};
 
 			let match_sep = if let Some(sep) = sep {
-				let sep_inner = compile_expr(context, sep, lx, false);
+				let sep_inner = compile_expr(context, sep, false);
 				quote! {
 					let __pos = if __repeat_value.is_empty() { __pos } else {
 						let __sep_res = #sep_inner;
@@ -450,7 +415,7 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 		}
 
 		PosAssertExpr(ref e) => {
-			let assert_res = compile_expr(context, e, lx, result_used);
+			let assert_res = compile_expr(context, e, result_used);
 			quote! {{
 				__err_state.suppress_fail += 1;
 				let __assert_res = #assert_res;
@@ -463,7 +428,7 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 		}
 
 		NegAssertExpr(ref e) => {
-			let assert_res = compile_expr(context, e, lx, false);
+			let assert_res = compile_expr(context, e, false);
 			quote! {{
 				__err_state.suppress_fail += 1;
 				let __assert_res = #assert_res;
@@ -476,7 +441,7 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 		}
 
 		ActionExpr(ref exprs, ref code, is_cond) => {
-			labeled_seq(context, &exprs, lx, {
+			labeled_seq(context, &exprs, {
 				if *is_cond {
 					quote!{
 						match { #code } {
@@ -493,7 +458,7 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 			})
 		}
 		MatchStrExpr(ref expr) => {
-			let inner = compile_expr(context, expr, lx, false);
+			let inner = compile_expr(context, expr, false);
 			quote! {{
 				let str_start = __pos;
 				match #inner {
@@ -506,7 +471,7 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 			quote! { Matched(__pos, __pos) }
 		}
 		QuietExpr(ref expr) => {
-			let inner = compile_expr(context, expr, lx, result_used);
+			let inner = compile_expr(context, expr, result_used);
 			quote! {{
 				__err_state.suppress_fail += 1;
 				let res = #inner;
@@ -519,7 +484,7 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 		}
 
 		InfixExpr{ ref atom, ref levels } => {
-			let match_atom = compile_expr(context, atom, lx, result_used);
+			let match_atom = compile_expr(context, atom, result_used);
 			let ty = if let RuleExpr(atom_rule_name) = &**atom {
                 let atom_rule_name_str = atom_rule_name.to_string();
 				context.grammar.iter_rules()
@@ -560,7 +525,7 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 					match (&left_arg.expr, &right_arg.expr) {
 						(&MarkerExpr, &MarkerExpr) => { //infix
 							post_rules.push(
-								labeled_seq(context, &op.elements[1..op.elements.len()-1], lx, {
+								labeled_seq(context, &op.elements[1..op.elements.len()-1], {
 									quote!{
 										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __err_state, __pos #extra_args_call) {
 											let #l_arg = __infix_result;
@@ -573,7 +538,7 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 						}
 						(&MarkerExpr, _) => { // postfix
 							post_rules.push(
-								labeled_seq(context, &op.elements[1..op.elements.len()], lx, {
+								labeled_seq(context, &op.elements[1..op.elements.len()], {
 									quote!{
 										let #l_arg = __infix_result;
 										__infix_result = #action;
@@ -584,7 +549,7 @@ fn compile_expr(context: &Context, e: &Expr, lx: &LexicalContext, result_used: b
 						}
 						(_, &MarkerExpr) => { // prefix
 							pre_rules.push(
-								labeled_seq(context, &op.elements[..op.elements.len()-1], lx, {
+								labeled_seq(context, &op.elements[..op.elements.len()-1], {
 									quote!{
 										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __err_state, __pos #extra_args_call) {
 											Matched(__pos, {#action})

@@ -10,12 +10,7 @@ pub rule peg_grammar -> Grammar
         { Grammar { name, args, input_type, items } }
 
 rule grammar_args -> Vec<(Ident, TokenStream)>
-    = "(" args:COMMASEP<i:IDENT ":" t:$(rust_type) { (i, t) } > ")" { args }
-
-rule peg_template -> Template
-    = "rule" name:IDENT "<" params:IDENT**"," ">" "=" expr:expression ";"? {
-        Template { name, params, expr }
-    }
+    = "(" args:((i:IDENT ":" t:$(rust_type) { (i, t) })**",") ","? ")" { args }
 
 rule peg_rule -> Rule
     = cached:cacheflag visibility:rust_visibility "rule" name:IDENT ret_type:("->" t:$(rust_type) {t})? "=" expr:expression ";"?
@@ -27,7 +22,6 @@ rule peg_rule -> Rule
 
 rule item -> Item
     = u:rust_use     { Item::Use(u) }
-    / r:peg_template { Item::Template(r) }
     / r:peg_rule     { Item::Rule(r) }
 
 rule rust_use -> TokenStream
@@ -100,8 +94,7 @@ rule repeatnum -> TokenStream = $(INTEGER / BRACE_GROUP)
 
 #[cache]
 rule primary -> Expr
-  = name:IDENT "<" args:(expression ** ",") ">" { TemplateInvoke(name, args) }
-  / name:IDENT { RuleExpr(name) }
+  = name:IDENT { RuleExpr(name) }
   / l:LITERAL { LiteralExpr(l) }
   / p:BRACKET_GROUP { PatternExpr(p) }
   / "." { AnyCharExpr }
@@ -121,8 +114,6 @@ rule infix_level -> InfixLevel
 rule infix_op -> InfixOperator
   = elements:labeled* action:BRACE_GROUP
   { InfixOperator{ elements, action } }
-
-rule COMMASEP<t> = list:t**"," ","? { list }
 
 rule KEYWORD = "pub" / "crate" / "rule" / "use" / "type"
 rule IDENT -> Ident = !KEYWORD i:##ident() {i}

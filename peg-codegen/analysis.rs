@@ -85,9 +85,6 @@ impl<'a> ExpressionVisitor<'a> {
                     self.walk_expr(&elem.expr, elem.name.is_some());
                 }
             }
-            TemplateInvoke(..) => {
-                // unimplemented
-            }
             ChoiceExpr(ref choices) => {
                 for expr in choices {
                     self.walk_expr(expr, result_used);
@@ -167,10 +164,6 @@ impl<'a> RecursionVisitor<'a> {
                     // Missing rule would have already been reported
                     RuleInfo { nullable: false }
                 }
-            }
-            TemplateInvoke(..) => {
-                // unimplemented
-                RuleInfo { nullable: false }
             }
             ActionExpr(ref elems, ..) => {
                 for elem in elems {
