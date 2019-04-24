@@ -26,13 +26,6 @@ pub fn compile_tokens(input: TokenStream) -> TokenStream {
         }
     };
 
-    let mut errors = Vec::new();
-    analysis::check(&grammar, &mut |err| errors.push(err.to_compile_error()));
-    let res = translate::compile_grammar(&grammar);
-
-    quote! {
-        #res
-        #(#errors)*
-    }
+    translate::compile_grammar(&grammar)
 }
 

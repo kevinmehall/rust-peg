@@ -1,6 +1,18 @@
+use std::collections::HashMap;
 use proc_macro2::{Ident, Span, TokenStream};
 pub use self::Expr::*;
 use crate::ast::*;
+use crate::analysis;
+
+pub fn report_error(span: Span, msg: String) -> TokenStream {
+    // panic!() to avoid "Mismatched types" error
+    quote_spanned!(span=>compile_error!(#msg);)
+}
+
+pub fn report_error_expr(span: Span, msg: String) -> TokenStream {
+    // panic!() to avoid "Mismatched types" error
+    quote_spanned!(span=> { compile_error!(#msg); panic!() })
+}
 
 fn extra_args_def(grammar: &Grammar) -> TokenStream {
     let args: Vec<TokenStream> = grammar.args.iter().map(|&(ref name, ref tp)| {
@@ -18,6 +30,7 @@ fn extra_args_call(grammar: &Grammar) -> TokenStream {
 
 struct Context<'a> {
     grammar: &'a Grammar,
+	rules: &'a HashMap<String, &'a Rule>,
     extra_args_call: TokenStream,
     extra_args_def: TokenStream,
 }
@@ -26,8 +39,11 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     let name = &grammar.name;
 	let mut items = vec![make_parse_state(&grammar)];
 
+	let analysis = analysis::check(&grammar);
+
     let context = &Context {
         grammar: grammar,
+		rules: &analysis.rules,
         extra_args_call: extra_args_call(grammar),
         extra_args_def: extra_args_def(grammar),
     };
@@ -48,6 +64,16 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
 	let input_type = &grammar.input_type;
 
+	let mut errors = Vec::new();
+
+	for rule in &analysis.duplicate_rules {
+		errors.push(report_error(rule.name.span(), format!("duplicate rule `{}`", rule.name)));
+	}
+
+	for rec in &analysis.left_recursion {
+		errors.push(report_error(rec.span, rec.msg()));
+	}
+
 	quote! {
         mod #name {
             use ::peg::RuleResult::{Matched, Failed};
@@ -56,6 +82,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
             type Position<'input> = <Input as ::peg::Parse<'input>>::Position;
             type PositionRepr<'input> = <Input as ::peg::Parse<'input>>::PositionRepr;
 
+            #(#errors)*
             #(#items)*
         }
 	}
@@ -272,6 +299,15 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 
 		RuleExpr(ref rule_name) => {
 			let rule_name_str = rule_name.to_string();
+
+			if let Some(rule_def) = context.rules.get(&rule_name_str) {
+				if result_used && rule_def.ret_type.is_none() {
+					let msg = format!("using result of rule `{}`, which does not return a value", rule_name_str);
+					return report_error_expr(rule_name.span(), msg);
+				}
+			} else {
+				return report_error_expr(rule_name.span(), format!("undefined rule `{}`", rule_name_str));
+			}
 
 			let func = Ident::new(&format!("__parse_{}", rule_name), rule_name.span());
 			let extra_args_call = &context.extra_args_call;

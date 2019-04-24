@@ -1,119 +1,44 @@
 use std::collections::HashMap;
-use proc_macro2::{ Span, TokenStream };
+use proc_macro2::Span;
 
 use crate::ast::*;
 
-#[derive(Debug)]
-pub enum Diagnostic {
-    DuplicateRule(String, Span),
-    UndefinedRule(String, Span),
-    UsedUnitResult(String, Span),
-    LeftRecursion(Vec<String>, Span),
+pub struct GrammarAnalysis<'a> {
+    pub rules: HashMap<String, &'a Rule>,
+    pub duplicate_rules: Vec<&'a Rule>,
+    pub left_recursion: Vec<RecursionError>,
 }
 
-impl Diagnostic {
-    pub fn primary_span(&self) -> &Span {
-        use self::Diagnostic::*;
-        match self {
-            DuplicateRule(_, span) => span,
-            UndefinedRule(_, span) => span,
-            UsedUnitResult(_, span) => span,
-            LeftRecursion(_, span) => span,
-        }
-    }
-
-    pub fn msg(&self) -> String {
-        use self::Diagnostic::*;
-        match self {
-            DuplicateRule(name, _) => format!("duplicate rule `{}`", name),
-            UndefinedRule(name, _) => format!("undefined rule `{}`", name),
-            UsedUnitResult(name, _) => format!("using result of rule `{}`, which does not return a value", name),
-            LeftRecursion(path, _) => format!("left recursive rules create an infinite loop: {}", path.join(" -> ")),
-        }
-    }
-
-    pub fn to_compile_error(&self) -> TokenStream {
-        let span = self.primary_span();
-        let msg = self.msg();
-        quote_spanned!(*span=> compile_error!(#msg);)
-    }
-}
-
-pub fn check(grammar: &Grammar, emit_error: &mut FnMut(Diagnostic)) {
+pub fn check<'a>(grammar: &'a Grammar) -> GrammarAnalysis<'a> {
     let mut rules = HashMap::new();
+    let mut duplicate_rules = Vec::new();
 
     for rule in grammar.iter_rules() {
         if rules.insert(rule.name.to_string(), rule).is_some() {
-            emit_error(Diagnostic::DuplicateRule(rule.name.to_string(), rule.name.span()))
+            duplicate_rules.push(rule);
         }
     }
+    
+   let left_recursion = RecursionVisitor::check(grammar, &rules);
 
-   ExpressionVisitor::check(grammar, &rules, emit_error);
-   RecursionVisitor::check(grammar, &rules, emit_error);
-}
-
-struct ExpressionVisitor<'a> {
-    emit_error: &'a mut FnMut(Diagnostic),
-    rules: &'a HashMap<String, &'a Rule>,
-}
-
-impl<'a> ExpressionVisitor<'a> {
-    fn check(grammar: &'a Grammar, rules: &HashMap<String, &'a Rule>, emit_error: &'a mut FnMut(Diagnostic)) {
-        let mut visitor = ExpressionVisitor { rules, emit_error };
-
-        for rule in grammar.iter_rules() {
-            visitor.walk_expr(&rule.expr, rule.ret_type.is_some());
-        }
-    }
-
-    fn walk_expr(&mut self, this_expr: &Expr, result_used: bool) {
-        use self::Expr::*;
-        match *this_expr {
-            RuleExpr(ref name_ident) => {
-                let name = name_ident.to_string();
-
-                if let Some(rule_def) = self.rules.get(&name) {
-                    if result_used && rule_def.ret_type.is_none() {
-                        (self.emit_error)(Diagnostic::UsedUnitResult(name, name_ident.span()));
-                    }
-                } else {
-                    (self.emit_error)(Diagnostic::UndefinedRule(name, name_ident.span()));
-                }
-            }
-            ActionExpr(ref elems, ..) => {
-                for elem in elems {
-                    self.walk_expr(&elem.expr, elem.name.is_some());
-                }
-            }
-            ChoiceExpr(ref choices) => {
-                for expr in choices {
-                    self.walk_expr(expr, result_used);
-                }
-            }
-
-            OptionalExpr(ref expr) | 
-            Repeat(ref expr, _, _) |
-            QuietExpr(ref expr) |
-            PosAssertExpr(ref expr) => self.walk_expr(expr, result_used),
-
-            MatchStrExpr(ref expr) | NegAssertExpr(ref expr) => self.walk_expr(expr, false),
-            InfixExpr{ ref atom, .. } => self.walk_expr(atom, true),
-
-            AnyCharExpr |
-            LiteralExpr(_) |
-            PatternExpr(_) |
-            MethodExpr(_, _) |
-            FailExpr(_) |
-            MarkerExpr |
-            PositionExpr => { }
-        }
-    }
+   GrammarAnalysis { rules, duplicate_rules, left_recursion }
 }
 
 struct RecursionVisitor<'a> {
     stack: Vec<String>,
-    emit_error: &'a mut FnMut(Diagnostic),
     rules: &'a HashMap<String, &'a Rule>,
+    errors: Vec<RecursionError>,
+}
+
+pub struct RecursionError {
+    pub span: Span,
+    pub path: Vec<String>,
+}
+
+impl RecursionError {
+    pub fn msg(&self) -> String {
+        format!("left recursive rules create an infinite loop: {}", self.path.join(" -> "))
+    }
 }
 
 #[derive(Clone)]
@@ -126,9 +51,10 @@ struct RuleInfo {
 
 
 impl<'a> RecursionVisitor<'a> {
-    fn check(grammar: &'a Grammar, rules: &HashMap<String, &'a Rule>, emit_error: &'a mut FnMut(Diagnostic)) {
+    fn check(grammar: &'a Grammar, rules: &HashMap<String, &'a Rule>) -> Vec<RecursionError> {
         let mut visitor = RecursionVisitor {
-            rules, emit_error,
+            rules,
+            errors: Vec::new(),
             stack: Vec::new(),
         };
 
@@ -136,6 +62,8 @@ impl<'a> RecursionVisitor<'a> {
             visitor.walk_rule(rule);
             debug_assert!(visitor.stack.is_empty());
         }
+
+        visitor.errors
     }
 
     fn walk_rule(&mut self, rule: &'a Rule) -> RuleInfo {
@@ -154,7 +82,7 @@ impl<'a> RecursionVisitor<'a> {
                 if let Some(loop_start) = self.stack.iter().position(|caller_name| { caller_name == &name}) {
                     let mut recursive_loop = self.stack[loop_start..].to_vec();
                     recursive_loop.push(name);
-                    (self.emit_error)(Diagnostic::LeftRecursion(recursive_loop, rule_ident.span()));
+                    self.errors.push(RecursionError { path: recursive_loop, span: rule_ident.span()});
                     return RuleInfo { nullable: false };
                 }
 
