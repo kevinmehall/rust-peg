@@ -1,32 +1,32 @@
 extern crate peg;
 
 peg::parser!( grammar repeats() for str {
-    rule number -> i64
+    rule number() -> i64
         = n:$(['0'..='9']+) { n.parse().unwrap() }
 
-    pub rule list -> Vec<i64>
-        = number ** ","
+    pub rule list() -> Vec<i64>
+        = number() ** ","
 
-    rule digit -> i64
+    rule digit() -> i64
         = n:$(['0'..='9']) {n.parse().unwrap() }
 
-    pub rule repeat_n -> Vec<i64>
-        = digit*<4>
+    pub rule repeat_n() -> Vec<i64>
+        = digit()*<4>
 
-    pub rule repeat_min -> Vec<i64>
-        = digit*<2,>
+    pub rule repeat_min() -> Vec<i64>
+        = digit()*<2,>
 
-    pub rule repeat_max -> Vec<i64>
-        = digit*<,2>
+    pub rule repeat_max() -> Vec<i64>
+        = digit()*<,2>
 
-    pub rule repeat_min_max -> Vec<i64>
-        = digit*<2,3>
+    pub rule repeat_min_max() -> Vec<i64>
+        = digit()*<2,3>
 
-    pub rule repeat_sep_3 -> Vec<i64>
-        = digit **<3> ","
+    pub rule repeat_sep_3() -> Vec<i64>
+        = digit() **<3> ","
 
-    pub rule repeat_variable -> Vec<&'input str>
-        = (count:digit s:$(['a'..='z'|'0'..='9']*<{count as usize}>) {s})*
+    pub rule repeat_variable() -> Vec<&'input str>
+        = (count:digit() s:$(['a'..='z'|'0'..='9']*<{count as usize}>) {s})*
 });
 
 use repeats::*;

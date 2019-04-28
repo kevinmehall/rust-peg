@@ -2,14 +2,14 @@
 extern crate peg;
 
 peg::parser!( grammar arithmetic() for str {
-    rule number -> i64
+    rule number() -> i64
         = n:$(['0'..='9']+) { n.parse().unwrap() }
 
-    rule atom -> i64
-        = "(" v:calculate ")" { v }
-        / number
+    rule atom() -> i64
+        = "(" v:calculate() ")" { v }
+        / number()
 
-    pub(crate) rule calculate -> i64 = #infix<atom> {
+    pub(crate) rule calculate() -> i64 = #infix<atom> {
         #L
         x:@ "+" y:@ { x + y }
         x:@ "-" y:@ { x - y }

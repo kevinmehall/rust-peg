@@ -11,22 +11,22 @@ pub enum Expression {
 parser!{grammar arithmetic() for str {
 	use super::Expression;
 
-	pub rule expression -> Expression
-		= sum
+	pub rule expression() -> Expression
+		= sum()
 
-	rule sum -> Expression
-		= l:product "+" r:product { Expression::Sum(Box::new(l), Box::new(r)) }
-		/ product
+	rule sum() -> Expression
+		= l:product() "+" r:product() { Expression::Sum(Box::new(l), Box::new(r)) }
+		/ product()
 
-	rule product -> Expression
+	rule product() -> Expression
 		= l:atom "*" r:atom { Expression::Product(Box::new(l), Box::new(r)) }
 		/ atom
 
-	rule atom -> Expression
+	rule atom() -> Expression
 		= number
 		/ "(" v:sum ")" { v }
 
-	rule number -> Expression
+	rule number() -> Expression
 		= n:$(['0'..='9']+) { Expression::Number(n.parse().unwrap()) }
 }}
 

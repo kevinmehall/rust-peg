@@ -1,13 +1,13 @@
 extern crate peg;
 
 peg::parser!(grammar foo() for str {
-    rule rec = rec //~ ERROR left recursive rules create an infinite loop: rec -> rec
+    rule rec() = rec //~ ERROR left recursive rules create an infinite loop: rec -> rec
 
-    rule foo
+    rule foo()
         = "foo" foo
         / bar //~ ERROR left recursive rules create an infinite loop: bar -> foo -> bar
 
-    rule bar
+    rule bar()
         = "bar" bar
         / foo //~ ERROR left recursive rules create an infinite loop: foo -> bar -> foo
 });

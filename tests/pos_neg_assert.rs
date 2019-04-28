@@ -1,12 +1,12 @@
 extern crate peg;
 
 peg::parser!( grammar lookahead() for str {
-    pub rule consonants
+    pub rule consonants()
 	    = (!['a'|'e'|'i'|'o'|'u']['a'..='z'])+
 
-    pub rule neg_lookahead_err = !(['a']['b']) ['a']['x']
+    pub rule neg_lookahead_err() = !(['a']['b']) ['a']['x']
 
-    pub rule lookahead_result -> &'input str
+    pub rule lookahead_result() -> &'input str
         = v:&($(['a'..='c']*)) "abcd" { v }
 });
 

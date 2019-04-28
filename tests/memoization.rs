@@ -2,12 +2,12 @@ extern crate peg;
 
 peg::parser!{ grammar memo() for str {
     #[cache]
-    rule r -> &'input str
+    rule r() -> &'input str
         = s:$(['a'..='z']+) { s }
 
-    pub rule parse
-        = r "+" r { () }
-        / r " " r { () }
+    pub rule parse()
+        = r() "+" r() { () }
+        / r() " " r() { () }
 }}
 
 #[test]

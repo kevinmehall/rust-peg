@@ -2,7 +2,7 @@ extern crate peg;
 
 peg::parser!( grammar parse() for str {
 
-    pub rule dec_byte -> u8
+    pub rule dec_byte() -> u8
         = match_str:$(['0'..='9']*<,3>) {?
             let val: u64 = match_str.parse().unwrap();
 
@@ -15,11 +15,11 @@ peg::parser!( grammar parse() for str {
             }
         }
 
-    rule tag -> &'input str
+    rule tag() -> &'input str
         = $(['a'..='z']+)
 
-    pub rule xml
-        = "<" open:tag ">" xml* "</" close:tag ">" {?
+    pub rule xml()
+        = "<" open:tag() ">" xml* "</" close:tag() ">" {?
             if open == close {
                 Ok(())
             } else {

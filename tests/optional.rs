@@ -1,10 +1,10 @@
 extern crate peg;
 
 peg::parser!( grammar test_grammar() for str {
-    pub rule options -> Option<()>
+    pub rule options() -> Option<()>
         = "abc" v:"def"? {v}
 
-    pub rule option_unused_result = "a"? / "b"
+    pub rule option_unused_result() = "a"? / "b"
 });
 
 use self::test_grammar::*;

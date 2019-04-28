@@ -13,7 +13,7 @@ rule grammar_args -> Vec<(Ident, TokenStream)>
     = "(" args:((i:IDENT ":" t:$(rust_type) { (i, t) })**",") ","? ")" { args }
 
 rule peg_rule -> Rule
-    = cached:cacheflag visibility:rust_visibility "rule" name:IDENT ret_type:("->" t:$(rust_type) {t})? "=" expr:expression ";"?
+    = cached:cacheflag visibility:rust_visibility "rule" name:IDENT ("(" ")")? ret_type:("->" t:$(rust_type) {t})? "=" expr:expression ";"?
         { Rule { name, expr, ret_type, visibility, cached } }
 
     rule rust_visibility -> Option<TokenStream> = ($("pub" PAREN_GROUP? / "crate"))?
@@ -94,7 +94,7 @@ rule repeatnum -> TokenStream = $(INTEGER / BRACE_GROUP)
 
 #[cache]
 rule primary -> Expr
-  = name:IDENT { RuleExpr(name) }
+  = name:IDENT ("(" ")")? { RuleExpr(name) }
   / l:LITERAL { LiteralExpr(l) }
   / p:BRACKET_GROUP { PatternExpr(p) }
   / "@" { MarkerExpr }

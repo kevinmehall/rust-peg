@@ -4,16 +4,16 @@ use std::collections::HashMap;
 peg::parser!( grammar keyval() for str {
     use std::collections::HashMap;
 
-    rule number -> i64
+    rule number() -> i64
         = n:$(['0'..='9']+) { n.parse().unwrap() }
 
-    pub rule keyvals -> HashMap<i64, i64>
-        = kvs:keyval ++ "\n" {
+    pub rule keyvals() -> HashMap<i64, i64>
+        = kvs:keyval() ++ "\n" {
             kvs.iter().cloned().collect::<HashMap<i64, i64>>()
         }
 
-    rule keyval -> (i64, i64)
-        = k:number ":" + v:number { (k, v) }
+    rule keyval() -> (i64, i64)
+        = k:number() ":" + v:number() { (k, v) }
 });
 
 #[test]
