@@ -97,7 +97,6 @@ rule primary -> Expr
   = name:IDENT { RuleExpr(name) }
   / l:LITERAL { LiteralExpr(l) }
   / p:BRACKET_GROUP { PatternExpr(p) }
-  / "." { AnyCharExpr }
   / "@" { MarkerExpr }
   / "##" method:IDENT args:PAREN_GROUP { MethodExpr(method, args) }
   / "#" "position" { PositionExpr }

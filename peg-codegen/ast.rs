@@ -42,7 +42,6 @@ pub struct TaggedExpr {
 
 #[derive(Debug, Clone)]
 pub enum Expr {
-    AnyCharExpr,
     LiteralExpr(Literal),
     PatternExpr(TokenStream),
     RuleExpr(Ident),

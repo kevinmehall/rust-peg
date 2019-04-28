@@ -45,7 +45,7 @@ rule frac
 
 // note: escaped chars not handled
 rule string
-    = "\"" (!"\"" .)* "\""
+    = "\"" (!"\"" [_])* "\""
 });
 
 #[bench]

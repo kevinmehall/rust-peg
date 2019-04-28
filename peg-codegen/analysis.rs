@@ -134,7 +134,6 @@ impl<'a> RecursionVisitor<'a> {
 
             InfixExpr{ ref atom, .. } => self.walk_expr(atom),
 
-            | AnyCharExpr
             | LiteralExpr(_)
             | PatternExpr(_)
             | MethodExpr(_, _)

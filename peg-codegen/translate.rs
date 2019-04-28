@@ -263,10 +263,6 @@ fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
 
 fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 	match e {
-		AnyCharExpr => {
-			quote!{ ::peg::ParseElem::parse_elem(__input, __pos) }
-		}
-
 		LiteralExpr(ref s) => {
 			let escaped_str = s.to_string();
 			quote!{ match ::peg::ParseLiteral::parse_string_literal(__input, __pos, #s) {
