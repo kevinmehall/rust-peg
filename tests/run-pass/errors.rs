@@ -9,8 +9,8 @@ peg::parser!{ grammar parser() for str {
     pub rule error_pos() = ("a" / "\n" / "\r")*
 }}
 
-#[test]
-fn test_eof() {
+fn main() {
+    // errors at eof
 	assert_eq!(parser::one_letter("t"), Ok(()));
 
     let err = parser::one_letter("tt").unwrap_err();
@@ -18,10 +18,8 @@ fn test_eof() {
     assert_eq!(err.location.column, 2);
     assert_eq!(err.location.offset, 1);
     assert_eq!(format!("{}", err.expected), "EOF");
-}
 
-#[test]
-fn test_errors() {
+    // expected character set
     let err = parser::parse(r#"
 aaaa
 aaaaaa
@@ -32,10 +30,8 @@ aaaabaaaa
     assert_eq!(err.location.column, 5);
     assert_eq!(err.location.offset, 17);
     assert_eq!(format!("{}", err.expected), r#"one of "\n", "a", EOF"#);
-}
 
-#[test]
-fn test_error_pos() {
+    // error position reporting
     let err = parser::error_pos("aab\n").unwrap_err();
     assert_eq!(err.location.line, 1);
     assert_eq!(err.location.column, 3);

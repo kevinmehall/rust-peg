@@ -10,7 +10,6 @@ peg::parser!(grammar test_grammar() for str {
 
 use self::test_grammar::*;
 
-#[test]
-fn test_renamed_imports() {
+fn main() {
 	assert_eq!(renamed_imports("").unwrap(), (42, 42));
 }

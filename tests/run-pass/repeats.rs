@@ -31,14 +31,10 @@ peg::parser!( grammar repeats() for str {
 
 use repeats::*;
 
-#[test]
-fn test_list() {
+fn main() {
 	assert_eq!(list("5"), Ok(vec![5]));
 	assert_eq!(list("1,2,3,4"), Ok(vec![1,2,3,4]));
-}
 
-#[test]
-fn test_repeat() {
 	assert!(repeat_n("123").is_err());
 	assert_eq!(repeat_n("1234"), Ok(vec![1,2,3,4]));
 	assert!(repeat_n("12345").is_err());

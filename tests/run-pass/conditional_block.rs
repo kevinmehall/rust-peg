@@ -30,17 +30,13 @@ peg::parser!( grammar parse() for str {
 
 });
 
-#[test]
-fn dec_byte() {
+fn main() {
     assert_eq!(parse::dec_byte("0"), Ok(0));
     assert_eq!(parse::dec_byte("255"), Ok(255));
     assert_eq!(parse::dec_byte("1"), Ok(1));
     assert!(parse::dec_byte("256").is_err());
     assert!(parse::dec_byte("1234").is_err());
-}
 
-#[test]
-fn xml() {
     assert!(parse::xml("<a></a>").is_ok());
     assert!(parse::xml("<a><b></b><c></c></a>").is_ok());
     assert!(parse::xml("<a><b><c></b></c></a>").is_err());

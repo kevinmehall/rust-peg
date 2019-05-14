@@ -13,13 +13,8 @@ peg::parser!(grammar borrows() for str {
 
 use self::borrows::*;
 
-#[test]
-fn test_borrowed() {
+fn main() {
 	assert_eq!(borrowed("abcd"), Ok("abcd"));
-}
-
-#[test]
-fn test_lifetime_parameter() {
 	assert_eq!(&*lifetime_parameter("abcd").unwrap(), "abcd");
 	assert_eq!(&*lifetime_parameter("COW").unwrap(), "cow");
 }

@@ -9,8 +9,7 @@ peg::parser!( grammar test_grammar() for str {
 
 use self::test_grammar::*;
 
-#[test]
-fn test_optional() {
+fn main() {
 	assert_eq!(options("abc"), Ok(None));
 	assert_eq!(options("abcdef"), Ok(Some(())));
 	assert!(options("def").is_err());

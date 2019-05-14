@@ -10,7 +10,6 @@ peg::parser!{ grammar memo() for str {
         / r() " " r() { () }
 }}
 
-#[test]
 fn main() {
 	assert_eq!(memo::parse("abc zzz"), Ok(()));
 }

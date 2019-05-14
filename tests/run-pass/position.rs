@@ -7,7 +7,6 @@ peg::parser!(grammar test_grammar() for str {
 
 use self::test_grammar::*;
 
-#[test]
-fn test_position() {
+fn main() {
 	assert_eq!(position("aaaabbb").unwrap(), (0, 4, 7));
 }

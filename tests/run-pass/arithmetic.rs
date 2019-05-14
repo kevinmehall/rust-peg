@@ -21,7 +21,6 @@ peg::parser!( grammar arithmetic() for str {
 		= n:$(['0'..='9']+) { n.parse().unwrap() }
 });
 
-#[test]
 fn main() {
 	assert_eq!(expression("1+1"), Ok(2));
 	assert_eq!(expression("5*5"), Ok(25));

@@ -11,3 +11,5 @@ peg::parser!(grammar foo() for str {
         = "bar" bar
         / foo //~ ERROR left recursive rules create an infinite loop: foo -> bar -> foo
 });
+
+fn main() {}

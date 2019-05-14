@@ -16,8 +16,7 @@ peg::parser!( grammar keyval() for str {
         = k:number() ":" + v:number() { (k, v) }
 });
 
-#[test]
-fn test_keyval() {
+fn main() {
     let mut expected = HashMap::new();
     expected.insert(1, 3);
     expected.insert(2, 4);

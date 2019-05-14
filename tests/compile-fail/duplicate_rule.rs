@@ -5,3 +5,5 @@ peg::parser!(grammar foo() for str { //~ ERROR  the name `__parse_foo` is define
 
     rule foo() = "xyz" //~ ERROR duplicate rule `foo`
 });
+
+fn main() {}

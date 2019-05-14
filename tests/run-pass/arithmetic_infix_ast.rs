@@ -21,8 +21,7 @@ pub enum InfixAst {
     Op(String, Box<InfixAst>, Box<InfixAst>)
 }
 
-#[test]
-fn test_infix_ast(){
+fn main(){
     assert_eq!(arithmetic::expression("a + b `x` c").unwrap(),
         InfixAst::Add(
             Box::new(InfixAst::Ident("a".to_owned())),

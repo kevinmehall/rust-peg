@@ -24,8 +24,7 @@ peg::parser!( grammar arithmetic() for str {
     }
 });
 
-#[test]
-fn test_infix_arith() {
+fn main() {
     assert_eq!(arithmetic::calculate("3+3*3+3"), Ok(15));
     assert_eq!(arithmetic::calculate("2+2^2^2^2/2+2"), Ok(32772));
     assert_eq!(arithmetic::calculate("1024/2/2/2+1"), Ok(129));

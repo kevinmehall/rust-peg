@@ -8,7 +8,6 @@ parser!{
 	}
 }
 
-#[test]
 fn main() {
 	assert_eq!(byteparser::commands(b">asdf\0>xyz\0"), Ok(vec![&b"asdf"[..], &b"xyz"[..]]));
 }

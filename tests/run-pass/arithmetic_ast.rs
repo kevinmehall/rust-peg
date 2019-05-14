@@ -30,8 +30,6 @@ parser!{grammar arithmetic() for str {
 		= n:$(['0'..='9']+) { Expression::Number(n.parse().unwrap()) }
 }}
 
-
-#[test]
 fn main() {
 	assert_eq!(arithmetic::expression("1+1"), Ok(Expression::Sum(
 		Box::new(Expression::Number(1)),
