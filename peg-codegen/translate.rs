@@ -5,7 +5,6 @@ use crate::ast::*;
 use crate::analysis;
 
 pub fn report_error(span: Span, msg: String) -> TokenStream {
-    // panic!() to avoid "Mismatched types" error
     quote_spanned!(span=>compile_error!(#msg);)
 }
 
@@ -76,8 +75,6 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
 	quote! {
         mod #name {
-            use ::peg::RuleResult::{Matched, Failed};
-
             type Input = #input_type;
             type Position<'input> = <Input as ::peg::Parse<'input>>::Position;
             type PositionRepr<'input> = <Input as ::peg::Parse<'input>>::PositionRepr;
@@ -134,8 +131,8 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 			};
 			let __peg_result = __peg_closure();
 			match __peg_result {
-				Matched(_, _) => println!("[PEG_TRACE] Matched rule {} at {}:{}", #rule_name, loc),
-				Failed => println!("[PEG_TRACE] Failed to match rule {} at {}:{}", #rule_name, loc)
+				::peg::RuleResult::Matched(_, _) => println!("[PEG_TRACE] Matched rule {} at {}:{}", #rule_name, loc),
+				::peg::RuleResult::Failed => println!("[PEG_TRACE] Failed to match rule {} at {}:{}", #rule_name, loc)
 			}
 			__peg_result
 		}}
@@ -150,7 +147,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 			quote!{
 				let loc = ::peg::Parse::position_repr(__input, pos);
                 match entry {
-                    &Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}", #rule_name, loc),
+                    &::peg::RuleResult::Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}", #rule_name, loc),
                     &Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}", #rule_name, loc),
                 };
 			}
@@ -196,7 +193,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 			let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
 			let mut __state = ParseState::new();
 			match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call) {
-				Matched(__pos, __value) => {
+				::peg::RuleResult::Matched(__pos, __value) => {
 					if __pos == __input.len() {
 						return Ok(__value)
 					} else {
@@ -210,7 +207,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 			__err_state.reparse_for_error();
 
 			match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call) {
-				Matched(__pos, __value) => {
+				::peg::RuleResult::Matched(__pos, __value) => {
 					if __pos == __input.len() {
 						panic!("Parser is nondeterministic: succeeded when reparsing for error position");
 					} else {
@@ -235,8 +232,8 @@ fn compile_match_and_then(context: &Context, e: &Expr, value_name: Option<&Ident
 	quote! {{
 		let __seq_res = #seq_res;
 		match __seq_res {
-			Matched(__pos, #name_pat) => { #then }
-			Failed => Failed,
+			::peg::RuleResult::Matched(__pos, #name_pat) => { #then }
+			::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
 		}
 	}}
 }
@@ -266,8 +263,8 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 		LiteralExpr(ref s) => {
 			let escaped_str = s.to_string();
 			quote!{ match ::peg::ParseLiteral::parse_string_literal(__input, __pos, #s) {
-				Matched(__pos, __val) => Matched(__pos, __val),
-				Failed => __err_state.mark_failure(__pos, #escaped_str)
+				::peg::RuleResult::Matched(__pos, __val) => ::peg::RuleResult::Matched(__pos, __val),
+				::peg::RuleResult::Failed => __err_state.mark_failure(__pos, #escaped_str)
 			}}
 		}
 
@@ -276,7 +273,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
             let pat_str = pattern.to_string();
 
 			let (in_set, not_in_set) = cond_swap(invert, (
-				quote!{ Matched(__next, ()) },
+				quote!{ ::peg::RuleResult::Matched(__next, ()) },
 				quote!{ __err_state.mark_failure(__pos, #pat_str) },
 			));
 
@@ -284,11 +281,11 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 
 			quote!{
 				match ::peg::ParseElem::parse_elem(__input, __pos) {
-					Matched(__next, __ch) => match __ch {
+					::peg::RuleResult::Matched(__next, __ch) => match __ch {
 						#in_set_arm
 						_ => #not_in_set,
 					}
-					Failed => __err_state.mark_failure(__pos, #pat_str)
+					::peg::RuleResult::Failed => __err_state.mark_failure(__pos, #pat_str)
 				}					
 			}
 		}
@@ -313,8 +310,8 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 			} else {
 				quote!{
 					match #func(__input, __state, __err_state, __pos #extra_args_call){
-						Matched(pos, _) => Matched(pos, ()),
-						Failed => Failed,
+						::peg::RuleResult::Matched(pos, _) => ::peg::RuleResult::Matched(pos, ()),
+						::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
 					}
 				}
 			}
@@ -335,15 +332,15 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 					quote! {{
 						let __choice_res = #choice_res;
 						match __choice_res {
-							Matched(__pos, __value) => Matched(__pos, __value),
-							Failed => #next
+							::peg::RuleResult::Matched(__pos, __value) => ::peg::RuleResult::Matched(__pos, __value),
+							::peg::RuleResult::Failed => #next
 						}
 					}}
 				}
 			}
 
 			if exprs.is_empty() {
-				quote!{ Matched(__pos, ()) }
+				quote!{ ::peg::RuleResult::Matched(__pos, ()) }
 			} else {
 				write_choice(context, &exprs, result_used)
 			}
@@ -355,15 +352,15 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 			if result_used {
 				quote!{
 					match #optional_res {
-						Matched(__newpos, __value) => { Matched(__newpos, Some(__value)) },
-						Failed => { Matched(__pos, None) },
+						::peg::RuleResult::Matched(__newpos, __value) => { ::peg::RuleResult::Matched(__newpos, Some(__value)) },
+						::peg::RuleResult::Failed => { ::peg::RuleResult::Matched(__pos, None) },
 					}
 				}
 			} else {
 				quote!{
 					match #optional_res {
-						Matched(__newpos, _) => { Matched(__newpos, ()) },
-						Failed => { Matched(__pos, ()) },
+						::peg::RuleResult::Matched(__newpos, _) => { ::peg::RuleResult::Matched(__newpos, ()) },
+						::peg::RuleResult::Failed => { ::peg::RuleResult::Matched(__pos, ()) },
 					}
 				}
 			}
@@ -385,8 +382,8 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 					let __pos = if __repeat_value.is_empty() { __pos } else {
 						let __sep_res = #sep_inner;
 						match __sep_res {
-							Matched(__newpos, _) => { __newpos },
-							Failed => break,
+							::peg::RuleResult::Matched(__newpos, _) => { __newpos },
+							::peg::RuleResult::Failed => break,
 						}
 					};
 				}
@@ -411,13 +408,13 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 			let result_check = if let Some(min) = min {
 				quote!{
 					if __repeat_value.len() >= #min {
-						Matched(__repeat_pos, #result)
+						::peg::RuleResult::Matched(__repeat_pos, #result)
 					} else {
-						Failed
+						::peg::RuleResult::Failed
 					}
 				}
 			} else {
-				quote!{ Matched(__repeat_pos, #result) }
+				quote!{ ::peg::RuleResult::Matched(__repeat_pos, #result) }
 			};
 
 			quote!{{
@@ -432,11 +429,11 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 
 					let __step_res = #inner;
 					match __step_res {
-						Matched(__newpos, __value) => {
+						::peg::RuleResult::Matched(__newpos, __value) => {
 							__repeat_pos = __newpos;
 							#repeat_step
 						},
-						Failed => {
+						::peg::RuleResult::Failed => {
 							break;
 						}
 					}
@@ -453,8 +450,8 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 				let __assert_res = #assert_res;
 				__err_state.suppress_fail -= 1;
 				match __assert_res {
-					Matched(_, __value) => Matched(__pos, __value),
-					Failed => Failed,
+					::peg::RuleResult::Matched(_, __value) => ::peg::RuleResult::Matched(__pos, __value),
+					::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
 				}
 			}}
 		}
@@ -466,8 +463,8 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 				let __assert_res = #assert_res;
 				__err_state.suppress_fail -= 1;
 				match __assert_res {
-					Failed => Matched(__pos, ()),
-					Matched(..) => Failed,
+					::peg::RuleResult::Failed => ::peg::RuleResult::Matched(__pos, ()),
+					::peg::RuleResult::Matched(..) => ::peg::RuleResult::Failed,
 				}
 			}}
 		}
@@ -477,15 +474,15 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 				if *is_cond {
 					quote!{
 						match { #code } {
-							Ok(res) => Matched(__pos, res),
+							Ok(res) => ::peg::RuleResult::Matched(__pos, res),
 							Err(expected) => {
 								__err_state.mark_failure(__pos, expected);
-								Failed
+								::peg::RuleResult::Failed
 							},
 						}
 					}
 				} else {
-					quote!{ Matched(__pos, { #code }) }
+					quote!{ ::peg::RuleResult::Matched(__pos, { #code }) }
 				}
 			})
 		}
@@ -494,13 +491,13 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 			quote! {{
 				let str_start = __pos;
 				match #inner {
-					Matched(__newpos, _) => { Matched(__newpos, ::peg::ParseSlice::parse_slice(__input, str_start, __newpos)) },
-					Failed => Failed,
+					::peg::RuleResult::Matched(__newpos, _) => { ::peg::RuleResult::Matched(__newpos, ::peg::ParseSlice::parse_slice(__input, str_start, __newpos)) },
+					::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
 				}
 			}}
 		}
 		PositionExpr => {
-			quote! { Matched(__pos, __pos) }
+			quote! { ::peg::RuleResult::Matched(__pos, __pos) }
 		}
 		QuietExpr(ref expr) => {
 			let inner = compile_expr(context, expr, result_used);
@@ -512,7 +509,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 			}}
 		}
 		FailExpr(ref expected) => {
-			quote!{{ __err_state.mark_failure(__pos, #expected); Failed }}
+			quote!{{ __err_state.mark_failure(__pos, #expected); ::peg::RuleResult::Failed }}
 		}
 
 		InfixExpr{ ref atom, ref levels } => {
@@ -559,11 +556,11 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 							post_rules.push(
 								labeled_seq(context, &op.elements[1..op.elements.len()-1], {
 									quote!{
-										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __err_state, __pos #extra_args_call) {
+										if let ::peg::RuleResult::Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __err_state, __pos #extra_args_call) {
 											let #l_arg = __infix_result;
 											__infix_result = #action;
-											Matched(__pos, ())
-										} else { Failed }
+											::peg::RuleResult::Matched(__pos, ())
+										} else { ::peg::RuleResult::Failed }
 									}
 								})
 							);
@@ -574,7 +571,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 									quote!{
 										let #l_arg = __infix_result;
 										__infix_result = #action;
-										Matched(__pos, ())
+										::peg::RuleResult::Matched(__pos, ())
 									}
 								})
 							);
@@ -583,9 +580,9 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 							pre_rules.push(
 								labeled_seq(context, &op.elements[..op.elements.len()-1], {
 									quote!{
-										if let Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __err_state, __pos #extra_args_call) {
-											Matched(__pos, {#action})
-										} else { Failed }
+										if let ::peg::RuleResult::Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __err_state, __pos #extra_args_call) {
+											::peg::RuleResult::Matched(__pos, {#action})
+										} else { ::peg::RuleResult::Failed }
 									}
 								})
 							);
@@ -600,7 +597,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 					level_code.push(quote!{
 						if #prec >= __min_prec {
 							#(
-								if let Matched(__pos, ()) = #post_rules {
+								if let ::peg::RuleResult::Matched(__pos, ()) = #post_rules {
 									__repeat_pos = __pos;
 									continue;
 								}
@@ -621,15 +618,15 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 				fn __infix_parse<'input>(__min_prec:i32, __input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState<Position<'input>>, __pos: Position<'input> #extra_args_def) -> ::peg::RuleResult<usize, #ty> {
 					let __initial = (|| {
 						#(
-							if let Matched(__pos, __v) = #pre_rules {
-								return Matched(__pos, __v);
+							if let ::peg::RuleResult::Matched(__pos, __v) = #pre_rules {
+								return ::peg::RuleResult::Matched(__pos, __v);
 							}
 						)*
 
 						#match_atom
 					})();
 
-					if let Matched(__pos, mut __infix_result) = __initial {
+					if let ::peg::RuleResult::Matched(__pos, mut __infix_result) = __initial {
 						#enter
 						let mut __repeat_pos = __pos;
 						loop {
@@ -638,9 +635,9 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 							break;
 						}
 						#leave
-						Matched(__repeat_pos, __infix_result)
+						::peg::RuleResult::Matched(__repeat_pos, __infix_result)
 					} else {
-						Failed
+						::peg::RuleResult::Failed
 					}
 				}
 				__infix_parse(0, __input, __state, __err_state, __pos #extra_args_call)
