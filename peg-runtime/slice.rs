@@ -1,7 +1,6 @@
 use super::{RuleResult, Parse, ParseElem, ParseLiteral, ParseSlice};
 
 impl<T> Parse for [T] {
-    type Position = usize;
     type PositionRepr = usize;
     fn start(&self) -> usize { 0 }
 
@@ -11,7 +10,7 @@ impl<T> Parse for [T] {
 impl<T: Clone> ParseElem for [T] {
     type Element = T;
 
-    fn parse_elem(&self, pos: usize) -> RuleResult<usize, T> {
+    fn parse_elem(&self, pos: usize) -> RuleResult<T> {
         match self[pos..].first() {
             Some(c) => RuleResult::Matched(pos + 1, c.clone()),
             None => RuleResult::Failed
@@ -20,7 +19,7 @@ impl<T: Clone> ParseElem for [T] {
 }
 
 impl ParseLiteral for [u8] {
-    fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<usize, ()> {
+    fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
         let l = literal.len();
         if self.len() >= pos + l && &self[pos..pos+l] == literal.as_bytes() {
             RuleResult::Matched(pos+l, ())

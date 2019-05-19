@@ -48,28 +48,28 @@ impl FlatTokenStream {
 
     pub fn len(&self) -> usize { self.tokens.len() } //TODO
 
-    pub fn ident(&self, pos: usize) -> RuleResult<usize, Ident> {
+    pub fn ident(&self, pos: usize) -> RuleResult<Ident> {
         match self.tokens.get(pos) {
             Some(Token::Ident(i)) => RuleResult::Matched(pos+1, i.clone()),
             _ => RuleResult::Failed,
         }
     }
 
-    pub fn literal(&self, pos: usize) -> RuleResult<usize, Literal> {
+    pub fn literal(&self, pos: usize) -> RuleResult<Literal> {
         match self.tokens.get(pos) {
             Some(Token::Literal(i)) => RuleResult::Matched(pos+1, i.clone()),
             _ => RuleResult::Failed,
         }
     }
 
-    pub fn group(&self, pos: usize, delim: Delimiter) -> RuleResult<usize, TokenStream> {
+    pub fn group(&self, pos: usize, delim: Delimiter) -> RuleResult<TokenStream> {
         match self.tokens.get(pos) {
             Some(Token::Begin(g, n)) if g.delimiter() == delim => RuleResult::Matched(*n, g.stream()),
             _ => RuleResult::Failed,
         }
     }
 
-    pub fn group_body(&self, mut pos: usize) -> RuleResult<usize, TokenStream> {
+    pub fn group_body(&self, mut pos: usize) -> RuleResult<TokenStream> {
         let mut r: Vec<TokenTree> = Vec::new();
         while let Some(t) = self.tokens.get(pos) {
             match t {
@@ -99,7 +99,6 @@ impl ::std::fmt::Display for Sp {
 }
 
 impl Parse for FlatTokenStream {
-    type Position = usize;
     type PositionRepr = Sp;
     fn start(&self) -> usize { 0 }
 
@@ -117,7 +116,7 @@ impl Parse for FlatTokenStream {
 impl ParseElem for FlatTokenStream {
     type Element = Token;
 
-    fn parse_elem(&self, pos: usize) -> RuleResult<usize, Token> {
+    fn parse_elem(&self, pos: usize) -> RuleResult<Token> {
         match self.tokens.get(pos) {
             Some(c) => RuleResult::Matched(pos + 1, c.clone()),
             None => RuleResult::Failed
@@ -144,7 +143,7 @@ fn delimiter_end(d: Delimiter) -> &'static str {
 }
 
 impl ParseLiteral for FlatTokenStream {
-    fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<usize, ()> {
+    fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
         match self.tokens.get(pos) {
             Some(Token::Ident(i)) if i.to_string() == literal => RuleResult::Matched(pos + 1, ()),
             Some(Token::Punct(p)) if literal.starts_with(p.as_char()) => {
@@ -165,7 +164,7 @@ impl ParseLiteral for FlatTokenStream {
 
 impl<'input> ParseSlice<'input> for FlatTokenStream {
     type Slice = TokenStream;
-    fn parse_slice(&self, p1: usize, p2: usize) -> TokenStream {
+    fn parse_slice(&'input self, p1: usize, p2: usize) -> TokenStream {
         let mut ts = TokenStream::new();
         let mut pos = p1;
 

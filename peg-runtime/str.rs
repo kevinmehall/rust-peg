@@ -15,7 +15,6 @@ impl Display for LineCol {
 }
 
 impl Parse for str {
-    type Position = usize;
     type PositionRepr = LineCol;
     fn start(&self) -> usize { 0 }
 
@@ -30,7 +29,7 @@ impl Parse for str {
 impl ParseElem for str {
     type Element = char;
 
-    fn parse_elem(&self, pos: usize) -> RuleResult<usize, char> {
+    fn parse_elem(&self, pos: usize) -> RuleResult<char> {
         match self[pos..].chars().next() {
             Some(c) => RuleResult::Matched(pos + c.len_utf8(), c),
             None => RuleResult::Failed
@@ -39,7 +38,7 @@ impl ParseElem for str {
 }
 
 impl ParseLiteral for str {
-    fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<usize, ()> {
+    fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
         let l = literal.len();
         if self.len() >= pos + l && &self.as_bytes()[pos..pos+l] == literal.as_bytes() {
             RuleResult::Matched(pos+l, ())

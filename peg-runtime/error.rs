@@ -52,15 +52,15 @@ impl<L: Display + Debug> ::std::error::Error for ParseError<L> {
     }
 }
 
-pub struct ErrorState<P> {
-    pub max_err_pos: P,
+pub struct ErrorState {
+    pub max_err_pos: usize,
     pub suppress_fail: usize,
     pub reparsing_on_error: bool,
     pub expected: ExpectedSet,
 }
 
-impl<P: PartialOrd> ErrorState<P> {
-    pub fn new(initial_pos: P) -> ErrorState<P> {
+impl ErrorState {
+    pub fn new(initial_pos: usize) -> ErrorState {
         ErrorState {
             max_err_pos: initial_pos,
             suppress_fail: 0,
@@ -75,14 +75,14 @@ impl<P: PartialOrd> ErrorState<P> {
     }
 
     #[inline(never)]
-    pub fn mark_failure_slow_path(&mut self, pos: P, expected: &'static str) {
+    pub fn mark_failure_slow_path(&mut self, pos: usize, expected: &'static str) {
         if pos == self.max_err_pos {
             self.expected.expected.insert(expected);
         }
     }
 
     #[inline(always)]
-    pub fn mark_failure(&mut self, pos: P, expected: &'static str) -> RuleResult<P, ()> {
+    pub fn mark_failure(&mut self, pos: usize, expected: &'static str) -> RuleResult<()> {
         if self.suppress_fail == 0 {
             if self.reparsing_on_error {
                 self.mark_failure_slow_path(pos, expected);
@@ -93,7 +93,7 @@ impl<P: PartialOrd> ErrorState<P> {
         RuleResult::Failed
     }
 
-    pub fn into_parse_error<I: Parse + ?Sized>(self, input: &I) -> ParseError<I::PositionRepr> where I::Position: From<P> {
+    pub fn into_parse_error<I: Parse + ?Sized>(self, input: &I) -> ParseError<I::PositionRepr> {
         ParseError {
             location: Parse::position_repr(input, self.max_err_pos.into()),
             expected: self.expected,
