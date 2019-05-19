@@ -76,8 +76,8 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 	quote! {
         mod #name {
             type Input = #input_type;
-            type Position<'input> = <Input as ::peg::Parse<'input>>::Position;
-            type PositionRepr<'input> = <Input as ::peg::Parse<'input>>::PositionRepr;
+            type Position = <Input as ::peg::Parse>::Position;
+            type PositionRepr = <Input as ::peg::Parse>::PositionRepr;
 
             #(#errors)*
             #(#items)*
@@ -156,7 +156,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 		};
 
 		quote! {
-			fn #name<'input>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState<Position<'input>>, __pos: Position<'input> #extra_args_def) -> ::peg::RuleResult<usize, #ret_ty> {
+			fn #name<'input>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState<Position>, __pos: Position #extra_args_def) -> ::peg::RuleResult<usize, #ret_ty> {
 				#![allow(non_snake_case, unused)]
 				if let Some(entry) = __state.#cache_field.get(&__pos) {
 					#cache_trace
@@ -169,7 +169,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 		}
 	} else {
 		quote! {
-			fn #name<'input>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState<Position<'input>>, __pos: Position<'input> #extra_args_def) -> ::peg::RuleResult<usize, #ret_ty> {
+			fn #name<'input>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState<Position>, __pos: Position #extra_args_def) -> ::peg::RuleResult<usize, #ret_ty> {
 				#![allow(non_snake_case, unused)]
 				#wrapped_body
 			}
@@ -187,7 +187,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 	let extra_args_call = &context.extra_args_call;
 
 	quote! {
-		#visibility fn #name<'input>(__input: &'input Input #extra_args_def) -> Result<#ret_ty, ::peg::error::ParseError<PositionRepr<'input>>> {
+		#visibility fn #name<'input>(__input: &'input Input #extra_args_def) -> Result<#ret_ty, ::peg::error::ParseError<PositionRepr>> {
 			#![allow(non_snake_case, unused)]
 
 			let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
@@ -615,7 +615,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 			};
 
 			quote!{{
-				fn __infix_parse<'input>(__min_prec:i32, __input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState<Position<'input>>, __pos: Position<'input> #extra_args_def) -> ::peg::RuleResult<usize, #ty> {
+				fn __infix_parse<'input>(__min_prec:i32, __input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState<Position>, __pos: Position #extra_args_def) -> ::peg::RuleResult<usize, #ty> {
 					let __initial = (|| {
 						#(
 							if let ::peg::RuleResult::Matched(__pos, __v) = #pre_rules {

@@ -14,12 +14,12 @@ impl Display for LineCol {
     }
 }
 
-impl<'input> Parse<'input> for str {
+impl Parse for str {
     type Position = usize;
     type PositionRepr = LineCol;
-    fn start(&'input self) -> usize { 0 }
+    fn start(&self) -> usize { 0 }
 
-    fn position_repr(&'input self, pos: usize) -> LineCol {
+    fn position_repr(&self, pos: usize) -> LineCol {
         let before = &self[..pos];
 		let line = before.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;
 		let column = before.chars().rev().take_while(|&c| c != '\n').count() + 1;
@@ -27,10 +27,10 @@ impl<'input> Parse<'input> for str {
     }
 }
 
-impl<'input> ParseElem<'input> for str {
+impl ParseElem for str {
     type Element = char;
 
-    fn parse_elem(&'input self, pos: usize) -> RuleResult<usize, char> {
+    fn parse_elem(&self, pos: usize) -> RuleResult<usize, char> {
         match self[pos..].chars().next() {
             Some(c) => RuleResult::Matched(pos + c.len_utf8(), c),
             None => RuleResult::Failed
@@ -38,8 +38,8 @@ impl<'input> ParseElem<'input> for str {
     }
 }
 
-impl<'input> ParseLiteral<'input> for str {
-    fn parse_string_literal(&'input self, pos: usize, literal: &str) -> RuleResult<usize, ()> {
+impl ParseLiteral for str {
+    fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<usize, ()> {
         let l = literal.len();
         if self.len() >= pos + l && &self.as_bytes()[pos..pos+l] == literal.as_bytes() {
             RuleResult::Matched(pos+l, ())

@@ -1,17 +1,17 @@
 use super::{RuleResult, Parse, ParseElem, ParseLiteral, ParseSlice};
 
-impl<'input, T: 'input> Parse<'input> for [T] {
+impl<T> Parse for [T] {
     type Position = usize;
     type PositionRepr = usize;
-    fn start(&'input self) -> usize { 0 }
+    fn start(&self) -> usize { 0 }
 
-    fn position_repr(&'input self, pos: usize) -> usize { pos }
+    fn position_repr(&self, pos: usize) -> usize { pos }
 }
 
-impl<'input, T: 'input + Clone> ParseElem<'input> for [T] {
+impl<T: Clone> ParseElem for [T] {
     type Element = T;
 
-    fn parse_elem(&'input self, pos: usize) -> RuleResult<usize, T> {
+    fn parse_elem(&self, pos: usize) -> RuleResult<usize, T> {
         match self[pos..].first() {
             Some(c) => RuleResult::Matched(pos + 1, c.clone()),
             None => RuleResult::Failed
@@ -19,8 +19,8 @@ impl<'input, T: 'input + Clone> ParseElem<'input> for [T] {
     }
 }
 
-impl<'input> ParseLiteral<'input> for [u8] {
-    fn parse_string_literal(&'input self, pos: usize, literal: &str) -> RuleResult<usize, ()> {
+impl ParseLiteral for [u8] {
+    fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<usize, ()> {
         let l = literal.len();
         if self.len() >= pos + l && &self[pos..pos+l] == literal.as_bytes() {
             RuleResult::Matched(pos+l, ())

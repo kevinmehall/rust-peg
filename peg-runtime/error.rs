@@ -93,7 +93,7 @@ impl<P: PartialOrd> ErrorState<P> {
         RuleResult::Failed
     }
 
-    pub fn into_parse_error<'i, I: Parse<'i> + ?Sized>(self, input: &'i I) -> ParseError<I::PositionRepr> where I::Position: From<P> {
+    pub fn into_parse_error<I: Parse + ?Sized>(self, input: &I) -> ParseError<I::PositionRepr> where I::Position: From<P> {
         ParseError {
             location: Parse::position_repr(input, self.max_err_pos.into()),
             expected: self.expected,
