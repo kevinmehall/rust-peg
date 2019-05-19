@@ -9,6 +9,7 @@ cp peg-codegen/grammar_new.rs peg-codegen/grammar.rs
 if cargo run -- peg-codegen/grammar.rustpeg > peg-codegen/grammar_new.rs
 then
     diff -qs peg-codegen/grammar.rs peg-codegen/grammar_new.rs
+    rustfmt peg-codegen/grammar.rs
 else
     echo "Failed"
 fi
