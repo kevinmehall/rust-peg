@@ -56,22 +56,17 @@ pub enum Expr {
     PositionExpr,
     QuietExpr(Box<Expr>),
     FailExpr(Literal),
-    InfixExpr{ atom: Box<Expr>, levels: Vec<InfixLevel> },
-    MarkerExpr,
-}
-
-
-#[derive(Copy, Debug, Clone, PartialEq, Eq)]
-pub enum InfixAssoc { Left, Right }
-
-#[derive(Debug, Clone)]
-pub struct InfixLevel {
-    pub assoc: InfixAssoc,
-    pub operators: Vec<InfixOperator>,
+    PrecedenceExpr{ levels: Vec<PrecedenceLevel> },
+    MarkerExpr(bool),
 }
 
 #[derive(Debug, Clone)]
-pub struct InfixOperator {
+pub struct PrecedenceLevel {
+    pub operators: Vec<PrecedenceOperator>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PrecedenceOperator {
     pub elements: Vec<TaggedExpr>,
     pub action: TokenStream,
 }

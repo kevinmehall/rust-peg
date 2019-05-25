@@ -5,12 +5,14 @@ peg::parser!( grammar arithmetic() for str {
 
     rule ident() -> &'input str = $(['a'..='z']+)
     rule haskell_op() -> String = "`" i:ident() "`" [' '|'\n']* { i.to_owned() }
-    rule infix_atom() -> InfixAst = i:ident() [' '|'\n']* { InfixAst::Ident(i.to_owned()) }
     rule plus() = "+" [' '|'\n']*
 
-    pub rule expression() -> InfixAst = #infix<infix_atom> {
-        #L x:@ plus() y:@ { InfixAst::Add(Box::new(x), Box::new(y)) }
-        #L x:@ op:haskell_op() y:@ { InfixAst::Op(op, Box::new(x), Box::new(y)) }
+    pub rule expression() -> InfixAst = precedence!{
+        x:(@) plus() y:@ { InfixAst::Add(Box::new(x), Box::new(y)) }
+        --
+        x:(@) op:haskell_op() y:@ { InfixAst::Op(op, Box::new(x), Box::new(y)) }
+        --
+        i:ident() [' '|'\n']* { InfixAst::Ident(i.to_owned()) }
     }
 });
 

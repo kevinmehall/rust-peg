@@ -510,25 +510,19 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 		FailExpr(ref expected) => {
 			quote!{{ __err_state.mark_failure(__pos, #expected); ::peg::RuleResult::Failed }}
 		}
-
-		InfixExpr{ ref atom, ref levels } => {
-			let match_atom = compile_expr(context, atom, result_used);
-
+		
+		PrecedenceExpr{ ref levels } => {
 			let mut pre_rules = Vec::new();
 			let mut level_code = Vec::new();
 
 			for (prec, level) in levels.iter().enumerate() {
 				let prec = prec as i32;
-				let new_prec = match level.assoc {
-					InfixAssoc::Left => prec + 1,
-					InfixAssoc::Right => prec
-				};
 
 				let mut post_rules = Vec::new();
 
 				for op in &level.operators {
-					if op.elements.len() < 2 {
-						return quote!(compile_error!("incomplete rule".to_owned()));
+					if op.elements.len() < 1 {
+						return quote!(compile_error!("incomplete rule"));
 					}
 
 					let left_arg = &op.elements[0];
@@ -539,8 +533,16 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 
 					let action = &op.action;
 
+					println!("level {}: {:?}", prec, op);
+
 					match (&left_arg.expr, &right_arg.expr) {
-						(&MarkerExpr, &MarkerExpr) => { //infix
+						(&MarkerExpr(la), &MarkerExpr(ra)) => { //infix
+							let new_prec = match (la, ra) {
+								(true, false) => prec + 1, // left associative
+								(false, true) => prec,     // right associative
+								_ => return quote!(compile_error!("precedence rules must use `@` and `(@)` to indicate associativity"))
+							};
+
 							post_rules.push(
 								labeled_seq(context, &op.elements[1..op.elements.len()-1], {
 									quote!{
@@ -553,7 +555,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 								})
 							);
 						}
-						(&MarkerExpr, _) => { // postfix
+						(&MarkerExpr(_), _) => { // postfix
 							post_rules.push(
 								labeled_seq(context, &op.elements[1..op.elements.len()], {
 									quote!{
@@ -564,7 +566,11 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 								})
 							);
 						}
-						(_, &MarkerExpr) => { // prefix
+						(_, &MarkerExpr(a)) => { // prefix
+							let new_prec = match a {
+								true => prec,
+								false => prec + 1,
+							};
 							pre_rules.push(
 								labeled_seq(context, &op.elements[..op.elements.len()-1], {
 									quote!{
@@ -575,8 +581,12 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 								})
 							);
 						}
-						_ => {
-							return quote!(compile_error!("#infix rule must be prefix, postfix, or infix"));
+						_ => { // atom
+							pre_rules.push(
+								labeled_seq(context, &op.elements, {
+									quote!{ ::peg::RuleResult::Matched(__pos, {#action}) }
+								})
+							);
 						}
 					};
 				}
@@ -657,7 +667,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 							}
 						)*
 
-						#match_atom
+						::peg::RuleResult::Failed
 					},
 					&|__pos, __min_prec, mut __infix_result, __state, __err_state, __recurse| {
 						#(#level_code)*
@@ -666,8 +676,8 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 				)
 			}}
 		}
-		MarkerExpr => {
-			return quote!(compile_error!("`@` is only allowed in #infix"));
+		MarkerExpr { .. } => {
+			return quote!(compile_error!("`@` is only allowed in `precedence!{}`"));
 		}
 	}
 }

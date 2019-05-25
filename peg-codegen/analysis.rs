@@ -132,13 +132,13 @@ impl<'a> RecursionVisitor<'a> {
             MatchStrExpr(ref expr) |
             QuietExpr(ref expr) => self.walk_expr(expr),
 
-            InfixExpr{ ref atom, .. } => self.walk_expr(atom),
+            PrecedenceExpr{ .. } => { RuleInfo { nullable: false } },
 
             | LiteralExpr(_)
             | PatternExpr(_)
             | MethodExpr(_, _)
             | FailExpr(_)
-            | MarkerExpr => { RuleInfo { nullable: false } }
+            | MarkerExpr(_) => { RuleInfo { nullable: false } }
             PositionExpr => { RuleInfo { nullable: true} }
         }
     }

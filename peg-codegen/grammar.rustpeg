@@ -94,25 +94,25 @@ rule repeatnum -> TokenStream = $(INTEGER / BRACE_GROUP)
 
 #[cache]
 rule primary -> Expr
-  = name:IDENT ("(" ")")? { RuleExpr(name) }
+  = "precedence" "!" "{" levels:precedence_level**"--" "}" { PrecedenceExpr{ levels:levels }}
+  / name:IDENT ("(" ")")? { RuleExpr(name) }
   / l:LITERAL { LiteralExpr(l) }
   / p:BRACKET_GROUP { PatternExpr(p) }
-  / "@" { MarkerExpr }
+  / "(" "@" ")" { MarkerExpr(true) }
+  / "@" { MarkerExpr(false) }
   / "##" method:IDENT args:PAREN_GROUP { MethodExpr(method, args) }
   / "#" "position" { PositionExpr }
   / "#" "quiet" "<" e:expression ">" { QuietExpr(Box::new(e)) }
   / "#" "expected" "(" s:LITERAL ")" { FailExpr(s) }
-  / "#" "infix" "<" atom:expression ">" "{" levels:infix_level+ "}"
-        { InfixExpr{ atom: Box::new(atom), levels:levels }}
   / "(" expression:expression ")" { expression }
 
-rule infix_level -> InfixLevel
-  = assoc:("#" "L" { InfixAssoc::Left } / "#" "R" { InfixAssoc::Right} ) operators:infix_op+
-  { InfixLevel{ assoc: assoc, operators: operators} }
+rule precedence_level -> PrecedenceLevel
+  = operators:precedence_op+
+  { PrecedenceLevel{ operators: operators } }
 
-rule infix_op -> InfixOperator
+rule precedence_op -> PrecedenceOperator
   = elements:labeled* action:BRACE_GROUP
-  { InfixOperator{ elements, action } }
+  { PrecedenceOperator{ elements, action } }
 
 rule KEYWORD = "pub" / "crate" / "rule" / "use" / "type"
 rule IDENT -> Ident = !KEYWORD i:##ident() {i}
