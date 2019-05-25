@@ -7,6 +7,10 @@ peg::parser!{ grammar parser() for str {
         = v:( "a" / "\n" )* { v.len() }
 
     pub rule error_pos() = ("a" / "\n" / "\r")*
+
+    pub rule q() = (quiet!{
+        ("a" / "b" / "c") ("1" / "2")
+    } / expected!("letter followed by number"))+
 }}
 
 fn main() {
@@ -49,4 +53,10 @@ aaaabaaaa
     let err = parser::error_pos("aa\r\naaaa\r\naaab\r\naa").unwrap_err();
     assert_eq!(err.location.line, 3);
     assert_eq!(err.location.column, 4);
+
+    parser::q("a1").unwrap();
+    parser::q("a1b2").unwrap();
+    let err = parser::q("a1bb").unwrap_err();
+    assert_eq!(err.location.offset, 2);
+    assert_eq!(err.expected.to_string(), "one of EOF, letter followed by number");
 }

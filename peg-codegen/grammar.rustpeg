@@ -95,15 +95,15 @@ rule repeatnum -> TokenStream = $(INTEGER / BRACE_GROUP)
 #[cache]
 rule primary -> Expr
   = "precedence" "!" "{" levels:precedence_level**"--" "}" { PrecedenceExpr{ levels:levels }}
+  / "position" "!" "(" ")" { PositionExpr }
+  / "quiet" "!" "{" e:expression "}" { QuietExpr(Box::new(e)) }
+  / "expected" "!" "(" s:LITERAL ")" { FailExpr(s) }
   / name:IDENT ("(" ")")? { RuleExpr(name) }
   / l:LITERAL { LiteralExpr(l) }
   / p:BRACKET_GROUP { PatternExpr(p) }
   / "(" "@" ")" { MarkerExpr(true) }
   / "@" { MarkerExpr(false) }
   / "##" method:IDENT args:PAREN_GROUP { MethodExpr(method, args) }
-  / "#" "position" { PositionExpr }
-  / "#" "quiet" "<" e:expression ">" { QuietExpr(Box::new(e)) }
-  / "#" "expected" "(" s:LITERAL ")" { FailExpr(s) }
   / "(" expression:expression ")" { expression }
 
 rule precedence_level -> PrecedenceLevel
