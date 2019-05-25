@@ -513,20 +513,9 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 
 		InfixExpr{ ref atom, ref levels } => {
 			let match_atom = compile_expr(context, atom, result_used);
-			let ty = if let RuleExpr(atom_rule_name) = &**atom {
-                let atom_rule_name_str = atom_rule_name.to_string();
-				context.grammar.iter_rules()
-                    .find(|r| r.name == atom_rule_name_str)
-                    .and_then(|r| r.ret_type.clone())
-					.clone().unwrap_or_else(|| quote!(()))
-			} else {
-				return quote!(compile_error!("#infix atom must be a rule, not an arbitrary expression (so its return type can be inspected)"));
-			};
 
 			let mut pre_rules = Vec::new();
 			let mut level_code = Vec::new();
-			let extra_args_def = &context.extra_args_def;
-			let extra_args_call = &context.extra_args_call;
 
 			for (prec, level) in levels.iter().enumerate() {
 				let prec = prec as i32;
@@ -555,7 +544,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 							post_rules.push(
 								labeled_seq(context, &op.elements[1..op.elements.len()-1], {
 									quote!{
-										if let ::peg::RuleResult::Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __err_state, __pos #extra_args_call) {
+										if let ::peg::RuleResult::Matched(__pos, #r_arg) = __recurse(__pos, #new_prec, __state, __err_state) {
 											let #l_arg = __infix_result;
 											__infix_result = #action;
 											::peg::RuleResult::Matched(__pos, ())
@@ -579,7 +568,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 							pre_rules.push(
 								labeled_seq(context, &op.elements[..op.elements.len()-1], {
 									quote!{
-										if let ::peg::RuleResult::Matched(__pos, #r_arg) = __infix_parse(#new_prec, __input, __state, __err_state, __pos #extra_args_call) {
+										if let ::peg::RuleResult::Matched(__pos, #r_arg) = __recurse(__pos, #new_prec, __state, __err_state) {
 											::peg::RuleResult::Matched(__pos, {#action})
 										} else { ::peg::RuleResult::Failed }
 									}
@@ -597,8 +586,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 						if #prec >= __min_prec {
 							#(
 								if let ::peg::RuleResult::Matched(__pos, ()) = #post_rules {
-									__repeat_pos = __pos;
-									continue;
+									return (__infix_result, ::peg::RuleResult::Matched(__pos, ()));
 								}
 							)*
 						}
@@ -613,9 +601,56 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 				(quote!(), quote!())
 			};
 
+			// The closures below must be defined within the function call to which they are passed
+			// due to https://github.com/rust-lang/rust/issues/41078
+
 			quote!{{
-				fn __infix_parse<'input>(__min_prec:i32, __input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def) -> ::peg::RuleResult<#ty> {
-					let __initial = (|| {
+				fn __infix_parse<T, S>(
+					state: &mut S,
+					err_state: &mut ::peg::error::ErrorState,
+					min_prec: i32,
+					pos: usize,
+					prefix_atom: &Fn(usize, &mut S, &mut ::peg::error::ErrorState, &Fn(usize, i32, &mut S, &mut ::peg::error::ErrorState) -> ::peg::RuleResult<T>) -> ::peg::RuleResult<T>,
+					level_code: &Fn(usize, i32, T, &mut S, &mut ::peg::error::ErrorState, &Fn(usize, i32, &mut S, &mut ::peg::error::ErrorState) -> ::peg::RuleResult<T>) -> (T, ::peg::RuleResult<()>),
+				) -> ::peg::RuleResult<T> {
+					let initial = {
+						prefix_atom(pos, state, err_state, &|pos, min_prec, state, err_state| {
+							__infix_parse(state, err_state, min_prec, pos, prefix_atom, level_code)
+						})
+					};
+
+					if let ::peg::RuleResult::Matched(pos, mut infix_result) = initial {
+						#enter
+						let mut repeat_pos = pos;
+						loop {
+							let (val, res) = level_code(
+								repeat_pos,
+								min_prec,
+								infix_result,
+								state,
+								err_state,
+								&|pos, min_prec, state, err_state| {
+									__infix_parse(state, err_state, min_prec, pos, prefix_atom, level_code)
+								}
+							);
+							infix_result = val;
+
+							if let ::peg::RuleResult::Matched(pos, ()) = res {
+								repeat_pos = pos;
+								continue;
+							}
+
+							break;
+						}
+						#leave
+						::peg::RuleResult::Matched(repeat_pos, infix_result)
+					} else {
+						::peg::RuleResult::Failed
+					}
+				}
+
+				__infix_parse(__state, __err_state, 0, __pos, 
+					&|__pos, __state, __err_state, __recurse| {
 						#(
 							if let ::peg::RuleResult::Matched(__pos, __v) = #pre_rules {
 								return ::peg::RuleResult::Matched(__pos, __v);
@@ -623,23 +658,12 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 						)*
 
 						#match_atom
-					})();
-
-					if let ::peg::RuleResult::Matched(__pos, mut __infix_result) = __initial {
-						#enter
-						let mut __repeat_pos = __pos;
-						loop {
-							let __pos = __repeat_pos;
-							#(#level_code)*
-							break;
-						}
-						#leave
-						::peg::RuleResult::Matched(__repeat_pos, __infix_result)
-					} else {
-						::peg::RuleResult::Failed
+					},
+					&|__pos, __min_prec, mut __infix_result, __state, __err_state, __recurse| {
+						#(#level_code)*
+						(__infix_result, ::peg::RuleResult::Failed)
 					}
-				}
-				__infix_parse(0, __input, __state, __err_state, __pos #extra_args_call)
+				)
 			}}
 		}
 		MarkerExpr => {
