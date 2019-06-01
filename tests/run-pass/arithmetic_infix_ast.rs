@@ -1,8 +1,6 @@
 extern crate peg;
 
 peg::parser!( grammar arithmetic() for str {
-     use super::InfixAst;
-
     rule ident() -> &'input str = $(['a'..='z']+)
     rule haskell_op() -> String = "`" i:ident() "`" [' '|'\n']* { i.to_owned() }
     rule plus() = "+" [' '|'\n']*

@@ -75,6 +75,8 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
 	quote! {
         mod #name {
+            #[allow(unused_imports)]
+            use super::*;
             type Input = #input_type;
             type PositionRepr = <Input as ::peg::Parse>::PositionRepr;
 

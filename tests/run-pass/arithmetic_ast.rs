@@ -9,8 +9,6 @@ pub enum Expression {
 }
 
 parser!{grammar arithmetic() for str {
-	use super::Expression;
-
 	pub rule expression() -> Expression
 		= sum()
 
