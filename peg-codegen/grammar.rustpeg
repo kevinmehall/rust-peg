@@ -6,23 +6,26 @@ use tokens::FlatTokenStream;
 use proc_macro2::{ TokenStream, Ident, Literal, Delimiter };
 
 pub rule peg_grammar -> Grammar
-    = visibility:rust_visibility "grammar" name:IDENT args:grammar_args "for" input_type:$(rust_type) "{" items:item* "}"
-        { Grammar { visibility, name, args, input_type, items } }
+    = doc:rust_doc_comment visibility:rust_visibility "grammar" name:IDENT args:grammar_args "for" input_type:$(rust_type) "{" items:item* "}"
+        { Grammar { doc, visibility, name, args, input_type, items } }
 
 rule grammar_args -> Vec<(Ident, TokenStream)>
     = "(" args:((i:IDENT ":" t:$(rust_type) { (i, t) })**",") ","? ")" { args }
 
 rule peg_rule -> Rule
-    = cached:cacheflag visibility:rust_visibility "rule" name:IDENT ("(" ")")? ret_type:("->" t:$(rust_type) {t})? "=" expr:expression ";"?
-        { Rule { name, expr, ret_type, visibility, cached } }
+    = doc:rust_doc_comment cached:cacheflag visibility:rust_visibility "rule" name:IDENT ("(" ")")? ret_type:("->" t:$(rust_type) {t})? "=" expr:expression ";"?
+        { Rule { doc, name, expr, ret_type, visibility, cached } }
 
-    rule rust_visibility -> Option<TokenStream> = ($("pub" PAREN_GROUP? / "crate"))?
 
     rule cacheflag -> bool = "#" "[" "cache" "]" {true} / {false}
 
 rule item -> Item
     = u:rust_use     { Item::Use(u) }
     / r:peg_rule     { Item::Rule(r) }
+
+rule rust_doc_comment -> Option<TokenStream> = ($("#" "[" "doc" "=" LITERAL "]"))?
+
+rule rust_visibility -> Option<TokenStream> = ($("pub" PAREN_GROUP? / "crate"))?
 
 rule rust_use -> TokenStream
     = v:$("use" rust_path (

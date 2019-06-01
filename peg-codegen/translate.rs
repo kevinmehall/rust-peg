@@ -61,6 +61,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 		
 	}
 
+	let doc = &grammar.doc;
 	let input_type = &grammar.input_type;
 	let visibility = &grammar.visibility;
 
@@ -75,6 +76,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 	}
 
 	quote! {
+		#doc
         #visibility mod #name {
             #[allow(unused_imports)]
             use super::*;
@@ -180,6 +182,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 }
 
 fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
+	let doc = &rule.doc;
 	let name = &rule.name;
 	let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
 	let visibility = &rule.visibility;
@@ -189,6 +192,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 	let extra_args_call = &context.extra_args_call;
 
 	quote! {
+		#doc
 		#visibility fn #name<'input>(__input: &'input Input #extra_args_def) -> Result<#ret_ty, ::peg::error::ParseError<PositionRepr>> {
 			#![allow(non_snake_case, unused)]
 

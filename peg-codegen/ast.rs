@@ -2,6 +2,7 @@ use proc_macro2::{ TokenStream, Ident, Literal };
 
 #[derive(Debug)]
 pub struct Grammar {
+    pub doc: Option<TokenStream>,
     pub visibility: Option<TokenStream>,
     pub name: Ident,
     pub args: Vec<(Ident, TokenStream)>,
@@ -31,6 +32,7 @@ pub struct Rule {
     pub name: Ident,
     pub expr: Expr,
     pub ret_type: Option<TokenStream>,
+    pub doc: Option<TokenStream>,
     pub visibility: Option<TokenStream>,
     pub cached: bool,
 }

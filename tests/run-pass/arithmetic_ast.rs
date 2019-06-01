@@ -8,7 +8,10 @@ pub enum Expression {
 	Product(Box<Expression>, Box<Expression>),
 }
 
-parser!{grammar arithmetic() for str {
+parser!{
+/// Doc comment
+grammar arithmetic() for str {
+	/// Top level parser rule
 	pub rule expression() -> Expression
 		= sum()
 
