@@ -1,4 +1,4 @@
-grammar peg() for FlatTokenStream {
+pub grammar peg() for FlatTokenStream {
 
 use ast::*;
 use self::Expr::*; 
@@ -6,8 +6,8 @@ use tokens::FlatTokenStream;
 use proc_macro2::{ TokenStream, Ident, Literal, Delimiter };
 
 pub rule peg_grammar -> Grammar
-    = "grammar" name:IDENT args:grammar_args "for" input_type:$(rust_type) "{" items:item* "}"
-        { Grammar { name, args, input_type, items } }
+    = visibility:rust_visibility "grammar" name:IDENT args:grammar_args "for" input_type:$(rust_type) "{" items:item* "}"
+        { Grammar { visibility, name, args, input_type, items } }
 
 rule grammar_args -> Vec<(Ident, TokenStream)>
     = "(" args:((i:IDENT ":" t:$(rust_type) { (i, t) })**",") ","? ")" { args }

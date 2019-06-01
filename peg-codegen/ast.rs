@@ -2,6 +2,7 @@ use proc_macro2::{ TokenStream, Ident, Literal };
 
 #[derive(Debug)]
 pub struct Grammar {
+    pub visibility: Option<TokenStream>,
     pub name: Ident,
     pub args: Vec<(Ident, TokenStream)>,
     pub items: Vec<Item>,

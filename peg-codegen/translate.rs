@@ -62,6 +62,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 	}
 
 	let input_type = &grammar.input_type;
+	let visibility = &grammar.visibility;
 
 	let mut errors = Vec::new();
 
@@ -74,7 +75,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 	}
 
 	quote! {
-        mod #name {
+        #visibility mod #name {
             #[allow(unused_imports)]
             use super::*;
             type Input = #input_type;
