@@ -23,9 +23,9 @@ rule item -> Item
     = u:rust_use     { Item::Use(u) }
     / r:peg_rule     { Item::Rule(r) }
 
-rule rust_doc_comment -> Option<TokenStream> = ($("#" "[" "doc" "=" LITERAL "]"))?
+rule rust_doc_comment -> Option<TokenStream> = $("#" "[" "doc" "=" LITERAL "]")?
 
-rule rust_visibility -> Option<TokenStream> = ($("pub" PAREN_GROUP? / "crate"))?
+rule rust_visibility -> Option<TokenStream> = $("pub" PAREN_GROUP? / "crate")?
 
 rule rust_use -> TokenStream
     = v:$("use" rust_path (
@@ -71,22 +71,16 @@ rule sequence -> Expr
         = "{" is_cond:"?"? code:##group_body() "}" { (is_cond.is_some(), code) }
 
 rule labeled -> TaggedExpr
-    = label:(l:IDENT ":" {l})? expression:prefixed
+    = label:(l:IDENT ":" {l})? expression:suffixed
         { TaggedExpr{ name: label, expr: expression } }
 
-rule prefixed -> Expr
-    = "$" expression:suffixed { MatchStrExpr(Box::new(expression)) }
-    / "&" expression:suffixed { PosAssertExpr(Box::new(expression)) }
-    / "!" expression:suffixed { NegAssertExpr(Box::new(expression)) }
-    / suffixed
-
 rule suffixed -> Expr
-    = e:primary "?" { OptionalExpr(Box::new(e)) }
-    / e:primary "**" count:repeatcount sep:primary { Repeat(Box::new(e), count, Some(Box::new(sep))) }
-    / e:primary "++" sep:primary { Repeat(Box::new(e), BoundedRepeat::Plus, Some(Box::new(sep))) }
-    / e:primary "*" count:repeatcount { Repeat(Box::new(e), count, None) }
-    / e:primary "+" { Repeat(Box::new(e), BoundedRepeat::Plus, None) }
-    / primary
+    = e:prefixed "?" { OptionalExpr(Box::new(e)) }
+    / e:prefixed "**" count:repeatcount sep:primary { Repeat(Box::new(e), count, Some(Box::new(sep))) }
+    / e:prefixed "++" sep:primary { Repeat(Box::new(e), BoundedRepeat::Plus, Some(Box::new(sep))) }
+    / e:prefixed "*" count:repeatcount { Repeat(Box::new(e), count, None) }
+    / e:prefixed "+" { Repeat(Box::new(e), BoundedRepeat::Plus, None) }
+    / prefixed
 
 rule repeatcount -> BoundedRepeat
     = "<" n:repeatnum ">" { BoundedRepeat::Exact(n) }
@@ -94,6 +88,12 @@ rule repeatcount -> BoundedRepeat
     / { BoundedRepeat::None }
 
 rule repeatnum -> TokenStream = $(INTEGER / BRACE_GROUP)
+
+rule prefixed -> Expr
+    = "$" expression:primary { MatchStrExpr(Box::new(expression)) }
+    / "&" expression:primary { PosAssertExpr(Box::new(expression)) }
+    / "!" expression:primary { NegAssertExpr(Box::new(expression)) }
+    / primary
 
 #[cache]
 rule primary -> Expr

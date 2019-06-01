@@ -1565,7 +1565,7 @@ pub mod peg {
             };
             match __seq_res {
                 ::peg::RuleResult::Matched(__pos, label) => {
-                    let __seq_res = __parse_prefixed(__input, __state, __err_state, __pos);
+                    let __seq_res = __parse_suffixed(__input, __state, __err_state, __pos);
                     match __seq_res {
                         ::peg::RuleResult::Matched(__pos, expression) => {
                             ::peg::RuleResult::Matched(__pos, {
@@ -1582,114 +1582,6 @@ pub mod peg {
             }
         }
     }
-    fn __parse_prefixed<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
-        __err_state: &mut ::peg::error::ErrorState,
-        __pos: usize,
-    ) -> ::peg::RuleResult<Expr> {
-        #![allow(non_snake_case, unused)]
-        {
-            let __choice_res = {
-                let __seq_res = match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "$")
-                {
-                    ::peg::RuleResult::Matched(__pos, __val) => {
-                        ::peg::RuleResult::Matched(__pos, __val)
-                    }
-                    ::peg::RuleResult::Failed => __err_state.mark_failure(__pos, "\"$\""),
-                };
-                match __seq_res {
-                    ::peg::RuleResult::Matched(__pos, _) => {
-                        let __seq_res = __parse_suffixed(__input, __state, __err_state, __pos);
-                        match __seq_res {
-                            ::peg::RuleResult::Matched(__pos, expression) => {
-                                ::peg::RuleResult::Matched(__pos, {
-                                    MatchStrExpr(Box::new(expression))
-                                })
-                            }
-                            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
-                        }
-                    }
-                    ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
-                }
-            };
-            match __choice_res {
-                ::peg::RuleResult::Matched(__pos, __value) => {
-                    ::peg::RuleResult::Matched(__pos, __value)
-                }
-                ::peg::RuleResult::Failed => {
-                    let __choice_res = {
-                        let __seq_res =
-                            match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "&") {
-                                ::peg::RuleResult::Matched(__pos, __val) => {
-                                    ::peg::RuleResult::Matched(__pos, __val)
-                                }
-                                ::peg::RuleResult::Failed => {
-                                    __err_state.mark_failure(__pos, "\"&\"")
-                                }
-                            };
-                        match __seq_res {
-                            ::peg::RuleResult::Matched(__pos, _) => {
-                                let __seq_res =
-                                    __parse_suffixed(__input, __state, __err_state, __pos);
-                                match __seq_res {
-                                    ::peg::RuleResult::Matched(__pos, expression) => {
-                                        ::peg::RuleResult::Matched(__pos, {
-                                            PosAssertExpr(Box::new(expression))
-                                        })
-                                    }
-                                    ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
-                                }
-                            }
-                            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
-                        }
-                    };
-                    match __choice_res {
-                        ::peg::RuleResult::Matched(__pos, __value) => {
-                            ::peg::RuleResult::Matched(__pos, __value)
-                        }
-                        ::peg::RuleResult::Failed => {
-                            let __choice_res = {
-                                let __seq_res = match ::peg::ParseLiteral::parse_string_literal(
-                                    __input, __pos, "!",
-                                ) {
-                                    ::peg::RuleResult::Matched(__pos, __val) => {
-                                        ::peg::RuleResult::Matched(__pos, __val)
-                                    }
-                                    ::peg::RuleResult::Failed => {
-                                        __err_state.mark_failure(__pos, "\"!\"")
-                                    }
-                                };
-                                match __seq_res {
-                                    ::peg::RuleResult::Matched(__pos, _) => {
-                                        let __seq_res =
-                                            __parse_suffixed(__input, __state, __err_state, __pos);
-                                        match __seq_res {
-                                            ::peg::RuleResult::Matched(__pos, expression) => {
-                                                ::peg::RuleResult::Matched(__pos, {
-                                                    NegAssertExpr(Box::new(expression))
-                                                })
-                                            }
-                                            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
-                                        }
-                                    }
-                                    ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
-                                }
-                            };
-                            match __choice_res {
-                                ::peg::RuleResult::Matched(__pos, __value) => {
-                                    ::peg::RuleResult::Matched(__pos, __value)
-                                }
-                                ::peg::RuleResult::Failed => {
-                                    __parse_suffixed(__input, __state, __err_state, __pos)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
     fn __parse_suffixed<'input>(
         __input: &'input Input,
         __state: &mut ParseState<'input>,
@@ -1699,7 +1591,7 @@ pub mod peg {
         #![allow(non_snake_case, unused)]
         {
             let __choice_res = {
-                let __seq_res = __parse_primary(__input, __state, __err_state, __pos);
+                let __seq_res = __parse_prefixed(__input, __state, __err_state, __pos);
                 match __seq_res {
                     ::peg::RuleResult::Matched(__pos, e) => {
                         let __seq_res =
@@ -1727,7 +1619,7 @@ pub mod peg {
                 }
                 ::peg::RuleResult::Failed => {
                     let __choice_res = {
-                        let __seq_res = __parse_primary(__input, __state, __err_state, __pos);
+                        let __seq_res = __parse_prefixed(__input, __state, __err_state, __pos);
                         match __seq_res {
                             ::peg::RuleResult::Matched(__pos, e) => {
                                 let __seq_res = match ::peg::ParseLiteral::parse_string_literal(
@@ -1787,7 +1679,7 @@ pub mod peg {
                         ::peg::RuleResult::Failed => {
                             let __choice_res = {
                                 let __seq_res =
-                                    __parse_primary(__input, __state, __err_state, __pos);
+                                    __parse_prefixed(__input, __state, __err_state, __pos);
                                 match __seq_res {
                                     ::peg::RuleResult::Matched(__pos, e) => {
                                         let __seq_res =
@@ -1837,7 +1729,7 @@ pub mod peg {
                                 ::peg::RuleResult::Failed => {
                                     let __choice_res = {
                                         let __seq_res =
-                                            __parse_primary(__input, __state, __err_state, __pos);
+                                            __parse_prefixed(__input, __state, __err_state, __pos);
                                         match __seq_res {
                                             ::peg::RuleResult::Matched(__pos, e) => {
                                                 let __seq_res =
@@ -1890,7 +1782,7 @@ pub mod peg {
                                         }
                                         ::peg::RuleResult::Failed => {
                                             let __choice_res = {
-                                                let __seq_res = __parse_primary(
+                                                let __seq_res = __parse_prefixed(
                                                     __input,
                                                     __state,
                                                     __err_state,
@@ -1926,7 +1818,7 @@ pub mod peg {
                                                 ::peg::RuleResult::Matched(__pos, __value) => {
                                                     ::peg::RuleResult::Matched(__pos, __value)
                                                 }
-                                                ::peg::RuleResult::Failed => __parse_primary(
+                                                ::peg::RuleResult::Failed => __parse_prefixed(
                                                     __input,
                                                     __state,
                                                     __err_state,
@@ -2123,6 +2015,114 @@ pub mod peg {
                     ::peg::ParseSlice::parse_slice(__input, str_start, __newpos),
                 ),
                 ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+            }
+        }
+    }
+    fn __parse_prefixed<'input>(
+        __input: &'input Input,
+        __state: &mut ParseState<'input>,
+        __err_state: &mut ::peg::error::ErrorState,
+        __pos: usize,
+    ) -> ::peg::RuleResult<Expr> {
+        #![allow(non_snake_case, unused)]
+        {
+            let __choice_res = {
+                let __seq_res = match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "$")
+                {
+                    ::peg::RuleResult::Matched(__pos, __val) => {
+                        ::peg::RuleResult::Matched(__pos, __val)
+                    }
+                    ::peg::RuleResult::Failed => __err_state.mark_failure(__pos, "\"$\""),
+                };
+                match __seq_res {
+                    ::peg::RuleResult::Matched(__pos, _) => {
+                        let __seq_res = __parse_primary(__input, __state, __err_state, __pos);
+                        match __seq_res {
+                            ::peg::RuleResult::Matched(__pos, expression) => {
+                                ::peg::RuleResult::Matched(__pos, {
+                                    MatchStrExpr(Box::new(expression))
+                                })
+                            }
+                            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                        }
+                    }
+                    ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                }
+            };
+            match __choice_res {
+                ::peg::RuleResult::Matched(__pos, __value) => {
+                    ::peg::RuleResult::Matched(__pos, __value)
+                }
+                ::peg::RuleResult::Failed => {
+                    let __choice_res = {
+                        let __seq_res =
+                            match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "&") {
+                                ::peg::RuleResult::Matched(__pos, __val) => {
+                                    ::peg::RuleResult::Matched(__pos, __val)
+                                }
+                                ::peg::RuleResult::Failed => {
+                                    __err_state.mark_failure(__pos, "\"&\"")
+                                }
+                            };
+                        match __seq_res {
+                            ::peg::RuleResult::Matched(__pos, _) => {
+                                let __seq_res =
+                                    __parse_primary(__input, __state, __err_state, __pos);
+                                match __seq_res {
+                                    ::peg::RuleResult::Matched(__pos, expression) => {
+                                        ::peg::RuleResult::Matched(__pos, {
+                                            PosAssertExpr(Box::new(expression))
+                                        })
+                                    }
+                                    ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                                }
+                            }
+                            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                        }
+                    };
+                    match __choice_res {
+                        ::peg::RuleResult::Matched(__pos, __value) => {
+                            ::peg::RuleResult::Matched(__pos, __value)
+                        }
+                        ::peg::RuleResult::Failed => {
+                            let __choice_res = {
+                                let __seq_res = match ::peg::ParseLiteral::parse_string_literal(
+                                    __input, __pos, "!",
+                                ) {
+                                    ::peg::RuleResult::Matched(__pos, __val) => {
+                                        ::peg::RuleResult::Matched(__pos, __val)
+                                    }
+                                    ::peg::RuleResult::Failed => {
+                                        __err_state.mark_failure(__pos, "\"!\"")
+                                    }
+                                };
+                                match __seq_res {
+                                    ::peg::RuleResult::Matched(__pos, _) => {
+                                        let __seq_res =
+                                            __parse_primary(__input, __state, __err_state, __pos);
+                                        match __seq_res {
+                                            ::peg::RuleResult::Matched(__pos, expression) => {
+                                                ::peg::RuleResult::Matched(__pos, {
+                                                    NegAssertExpr(Box::new(expression))
+                                                })
+                                            }
+                                            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                                        }
+                                    }
+                                    ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                                }
+                            };
+                            match __choice_res {
+                                ::peg::RuleResult::Matched(__pos, __value) => {
+                                    ::peg::RuleResult::Matched(__pos, __value)
+                                }
+                                ::peg::RuleResult::Failed => {
+                                    __parse_primary(__input, __state, __err_state, __pos)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
