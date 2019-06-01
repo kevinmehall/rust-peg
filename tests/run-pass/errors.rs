@@ -1,7 +1,7 @@
 extern crate peg;
 
 peg::parser!{ grammar parser() for str {
-	pub rule one_letter() -> () = ['a'..='z']
+    pub rule one_letter() -> () = ['a'..='z']
 
     pub rule parse() -> usize
         = v:( "a" / "\n" )* { v.len() }
@@ -15,7 +15,7 @@ peg::parser!{ grammar parser() for str {
 
 fn main() {
     // errors at eof
-	assert_eq!(parser::one_letter("t"), Ok(()));
+    assert_eq!(parser::one_letter("t"), Ok(()));
 
     let err = parser::one_letter("tt").unwrap_err();
     assert_eq!(err.location.line, 1);
