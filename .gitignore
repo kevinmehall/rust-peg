@@ -2,6 +2,6 @@
 target
 Cargo.lock
 
-src/grammar_new.rs
-src/grammar_old.rs
-src/grammar.rs
+peg-codegen/grammar_new.rs
+peg-codegen/grammar_old.rs
+peg-codegen/grammar.rs

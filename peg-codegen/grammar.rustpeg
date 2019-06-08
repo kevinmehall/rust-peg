@@ -1,0 +1,129 @@
+pub grammar peg() for FlatTokenStream {
+
+use ast::*;
+use self::Expr::*; 
+use tokens::FlatTokenStream;
+use proc_macro2::{ TokenStream, Ident, Literal, Delimiter };
+
+pub rule peg_grammar -> Grammar
+    = doc:rust_doc_comment visibility:rust_visibility "grammar" name:IDENT args:grammar_args "for" input_type:$(rust_type) "{" items:item* "}"
+        { Grammar { doc, visibility, name, args, input_type, items } }
+
+rule grammar_args -> Vec<(Ident, TokenStream)>
+    = "(" args:((i:IDENT ":" t:$(rust_type) { (i, t) })**",") ","? ")" { args }
+
+rule peg_rule -> Rule
+    = doc:rust_doc_comment cached:cacheflag visibility:rust_visibility "rule" name:IDENT ("(" ")")? ret_type:("->" t:$(rust_type) {t})? "=" expr:expression ";"?
+        { Rule { doc, name, expr, ret_type, visibility, cached } }
+
+
+    rule cacheflag -> bool = "#" "[" "cache" "]" {true} / {false}
+
+rule item -> Item
+    = u:rust_use     { Item::Use(u) }
+    / r:peg_rule     { Item::Rule(r) }
+
+rule rust_doc_comment -> Option<TokenStream> = $("#" "[" "doc" "=" LITERAL "]")?
+
+rule rust_visibility -> Option<TokenStream> = $("pub" PAREN_GROUP? / "crate")?
+
+rule rust_use -> TokenStream
+    = v:$("use" rust_path (
+        "::" "*"
+        / "::" "{" ((IDENT ("as" IDENT)?) ++ ",") "}"
+        / ("as" IDENT)?
+    ) ";") { v.to_owned() }
+
+rule rust_path = IDENT ++ "::"
+
+rule rust_type
+    = BRACKET_GROUP
+    / "&" "mut"? LIFETIME? rust_type
+    / "dyn" rust_type
+    / "impl" rust_type
+    / IDENT "<" (LIFETIME / rust_type) ++ "," ">"
+    / IDENT "::" rust_type
+    / "(" rust_type ** "," ")"
+    / IDENT
+
+rule expression -> Expr = choice
+
+rule choice -> Expr = s:sequence ++ "/" {
+    if s.len() == 1 {
+        s.into_iter().next().unwrap()
+    } else {
+        ChoiceExpr(s)
+    }
+}
+
+rule sequence -> Expr
+     = elements:labeled* code:code_block? {
+         if let Some(code) = code {
+            ActionExpr(elements, Some(code.1), code.0)
+         } else if elements.len() != 1 {
+             ActionExpr(elements, None, false)
+         } else {
+             elements.into_iter().next().unwrap().expr
+         }
+    }
+
+    rule code_block -> (bool, TokenStream)
+        = "{" is_cond:"?"? code:##group_body() "}" { (is_cond.is_some(), code) }
+
+rule labeled -> TaggedExpr
+    = label:(l:IDENT ":" {l})? expression:suffixed
+        { TaggedExpr{ name: label, expr: expression } }
+
+rule suffixed -> Expr
+    = e:prefixed "?" { OptionalExpr(Box::new(e)) }
+    / e:prefixed "**" count:repeatcount sep:primary { Repeat(Box::new(e), count, Some(Box::new(sep))) }
+    / e:prefixed "++" sep:primary { Repeat(Box::new(e), BoundedRepeat::Plus, Some(Box::new(sep))) }
+    / e:prefixed "*" count:repeatcount { Repeat(Box::new(e), count, None) }
+    / e:prefixed "+" { Repeat(Box::new(e), BoundedRepeat::Plus, None) }
+    / prefixed
+
+rule repeatcount -> BoundedRepeat
+    = "<" n:repeatnum ">" { BoundedRepeat::Exact(n) }
+    / "<" min:repeatnum? "," max:repeatnum? ">" { BoundedRepeat::Both(min, max) }
+    / { BoundedRepeat::None }
+
+rule repeatnum -> TokenStream = $(INTEGER / BRACE_GROUP)
+
+rule prefixed -> Expr
+    = "$" expression:primary { MatchStrExpr(Box::new(expression)) }
+    / "&" expression:primary { PosAssertExpr(Box::new(expression)) }
+    / "!" expression:primary { NegAssertExpr(Box::new(expression)) }
+    / primary
+
+#[cache]
+rule primary -> Expr
+  = "precedence" "!" "{" levels:precedence_level**"--" "}" { PrecedenceExpr{ levels:levels }}
+  / "position" "!" "(" ")" { PositionExpr }
+  / "quiet" "!" "{" e:expression "}" { QuietExpr(Box::new(e)) }
+  / "expected" "!" "(" s:LITERAL ")" { FailExpr(s) }
+  / name:IDENT ("(" ")")? { RuleExpr(name) }
+  / l:LITERAL { LiteralExpr(l) }
+  / p:BRACKET_GROUP { PatternExpr(p) }
+  / "(" "@" ")" { MarkerExpr(true) }
+  / "@" { MarkerExpr(false) }
+  / "##" method:IDENT args:PAREN_GROUP { MethodExpr(method, args) }
+  / "(" expression:expression ")" { expression }
+
+rule precedence_level -> PrecedenceLevel
+  = operators:precedence_op+
+  { PrecedenceLevel{ operators: operators } }
+
+rule precedence_op -> PrecedenceOperator
+  = elements:labeled* action:BRACE_GROUP
+  { PrecedenceOperator{ elements, action } }
+
+rule KEYWORD = "pub" / "crate" / "rule" / "use" / "type"
+rule IDENT -> Ident = !KEYWORD i:##ident() {i}
+rule LITERAL -> Literal = ##literal()
+rule PAREN_GROUP   -> TokenStream = ##group(Delimiter::Parenthesis)
+rule BRACE_GROUP   -> TokenStream = ##group(Delimiter::Brace)
+rule BRACKET_GROUP -> TokenStream = ##group(Delimiter::Bracket)
+rule LIFETIME = "'" IDENT
+rule INTEGER = LITERAL
+
+}

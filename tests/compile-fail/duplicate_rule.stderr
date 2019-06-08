@@ -1,0 +1,18 @@
+error[E0428]: the name `__parse_foo` is defined multiple times
+ --> $DIR/duplicate_rule.rs:3:1
+  |
+3 | peg::parser!(grammar foo() for str { //~ ERROR  the name `__parse_foo` is defined multiple times [E0428]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  | |
+  | `__parse_foo` redefined here
+  | previous definition of the value `__parse_foo` here
+  |
+  = note: `__parse_foo` must be defined only once in the value namespace of this module
+
+error: duplicate rule `foo`
+ --> $DIR/duplicate_rule.rs:6:10
+  |
+6 |     rule foo() = "xyz" //~ ERROR duplicate rule `foo`
+  |          ^^^
+
+For more information about this error, try `rustc --explain E0428`.
