@@ -1,219 +1,135 @@
 # Parsing Expression Grammars in Rust
 
-This is a simple parser generator based on [Parsing Expression Grammars](https://en.wikipedia.org/wiki/Parsing_expression_grammar).
+`rust-peg` is a simple yet flexible parser generator based on the [Parsing Expression Grammar](https://en.wikipedia.org/wiki/Parsing_expression_grammar) formalism. It provides a Rust macro that builds a recursive descent parser from a concise definition of the grammar.
 
 Please see the [release notes](https://github.com/kevinmehall/rust-peg/releases) for updates.
 
-## Grammar Definition Syntax
+Note: This documentation corresponds to the upcoming 1.0-beta version. For the latest release (which is a build script rather than a procedural macro), see [crates.io](https://crates.io/crates/peg).
+
+The `peg!{}` macro encloses a `grammar` definition containing a set of `rule`s which match components of your language. It expands to a Rust `mod` containing functions corresponding to each `rule` marked `pub`.
+
+```rust
+use peg::peg;
+
+peg! {
+  grammar my_grammar() for str {
+    rule number() -> u32
+      = n:$(['0'..='9']+) { n.parse().unwrap() }
+
+    pub rule list() -> Vec<u32>
+      = "[" l:number() ** "," "]" { l }
+  }
+}
+
+fn main() {
+  assert_eq!(my_grammar::number("[1,1,2,3,5,8]"), vec![1,1,2,3,5,8]);
+}
+```
+
+## Expressions
+
+  * `"keyword"` - _Literal:_ match a literal string.
+  * `['0'..='9']`  - _Pattern:_ match a single element that matches a Rust `match`-style pattern. [(details)](#match-expr)
+  * `some_rule()` - _Rule:_ match a rule defined elsewhere in the grammar and return its result.
+  * `e1 e2 e3` - _Sequence:_ match expressions in sequence (`e1` followed by `e2` followed by `e3`).
+  * `e1 / e2 / e3` - _Ordered choice:_ try to match `e1`. If the match succeeds, return its result, otherwise try `e2`, and so on.
+  * `expression?` - _Optional:_ match one or zero repetitions of `expression`. Returns an `Option`.
+  * `expression*` - _Repeat:_ match zero or more repetitions of `expression` and return the results as a `Vec`.
+  * `expression+` - _One-or-more:_ match one or more repetitions of `expression` and return the results as a `Vec`.
+  * `expression*<n,m>` - _Range repeat:_ match between `n` and `m` repetitions of `expression` return the results as a `Vec`. [(details)](#repeat-ranges)
+  * `expression ** delim` - _Delimited repeat:_ match zero or more repetitions of `expression` delimited with `delim` and return the results as a `Vec`.
+  * `&expression` - _Positive lookahead:_ Match only if `expression` matches at this position, without consuming any characters.
+  * `!expression` - _Negative lookahead:_ Match only if `expression` does not match at this position, without consuming any characters.
+  * `a:e1 b:e2 c:e3 { rust }` - _Action:_ Match `e1`, `e2`, `e3` in sequence. If they match successfully, run the Rust code in the block and return its return value. The variable names before the colons in the preceding sequence are bound to the results of the corresponding expressions.
+  * `a:e1 b:e2 c:e3 {? rust }` - Like above, but the Rust block returns a `Result<T, &str>` instead of a value directly. On `Ok(v)`, it matches successfully and returns `v`. On `Err(e)`, the match of the entire expression fails and it tries alternatives or reports a parse error with the `&str` `e`.
+  * `$(e)` - _Slice:_ match the expression `e`, and return the `&str` slice of the input corresponding to the match.
+  * `position!()` - return a `usize` representing the current offset into the input, and consumes no characters.
+  * `quiet!{ e }` - match expression, but don't report literals within it as "expected" in error messages.
+  * `expected!("something")` - fail to match, and report the specified string as an expected symbol at the current location.
+  * `precedence!{ ... }` - Parse infix, prefix, or postfix expressions by precedence climbing. [(details)](#precedence-climbing)
+
+### Match expressions
+
+The `[pat]` syntax expands into a [Rust `match` pattern](https://doc.rust-lang.org/book/ch18-03-pattern-syntax.html) against the next character (or element) of the input.
+
+This is commonly used for matching sets of characters with Rust's `..=` inclusive range pattern syntax and `|` to match multiple patterns. For example `['a'..='z' | 'A'..='Z']` matches an upper or lower case ASCII alphabet character.
+
+If your input type is a slice of an enum type, a pattern could match an enum variant like `[Token::Operator('+')]` or even bind a variable with `[Token::Identifier(i)]`.
+
+`[_]` matches any single element. As this always matches except at end-of-file, combining it with negative lookahead as `![_]` is the idiom for matching EOF in PEG.
+
+### Repeat ranges
+
+The repeat operators `*` and `**` can be followed by an optional range specification of the form `<n>` (exact), `<n,>` (min), `<,m>` (max) or `<n,m>` (range), where `n` and `m` are either integers, or a Rust `usize` expression enclosed in `{}`.
+
+### Precedence climbing
+
+`precedence!{ rules... }` provides a convenient way to parse infix, prefix, and postfix operators using the [precedence climbing](http://eli.thegreenplace.net/2012/08/02/parsing-expressions-by-precedence-climbing) algorithm.
+
+```rust
+pub rule arithmetic -> i64 = precedence!{
+  x:(@) "+" y:@ { x + y }
+  x:(@) "-" y:@ { x - y }
+  --
+  x:(@) "*" y:@ { x * y }
+  x:(@) "/" y:@ { x / y }
+  --
+  x:@ "^" y:(@) { x.pow(y as u32) }
+  --
+  n:number { n }
+}
+```
+
+Each `--` introduces a new precedence level that binds more tightly than previous precedence levels. The levels consist of one or more operator rules each followed by a Rust action expression.
+
+The `(@)` and `@` are the operands, and the parentheses indicate associativity.  An operator rule beginning and ending with `@` is an infix expression. Prefix and postfix rules have one `@` at the beginning or end, and atoms do not include `@`.
+
+## Custom input types
+
+`rust-peg` handles input types through a series of traits, and comes with implementations for `str`, `[u8]`, and `[T]`.
+
+  * `Parse` is the base trait for all inputs. The others are only required to use the corresponding expressions.
+  * `ParseElem` implements the `[_]` pattern operator, with a method returning the next item of the input to match.
+  * `ParseLiteral` implements matching against a `"string"` literal.
+  * `ParseSlice` implements the `$()` operator, returning a slice from a span of indexes.
+
+### Error reporting
+
+When a match fails, position information is automatically recorded to report a set of "expected" tokens that would have allowed the parser to advance further.
+
+Some rules should never appear in error messages, and can be suppressed with `quiet!{e}`:
+```rust
+rule whitespace() = quiet!{[' ' | '\n' | '\t']+}
+```
+
+If you want the "expected" set to contain a more helpful string instead of character sets, you can use `quiet!{}` and `expected!()` together:
+
+```rust
+rule identifier()
+  = quiet!{[ 'a'..='z' | 'A'..='Z']['a'..='z' | 'A'..='Z' | '0'..='9' ]+}
+  / expected!("identifier")
+```
+
+## Imports
 
 ```rust
 use super::name;
 ```
 
 The grammar may begin with a series of `use` declarations, just like in Rust, which are included in
-the generated module. Since the grammar is in its own module, you must `use super::StructName;` to
-access a structure from the parent module.
+the generated module. Unlike normal `mod {}` blocks, `use super::*` is inserted by default, so you
+don't have to deal with this most of the time.
 
-The remainder of the grammar defines a series of grammar rules which match components of
-your language:
+## Rustdoc comments
 
-```rust
-pub rule_name -> return_type
-   = expression
-```
-
-If a rule is marked with `pub`, the generated module has a public function that begins parsing at that rule.
-
-### Expressions
-
-  * `"literal"` - match a literal string
-  * `"literal"i` - match a literal string ignoring case
-  * `[a-zA-Z]`  - match a single character from a set
-  * `[^a-zA-Z]` - match a single character not in a set
-  * `.` - match any single character
-  * `!.` - match EOF (end-of-file)
-  * `some_rule` - match a rule defined elsewhere in the grammar and return its result
-  * `some_template<arg1, arg2>` - Expand a [template rule](#template-rules) with parameters
-  * `e1 e2 e3` - Match expressions in sequence
-  * `e1 / e2 / e3` - Try to match e1. If the match succeeds, return its result, otherwise try e2, and so on.
-  * `expression?` - Match one or zero repetitions of `expression`. Returns an `Option`
-  * `expression*` - Match zero or more repetitions of `expression` and return the results as a `Vec`
-  * `expression+` - Match one or more repetitions of `expression` and return the results as a `Vec`
-  * `expression*<n>` - Match `n` repetitions of `expression` and return the results as a `Vec`
-  * `expression*<n,m>` - Match between `n` and `m` repetitions of `expression` and return the results as a `Vec`.
-  * `expression*<{foo}>` - Evaluate the Rust expression `foo` returning usize and match that many repetitions of `expression`
-  * `expression ** delim` - Match zero or more repetitions of `expression` delimited with `delim` and return the results as a `Vec`
-  * `expression **<n,m> delim` - Match between `n` and `m` repetitions of `expression` delimited with `delim` and return the results as a `Vec`
-  * `expression ++ delim` - Match one or more repetitions of `expression` delimited with `delim` and return the results as a `Vec`
-  * `&expression` - Match only if `expression` matches at this position, without consuming any characters
-  * `!expression` - Match only if `expression` does not match at this position, without consuming any characters
-  * `a:e1 b:e2 c:e3 { rust }` - Match e1, e2, e3 in sequence. If they match successfully, run the Rust code in the block and return its return value. The variable names before the colons in the preceding sequence are bound to the results of the corresponding expressions. The Rust code must contain matched curly braces, including those in strings and comments.
-  * `a:e1 b:e2 c:e3 {? rust }` - Like above, but the Rust block returns a `Result` instead of a value directly. On `Ok(v)`, it matches successfully and returns `v`. On `Err(e)`, the match of the entire expression fails and it tries alternatives or reports a parse error with the `&str` `e`.
-  * `$(e)` - matches the expression `e`, and returns the `&str` slice of the input string corresponding to the match
-  * `#position` - returns a `usize` representing the current offset into the input string, and consumes no characters
-  * `#quiet<expression>` - match expression, but don't report literals within it as "expected" in error messages.
-  * `#expected("str")` - fails to match, and report the specified string as an expected symbol at the current location.
-  * `#infix<atom> { ... }` - Parse infix expressions by precedence climbing. [Details below](#infix-expressions).
-
-### Comments
-You can use line comments and block comments just as in Rust code, for example:
+`rustdoc` comments with `///` before a `grammar` or `pub rule` are propagated to the resulting function:
 
 ```rust
-// comment
-name -> String
-  = /* weirdly placed comment */ n:$([0-9]+) { from_str::<u64>(n).unwrap() } // comment
+/// Parse an array expression.
+pub rule array() -> Vec<Expr> = ...
 ```
 
-### Error reporting
-
-When a match fails, position information is automatically recorded to report a set of "expected" tokens that would have allowed the parser to advance further.
-
-Some rules should never appear in error messages, and can be suppressed with `#quiet<e>`:
-```rust
-whitespace = #quiet<[ \n\t]+>.
-```
-
-If you want the "expected" set to contain a more helpful string instead of character sets, you
-can use `#quiet` and `#expected` together:
-
-```rust
-identifier = #quiet<[a-zA-Z][a-zA-Z0-9_]+> / #expected("identifier")
-```
-
-### Infix expressions
-
-`#infix<atom> { rules... }` provides a convenient way to parse binary infix operators using the [precedence climbing](http://eli.thegreenplace.net/2012/08/02/parsing-expressions-by-precedence-climbing) algorithm.
-
-```rust
-pub arithmetic -> i64 = #infix<number> {
-	#L x "+" y { x + y }
-	   x "-" y { x - y }
-	#L x "*" y { x * y }
-	   x "/" y { x / y }
-	#R x "^" y { x.pow(y as u32) }
-}
-
-```
-
-The atom (in this example, `number`), is the rule used to parse the "things between the operators". It must be a name of a rule defined elsewhere in the grammar, not an expression, because its return type is used in the generated code. Each operator's action code and the `#infix` expression as a whole return the same type as this rule. When building an AST, this type is commonly an enum with a variant for the atom, and variant(s) for operators.
-
-Each `#L` or `#R` introduces a new precedence level that binds more tightly than previous precedence levels, and contains left (`#L`) or right (`#R`) associative operators. Each operator rule consists of a left operand variable name, an operator expression, a right variable name, and a Rust action expression. The Rust code has access to the two named operands.
-
-You can think of the above example as a PEG parser `number (("+" / "-" / "*" / "/" / "^") number)*`,
-followed by precedence climbing to associate the atoms and operators into a tree following associativity and precedence rules, and running the action code for each level of the tree. No intermediate vector is allocated.
-
-### Template rules
-
-Rule templating can reduce duplicated code in your grammar:
-
-Example:
-```rust
-keyword<E> = E !identifierChar whitespace*
-
-STRUCT = keyword<"struct">
-ENUM = keyword<"enum">
-```
-
-Templates are inlined every place they are used, and cannot be marked `pub`.
-
-### Context arguments
-
-You can pass parameters throughout the parser by adding a declaration like
-
-```
-#![arguments(filename: &str, interner: &mut Interner)]
-```
-
-to the top of your grammar. All public parse functions will take these additional arguments after
-the input string parameter, and they are available by name in all action code blocks.
-
-For an example see [the test](peg-syntax-ext/tests/grammar_args.rs).
-
-The arguments will be passed to each internal parse function, so they must be `Copy` or be a `&`
-or `&mut` reference. Be careful with mutable arguments. Remember that rule actions can run on parse
-paths that later fail and do not contribute to the final parse.
-
-## Usage
-
-### With a build script
-
-A Cargo build script can compile your PEG grammar to Rust source automatically. This method works
-on stable Rust.
-
-[Example crate using rust-peg with a build script](peg-tests/)
-
-Add to your `Cargo.toml`:
-
-```toml
-[package] # this section should already exist
-build = "build.rs"
-
-[build-dependencies]
-peg = { version = "0.5" }
-```
-
-Create `build.rs` with:
-
-```rust
-extern crate peg;
-
-fn main() {
-    peg::cargo_build("src/my_grammar.rustpeg");
-}
-```
-
-(If you already have a `build.rs`, just add the `extern crate peg;` and the `peg::cargo_build(...)` call.)
-
-And import the generated code:
-
-```rust
-mod my_grammar {
-    include!(concat!(env!("OUT_DIR"), "/my_grammar.rs"));
-}
-```
-
-You can then use the `pub` rules in the grammar as functions in the module. They accept a `&str` to parse, and return a `Result` with the parse result or parse error.
-
-```rust
-match my_grammar::my_rule("2 + 2") {
-  Ok(r) => println!("Parsed as: {:?}", r),
-  Err(e) => println!("Parse error: {}", e),
-}
-```
-
-### As a syntax extension
-
-`rust-syntax-ext` only works on Nightly builds of Rust.
-
-[Examples using rust-peg as a syntax extension](peg-syntax-ext/tests/)
-
-Add to your Cargo.toml:
-
-```toml
-[dependencies]
-peg-syntax-ext = "0.5.0"
-```
-
-Add to your crate root:
-```rust
-#![feature(plugin)]
-#![plugin(peg_syntax_ext)]
-```
-
-Use `peg_file! modname("mygrammarfile.rustpeg");` to include the grammar from an external file. The macro expands into a module called `modname` with functions corresponding to the `pub` rules in your grammar.
-
-Or, use
-```rust
-peg! modname(r#"
-  // grammar rules here
-"#);`
-```
-
-to embed a short PEG grammar inline in your Rust source file. [Example](peg-syntax-ext/tests/test_arithmetic.rs).
-
-### As a standalone code generator
-
-Run `rust-peg input_file.rustpeg` to compile a grammar and generate Rust code on stdout.
+As with all procedural macros, non-doc comments are ignored by the lexer and can be used like in any other Rust code.
 
 ## Tracing
 
@@ -227,11 +143,3 @@ $ cargo run --features peg/trace
 [PEG_TRACE] Failed to match rule letter at 8:12
 ...
 ```
-
-# Editor highlighting plugins
-
-Users have created text editor syntax highlighting plugins for the `.rustpeg` syntax:
-
-* [vim plugin](https://github.com/treycordova/rustpeg.vim) by Trey Cordova
-* [vim plugin](https://github.com/rhysd/vim-rustpeg) by rhysd
-* [Atom plugin](https://atom.io/packages/language-rustpeg) by MoritzKn
