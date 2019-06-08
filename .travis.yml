@@ -5,6 +5,7 @@ rust:
     - nightly
 
 script:
+  - rustup component add rustfmt
   - ./bootstrap.sh
   - git diff --exit-code # Check that src/grammar.rs is updated to match src/grammar.rustpeg
   - cargo test --all

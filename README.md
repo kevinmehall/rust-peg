@@ -29,7 +29,7 @@ fn main() {
 ## Expressions
 
   * `"keyword"` - _Literal:_ match a literal string.
-  * `['0'..='9']`  - _Pattern:_ match a single element that matches a Rust `match`-style pattern. [(details)](#match-expr)
+  * `['0'..='9']`  - _Pattern:_ match a single element that matches a Rust `match`-style pattern. [(details)](#match-expressions)
   * `some_rule()` - _Rule:_ match a rule defined elsewhere in the grammar and return its result.
   * `e1 e2 e3` - _Sequence:_ match expressions in sequence (`e1` followed by `e2` followed by `e3`).
   * `e1 / e2 / e3` - _Ordered choice:_ try to match `e1`. If the match succeeds, return its result, otherwise try `e2`, and so on.
