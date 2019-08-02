@@ -9,20 +9,20 @@ Note: This documentation corresponds to the upcoming 1.0-beta version. For the l
 The `peg!{}` macro encloses a `grammar` definition containing a set of `rule`s which match components of your language. It expands to a Rust `mod` containing functions corresponding to each `rule` marked `pub`.
 
 ```rust
-use peg::peg;
+use peg::parser;
 
-peg! {
-  grammar my_grammar() for str {
+parser!{
+  grammar list_parser() for str {
     rule number() -> u32
       = n:$(['0'..='9']+) { n.parse().unwrap() }
-
+    
     pub rule list() -> Vec<u32>
       = "[" l:number() ** "," "]" { l }
   }
 }
 
-fn main() {
-  assert_eq!(my_grammar::number("[1,1,2,3,5,8]"), vec![1,1,2,3,5,8]);
+pub fn main() {
+    assert_eq!(list_parser::list("[1,1,2,3,5,8]"), Ok(vec![1, 1, 2, 3, 5, 8]));
 }
 ```
 
