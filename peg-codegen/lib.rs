@@ -1,8 +1,7 @@
-#![recursion_limit = "192"]
-
-#[macro_use]
 extern crate quote;
 extern crate proc_macro2;
+
+use quote::quote_spanned;
 use proc_macro2::TokenStream;
 
 // This can't use the `peg` crate as it would be a circular dependency, but the generated code in grammar.rs

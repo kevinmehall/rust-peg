@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 use proc_macro2::{Ident, Span, TokenStream};
+
+use quote::{quote, quote_spanned, format_ident};
+
 pub use self::Expr::*;
 use crate::ast::*;
 use crate::analysis;
@@ -94,7 +97,7 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
     let mut cache_fields: Vec<Ident> = Vec::new();
     for rule in grammar.iter_rules() {
         if rule.cached {
-            let name = Ident::new(&format!("{}_cache", rule.name), Span::call_site());
+            let name = format_ident!("{}_cache", rule.name);
             let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
             cache_fields_def.push(quote!{ #name: ::std::collections::HashMap<usize, ::peg::RuleResult<#ret_ty>> });
             cache_fields.push(name);
@@ -120,7 +123,7 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
 
 fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let ref rule_name = rule.name;
-    let name = Ident::new(&format!("__parse_{}", rule.name), Span::call_site());
+    let name = format_ident!("__parse_{}", rule.name);
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let result_used =  rule.ret_type.is_some();
 
@@ -145,7 +148,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let extra_args_def = &context.extra_args_def;
 
     if rule.cached {
-        let cache_field = Ident::new(&format!("{}_cache", rule.name), Span::call_site());
+        let cache_field = format_ident!("{}_cache", rule.name);
 
         let cache_trace = if cfg!(feature = "trace") {
             quote!{
@@ -186,7 +189,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let name = &rule.name;
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let visibility = &rule.visibility;
-    let parse_fn = Ident::new(&format!("__parse_{}", rule.name.to_string()), name.span());
+    let parse_fn = format_ident!("__parse_{}", rule.name.to_string(), span = name.span());
 
     let extra_args_def = &context.extra_args_def;
     let extra_args_call = &context.extra_args_call;
@@ -308,7 +311,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                 return report_error_expr(rule_name.span(), format!("undefined rule `{}`", rule_name_str));
             }
 
-            let func = Ident::new(&format!("__parse_{}", rule_name), rule_name.span());
+            let func = format_ident!("__parse_{}", rule_name, span=rule_name.span());
             let extra_args_call = &context.extra_args_call;
 
             if result_used {

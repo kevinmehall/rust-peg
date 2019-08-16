@@ -7,8 +7,8 @@ repository = "https://github.com/kevinmehall/rust-peg"
 description = "Compilation of rust-peg grammars. To use rust-peg, see the `peg` crate."
 
 [dependencies]
-quote = "0.6"
-proc-macro2 = "0.4.4"
+quote = "1.0"
+proc-macro2 = "1.0"
 peg-runtime = { version = "0.6", path = "../peg-runtime" }
 
 [features]
