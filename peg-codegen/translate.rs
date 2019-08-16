@@ -31,7 +31,6 @@ fn extra_args_call(grammar: &Grammar) -> TokenStream {
 }
 
 struct Context<'a> {
-    grammar: &'a Grammar,
     rules: &'a HashMap<String, &'a Rule>,
     extra_args_call: TokenStream,
     extra_args_def: TokenStream,
@@ -44,7 +43,6 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     let analysis = analysis::check(&grammar);
 
     let context = &Context {
-        grammar: grammar,
         rules: &analysis.rules,
         extra_args_call: extra_args_call(grammar),
         extra_args_def: extra_args_def(grammar),
@@ -542,8 +540,6 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                     let r_arg = right_arg.name.as_ref().map_or_else(|| quote!(_), |n| quote!(#n));
 
                     let action = &op.action;
-
-                    println!("level {}: {:?}", prec, op);
 
                     match (&left_arg.expr, &right_arg.expr) {
                         (&MarkerExpr(la), &MarkerExpr(ra)) => { //infix

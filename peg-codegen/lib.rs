@@ -15,7 +15,6 @@ mod translate;
 mod analysis;
 
 pub fn compile_tokens(input: TokenStream) -> TokenStream {
-    ::std::panic::take_hook();
     let tokens = tokens::FlatTokenStream::new(input);
     let grammar = match grammar::peg::peg_grammar(&tokens) {
         Ok(g) => g,
