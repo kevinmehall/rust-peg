@@ -9,27 +9,22 @@ peg::parser!(grammar parser() for str {
 // JSON grammar (RFC 4627). Note that this only checks for valid JSON and does not build a syntax
 // tree.
 
-pub rule json() = object() / array()
+pub rule json() = _ (object() / array()) _
 
-rule ws() = [' ' | '\t' | '\r' | '\n']*
-rule begin_array() = ws() "[" ws()
-rule begin_object() = ws() "{" ws()
-rule end_array() = ws() "]" ws()
-rule end_object() = ws() "}" ws()
-rule name_separator() = ws() ":" ws()
-rule value_separator() = ws() "," ws()
+rule _() = [' ' | '\t' | '\r' | '\n']*
+rule value_separator() = _ "," _
 
 rule value()
     = "false" / "true" / "null" / object() / array() / number() / string()
 
 rule object()
-    = begin_object() member() ** value_separator() end_object()
+    = "{" _ member() ** value_separator() _ "}"
 
 rule member()
-    = string() name_separator() value()
+    = string() _ ":" _ value()
 
 rule array()
-    = begin_array() (value() ** value_separator()) end_array()
+    = "[" _ (value() ** value_separator()) _ "]"
 
 rule number()
     = "-"? int() frac()? exp()? {}

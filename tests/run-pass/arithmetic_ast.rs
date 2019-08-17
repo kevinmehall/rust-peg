@@ -15,17 +15,19 @@ grammar arithmetic() for str {
     pub rule expression() -> Expression
         = sum()
 
+    rule _() = [' ' | '\n']*
+
     rule sum() -> Expression
-        = l:product() "+" r:product() { Expression::Sum(Box::new(l), Box::new(r)) }
+        = l:product() _ "+" _ r:product() { Expression::Sum(Box::new(l), Box::new(r)) }
         / product()
 
     rule product() -> Expression
-        = l:atom() "*" r:atom() { Expression::Product(Box::new(l), Box::new(r)) }
+        = l:atom() _ "*" _ r:atom() { Expression::Product(Box::new(l), Box::new(r)) }
         / atom()
 
     rule atom() -> Expression
         = number()
-        / "(" v:sum() ")" { v }
+        / "(" _ v:sum() _ ")" { v }
 
     rule number() -> Expression
         = n:$(['0'..='9']+) { Expression::Number(n.parse().unwrap()) }
@@ -46,6 +48,13 @@ fn main() {
             Box::new(Expression::Number(3)),
             Box::new(Expression::Number(4))
         )),
+    )));
+    assert_eq!(arithmetic::expression("(2+3) * 4"), Ok(Expression::Product(
+        Box::new(Expression::Sum(
+            Box::new(Expression::Number(2)),
+            Box::new(Expression::Number(3)),
+        )),
+        Box::new(Expression::Number(4))
     )));
     assert!(arithmetic::expression("(22+)+1").is_err());
     assert!(arithmetic::expression("1++1").is_err());

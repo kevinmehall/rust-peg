@@ -101,6 +101,7 @@ rule primary() -> Expr
   / "position" "!" "(" ")" { PositionExpr }
   / "quiet" "!" "{" e:expression() "}" { QuietExpr(Box::new(e)) }
   / "expected" "!" "(" s:LITERAL() ")" { FailExpr(s) }
+  / &("_" / "__" / "___") name:IDENT() { RuleExpr(name) }
   / name:IDENT() "(" ")" { RuleExpr(name) }
   / l:LITERAL() { LiteralExpr(l) }
   / p:BRACKET_GROUP() { PatternExpr(p) }
