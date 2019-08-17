@@ -9,42 +9,42 @@ peg::parser!(grammar parser() for str {
 // JSON grammar (RFC 4627). Note that this only checks for valid JSON and does not build a syntax
 // tree.
 
-pub rule json = object / array
+pub rule json() = object() / array()
 
-rule ws = [' ' | '\t' | '\r' | '\n']*
-rule begin_array = ws "[" ws
-rule begin_object = ws "{" ws
-rule end_array = ws "]" ws
-rule end_object = ws "}" ws
-rule name_separator = ws ":" ws
-rule value_separator = ws "," ws
+rule ws() = [' ' | '\t' | '\r' | '\n']*
+rule begin_array() = ws() "[" ws()
+rule begin_object() = ws() "{" ws()
+rule end_array() = ws() "]" ws()
+rule end_object() = ws() "}" ws()
+rule name_separator() = ws() ":" ws()
+rule value_separator() = ws() "," ws()
 
-rule value
-    = "false" / "true" / "null" / object / array / number / string
+rule value()
+    = "false" / "true" / "null" / object() / array() / number() / string()
 
-rule object
-    = begin_object (member (value_separator member)*)? end_object
+rule object()
+    = begin_object() member() ** value_separator() end_object()
 
-rule member
-    = string name_separator value
+rule member()
+    = string() name_separator() value()
 
-rule array
-    = begin_array (value (value_separator value)*)? end_array
+rule array()
+    = begin_array() (value() ** value_separator()) end_array()
 
-rule number
-    = "-"? int frac? exp? {}
+rule number()
+    = "-"? int() frac()? exp()? {}
 
-rule int
+rule int()
     = ['0'] / ['1'..='9']['0'..='9']*
 
-rule exp
+rule exp()
     = ("e" / "E") ("-" / "+")? ['0'..='9']*<1,>
 
-rule frac
+rule frac()
     = "." ['0'..='9']*<1,>
 
 // note: escaped chars not handled
-rule string
+rule string()
     = "\"" (!"\"" [_])* "\""
 });
 

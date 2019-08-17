@@ -6,19 +6,19 @@ extern crate test;
 use test::Bencher;
 
 peg::parser!(grammar parser() for str {
-crate rule expr = eq
+crate rule expr() = eq()
 
 #[cache]
-rule eq = additive "=" eq / additive
+rule eq() = additive() "=" eq() / additive()
 #[cache]
-rule additive = multitive "+" additive / multitive
+rule additive() = multitive() "+" additive() / multitive()
 #[cache]
-rule multitive = pow "*" multitive / pow
+rule multitive() = pow() "*" multitive() / pow()
 #[cache]
-rule pow = atom "^" pow / atom
+rule pow() = atom() "^" pow() / atom()
 
 #[cache]
-rule atom = ['0'..='9']+ / "(" expr ")"
+rule atom() = ['0'..='9']+ / "(" expr() ")"
 });
 
 #[bench]

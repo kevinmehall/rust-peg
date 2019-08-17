@@ -20,12 +20,12 @@ grammar arithmetic() for str {
         / product()
 
     rule product() -> Expression
-        = l:atom "*" r:atom { Expression::Product(Box::new(l), Box::new(r)) }
-        / atom
+        = l:atom() "*" r:atom() { Expression::Product(Box::new(l), Box::new(r)) }
+        / atom()
 
     rule atom() -> Expression
-        = number
-        / "(" v:sum ")" { v }
+        = number()
+        / "(" v:sum() ")" { v }
 
     rule number() -> Expression
         = n:$(['0'..='9']+) { Expression::Number(n.parse().unwrap()) }

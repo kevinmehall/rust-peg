@@ -19,7 +19,7 @@ peg::parser!( grammar parse() for str {
         = $(['a'..='z']+)
 
     pub rule xml()
-        = "<" open:tag() ">" xml* "</" close:tag() ">" {?
+        = "<" open:tag() ">" xml()* "</" close:tag() ">" {?
             if open == close {
                 Ok(())
             } else {
