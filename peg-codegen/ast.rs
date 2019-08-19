@@ -30,11 +30,25 @@ pub enum Item {
 #[derive(Debug)]
 pub struct Rule {
     pub name: Ident,
+    pub ty_params: Option<Vec<TokenStream>>,
+    pub params: Vec<RuleParam>,
     pub expr: Expr,
     pub ret_type: Option<TokenStream>,
     pub doc: Option<TokenStream>,
     pub visibility: Option<TokenStream>,
     pub cached: bool,
+}
+
+#[derive(Debug)]
+pub struct RuleParam {
+    pub name: Ident,
+    pub ty: RuleParamTy,
+}
+
+#[derive(Debug)]
+pub enum RuleParamTy {
+    Rust(TokenStream),
+    Rule(TokenStream),
 }
 
 #[derive(Debug, Clone)]
@@ -47,7 +61,7 @@ pub struct TaggedExpr {
 pub enum Expr {
     LiteralExpr(Literal),
     PatternExpr(TokenStream),
-    RuleExpr(Ident),
+    RuleExpr(Ident, Vec<RuleArg>),
     MethodExpr(Ident, TokenStream),
     ChoiceExpr(Vec<Expr>),
     OptionalExpr(Box<Expr>),
@@ -61,6 +75,12 @@ pub enum Expr {
     FailExpr(Literal),
     PrecedenceExpr{ levels: Vec<PrecedenceLevel> },
     MarkerExpr(bool),
+}
+
+#[derive(Debug, Clone)]
+pub enum RuleArg {
+    Rust(TokenStream),
+    Peg(Expr),
 }
 
 #[derive(Debug, Clone)]

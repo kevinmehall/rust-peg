@@ -76,7 +76,7 @@ impl<'a> RecursionVisitor<'a> {
     fn walk_expr(&mut self, this_expr: &Expr) -> RuleInfo {
         use self::Expr::*;
         match *this_expr {
-            RuleExpr(ref rule_ident) => {
+            RuleExpr(ref rule_ident, _) => {
                 let name = rule_ident.to_string();
 
                 if let Some(loop_start) = self.stack.iter().position(|caller_name| { caller_name == &name}) {

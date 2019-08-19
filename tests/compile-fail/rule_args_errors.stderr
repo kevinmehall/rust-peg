@@ -1,0 +1,23 @@
+error: this rule takes 2 parameters but 1 parameters were supplied
+ --> $DIR/rule_args_errors.rs:7:22
+  |
+7 |     rule too_few() = foo(1) //~ ERROR
+  |                      ^^^
+
+error: this rule takes 2 parameters but 3 parameters were supplied
+ --> $DIR/rule_args_errors.rs:8:23
+  |
+8 |     rule too_many() = foo(1, <[_]>, 2)  //~ ERROR
+  |                       ^^^
+
+error: parameter `x` expects a value, but a PEG expression was passed
+  --> $DIR/rule_args_errors.rs:10:26
+   |
+10 |     rule wrong_type1() = foo(<[_]>, 1) //~ ERROR
+   |                          ^^^
+
+error: parameter `y` expects a PEG expression, but a value was passed
+  --> $DIR/rule_args_errors.rs:11:26
+   |
+11 |     rule wrong_type2() = foo(1, 1) //~ ERROR
+   |                          ^^^

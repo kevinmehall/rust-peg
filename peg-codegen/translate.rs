@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{ HashMap, HashSet };
 use proc_macro2::{Ident, Span, TokenStream};
 
 use quote::{quote, quote_spanned, format_ident};
@@ -30,8 +30,10 @@ fn extra_args_call(grammar: &Grammar) -> TokenStream {
     quote!(#(#args)*)
 }
 
+#[derive(Clone)]
 struct Context<'a> {
     rules: &'a HashMap<String, &'a Rule>,
+    rules_from_args: HashSet<String>,
     extra_args_call: TokenStream,
     extra_args_def: TokenStream,
 }
@@ -44,6 +46,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
     let context = &Context {
         rules: &analysis.rules,
+        rules_from_args: HashSet::new(),
         extra_args_call: extra_args_call(grammar),
         extra_args_def: extra_args_def(grammar),
     };
@@ -124,8 +127,12 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let name = format_ident!("__parse_{}", rule.name);
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let result_used =  rule.ret_type.is_some();
+    let ty_params = rule.ty_params.as_ref().map(|x| &x[..]).unwrap_or(&[]);
 
-    let body = compile_expr(context, &rule.expr, result_used);
+    let mut context = context.clone();
+    context.rules_from_args.extend(rule.params.iter().map(|param| { param.name.to_string() }));
+
+    let body = compile_expr(&context, &rule.expr, result_used);
 
     let wrapped_body = if cfg!(feature = "trace") {
         quote!{{
@@ -145,6 +152,16 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
     let extra_args_def = &context.extra_args_def;
 
+    let rule_params: Vec<TokenStream> = rule.params.iter().map(|param| {
+        let name = &param.name;
+        match &param.ty {
+            RuleParamTy::Rust(ty) => quote!{ #name: #ty },
+            RuleParamTy::Rule(ty) => quote!{
+                #name: impl Fn(&'input Input, &mut ParseState<'input>, &mut ::peg::error::ErrorState, usize) -> ::peg::RuleResult<#ty>
+            },
+        }
+    }).collect();
+
     if rule.cached {
         let cache_field = format_ident!("{}_cache", rule.name);
 
@@ -161,7 +178,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         };
 
         quote! {
-            fn #name<'input>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def) -> ::peg::RuleResult<#ret_ty> {
+            fn #name<'input #(, #ty_params)*>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
                 #![allow(non_snake_case, unused)]
                 if let Some(entry) = __state.#cache_field.get(&__pos) {
                     #cache_trace
@@ -174,7 +191,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         }
     } else {
         quote! {
-            fn #name<'input>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def) -> ::peg::RuleResult<#ret_ty> {
+            fn #name<'input #(, #ty_params)*>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
                 #![allow(non_snake_case, unused)]
                 #wrapped_body
             }
@@ -188,13 +205,14 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let visibility = &rule.visibility;
     let parse_fn = format_ident!("__parse_{}", rule.name.to_string(), span = name.span());
+    let ty_params = rule.ty_params.as_ref().map(|x| &x[..]).unwrap_or(&[]);
 
     let extra_args_def = &context.extra_args_def;
     let extra_args_call = &context.extra_args_call;
 
     quote! {
         #doc
-        #visibility fn #name<'input>(__input: &'input Input #extra_args_def) -> Result<#ret_ty, ::peg::error::ParseError<PositionRepr>> {
+        #visibility fn #name<'input #(, #ty_params)*>(__input: &'input Input #extra_args_def) -> Result<#ret_ty, ::peg::error::ParseError<PositionRepr>> {
             #![allow(non_snake_case, unused)]
 
             let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
@@ -297,26 +315,66 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
             }
         }
 
-        RuleExpr(ref rule_name) => {
+        RuleExpr(ref rule_name, ref rule_args) if context.rules_from_args.contains(&rule_name.to_string()) => {
+            if !rule_args.is_empty() {
+                return report_error_expr(rule_name.span(), format!("rule closure does not accept arguments"));
+            }
+
+            quote!{ #rule_name(__input, __state, __err_state, __pos) }
+        }
+
+        RuleExpr(ref rule_name, ref rule_args) => {
             let rule_name_str = rule_name.to_string();
 
-            if let Some(rule_def) = context.rules.get(&rule_name_str) {
-                if result_used && rule_def.ret_type.is_none() {
-                    let msg = format!("using result of rule `{}`, which does not return a value", rule_name_str);
-                    return report_error_expr(rule_name.span(), msg);
-                }
+            let rule_def = if let Some(rule_def) = context.rules.get(&rule_name_str) {
+                rule_def
             } else {
                 return report_error_expr(rule_name.span(), format!("undefined rule `{}`", rule_name_str));
+            };
+
+            if result_used && rule_def.ret_type.is_none() {
+                let msg = format!("using result of rule `{}`, which does not return a value", rule_name_str);
+                return report_error_expr(rule_name.span(), msg);
+            }
+
+            if rule_def.params.len() != rule_args.len() {
+                return report_error_expr(rule_name.span(),
+                    format!("this rule takes {} parameters but {} parameters were supplied", rule_def.params.len(), rule_args.len()));
+            }
+
+            for (param, arg) in rule_def.params.iter().zip(rule_args.iter()) {
+                match (&param.ty, &arg) {
+                    (RuleParamTy::Rust(..), RuleArg::Peg(..)) => {
+                        return report_error_expr(rule_name.span(),
+                            format!("parameter `{}` expects a value, but a PEG expression was passed", param.name));
+                    }
+                    (RuleParamTy::Rule(..), RuleArg::Rust(..)) => {
+                        return report_error_expr(rule_name.span(),
+                            format!("parameter `{}` expects a PEG expression, but a value was passed", param.name));
+                    },
+                    (RuleParamTy::Rule(..), RuleArg::Peg(..)) => (),
+                    (RuleParamTy::Rust(..), RuleArg::Rust(..)) => (),
+                }
             }
 
             let func = format_ident!("__parse_{}", rule_name, span=rule_name.span());
             let extra_args_call = &context.extra_args_call;
 
+            let rule_args_call: Vec<TokenStream> = rule_args.iter().map(|arg| {
+                match arg {
+                    RuleArg::Peg(e) => {
+                        let expr = compile_expr(context, e, true);
+                        quote!{ |__input, __state, __err_state, __pos| { #expr } }
+                    }
+                    RuleArg::Rust(e) => e.clone(),
+                }
+            }).collect();
+
             if result_used {
-                quote!{ #func(__input, __state, __err_state, __pos #extra_args_call) }
+                quote!{ #func(__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*) }
             } else {
                 quote!{
-                    match #func(__input, __state, __err_state, __pos #extra_args_call){
+                    match #func(__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*){
                         ::peg::RuleResult::Matched(pos, _) => ::peg::RuleResult::Matched(pos, ()),
                         ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
                     }
