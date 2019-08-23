@@ -51,15 +51,21 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
         extra_args_def: extra_args_def(grammar),
     };
 
+    let mut seen_rule_names = HashSet::new();
+
     for item in &grammar.items {
         match item {
             Item::Use(tt) => items.push(tt.clone()),
             Item::Rule(rule) => {
-                if rule.visibility.is_some() {
-                    items.push(compile_rule_export(context, rule));
-                }
+                if seen_rule_names.insert(rule.name.to_string()) {
+                    if rule.visibility.is_some() {
+                        items.push(compile_rule_export(context, rule));
+                    }
 
-                items.push(compile_rule(context, rule))
+                    items.push(compile_rule(context, rule));
+                } else {
+                    items.push(report_error(rule.name.span(), format!("duplicate rule `{}`", rule.name)));
+                }
             }
         }
         
@@ -70,10 +76,6 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     let visibility = &grammar.visibility;
 
     let mut errors = Vec::new();
-
-    for rule in &analysis.duplicate_rules {
-        errors.push(report_error(rule.name.span(), format!("duplicate rule `{}`", rule.name)));
-    }
 
     for rec in &analysis.left_recursion {
         errors.push(report_error(rec.span, rec.msg()));

@@ -5,23 +5,19 @@ use crate::ast::*;
 
 pub struct GrammarAnalysis<'a> {
     pub rules: HashMap<String, &'a Rule>,
-    pub duplicate_rules: Vec<&'a Rule>,
     pub left_recursion: Vec<RecursionError>,
 }
 
 pub fn check<'a>(grammar: &'a Grammar) -> GrammarAnalysis<'a> {
     let mut rules = HashMap::new();
-    let mut duplicate_rules = Vec::new();
 
     for rule in grammar.iter_rules() {
-        if rules.insert(rule.name.to_string(), rule).is_some() {
-            duplicate_rules.push(rule);
-        }
+        rules.entry(rule.name.to_string()).or_insert(rule);
     }
     
    let left_recursion = RecursionVisitor::check(grammar, &rules);
 
-   GrammarAnalysis { rules, duplicate_rules, left_recursion }
+   GrammarAnalysis { rules, left_recursion }
 }
 
 struct RecursionVisitor<'a> {
