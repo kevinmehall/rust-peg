@@ -582,6 +582,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
         PrecedenceExpr{ ref levels } => {
             let mut pre_rules = Vec::new();
             let mut level_code = Vec::new();
+            let mut span_capture = None;
 
             for (prec, level) in levels.iter().enumerate() {
                 let prec = prec as i32;
@@ -593,16 +594,38 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                         return quote!(compile_error!("incomplete rule"));
                     }
 
+                    fn name_pat(n: &Option<Ident>) -> TokenStream {
+                        n.as_ref().map_or_else(|| quote!(_), |n| quote!(#n))
+                    }
+
                     let left_arg = &op.elements[0];
-                    let l_arg = left_arg.name.as_ref().map_or_else(|| quote!(_), |n| quote!(#n));
+                    let l_arg = name_pat(&left_arg.name);
 
                     let right_arg = &op.elements[op.elements.len() - 1];
-                    let r_arg = right_arg.name.as_ref().map_or_else(|| quote!(_), |n| quote!(#n));
+                    let r_arg = name_pat(&right_arg.name);
 
                     let action = &op.action;
+                    let action = if let Some((lpos_name, val_name, rpos_name, wrap_action)) = &span_capture {
+                        quote!((|#lpos_name, #val_name, #rpos_name| {#wrap_action})(__lpos, #action, __pos))
+                    } else {
+                        quote!({#action})
+                    };
 
                     match (&left_arg.expr, &right_arg.expr) {
-                        (&MarkerExpr(la), &MarkerExpr(ra)) => { //infix
+                        (&PositionExpr, &PositionExpr) if op.elements.len() == 3 => { // wrapper rule to capture expression span
+                            match &op.elements[1].expr {
+                                &MarkerExpr(..) => (),
+                                _ => return quote!(compile_error!("span capture rule must be `l:position!() n:@ r:position!()"))
+                            }
+
+                            span_capture = Some((
+                                name_pat(&op.elements[0].name),
+                                name_pat(&op.elements[1].name),
+                                name_pat(&op.elements[2].name),
+                                &op.action
+                            ));
+                        }
+                        (&MarkerExpr(la), &MarkerExpr(ra)) if op.elements.len() >= 3 => { //infix
                             let new_prec = match (la, ra) {
                                 (true, false) => prec + 1, // left associative
                                 (false, true) => prec,     // right associative
@@ -621,7 +644,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                                 })
                             );
                         }
-                        (&MarkerExpr(_), _) => { // postfix
+                        (&MarkerExpr(_), _) if op.elements.len() >= 2 => { // postfix
                             post_rules.push(
                                 labeled_seq(context, &op.elements[1..op.elements.len()], {
                                     quote!{
@@ -632,7 +655,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                                 })
                             );
                         }
-                        (_, &MarkerExpr(a)) => { // prefix
+                        (_, &MarkerExpr(a)) if op.elements.len() >= 2 => { // prefix
                             let new_prec = match a {
                                 true => prec,
                                 false => prec + 1,
@@ -641,7 +664,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                                 labeled_seq(context, &op.elements[..op.elements.len()-1], {
                                     quote!{
                                         if let ::peg::RuleResult::Matched(__pos, #r_arg) = __recurse(__pos, #new_prec, __state, __err_state) {
-                                            ::peg::RuleResult::Matched(__pos, {#action})
+                                            ::peg::RuleResult::Matched(__pos, #action)
                                         } else { ::peg::RuleResult::Failed }
                                     }
                                 })
@@ -650,7 +673,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                         _ => { // atom
                             pre_rules.push(
                                 labeled_seq(context, &op.elements, {
-                                    quote!{ ::peg::RuleResult::Matched(__pos, {#action}) }
+                                    quote!{ ::peg::RuleResult::Matched(__pos, #action) }
                                 })
                             );
                         }
@@ -685,12 +708,12 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                     state: &mut S,
                     err_state: &mut ::peg::error::ErrorState,
                     min_prec: i32,
-                    pos: usize,
+                    lpos: usize,
                     prefix_atom: &Fn(usize, &mut S, &mut ::peg::error::ErrorState, &Fn(usize, i32, &mut S, &mut ::peg::error::ErrorState) -> ::peg::RuleResult<T>) -> ::peg::RuleResult<T>,
-                    level_code: &Fn(usize, i32, T, &mut S, &mut ::peg::error::ErrorState, &Fn(usize, i32, &mut S, &mut ::peg::error::ErrorState) -> ::peg::RuleResult<T>) -> (T, ::peg::RuleResult<()>),
+                    level_code: &Fn(usize, usize, i32, T, &mut S, &mut ::peg::error::ErrorState, &Fn(usize, i32, &mut S, &mut ::peg::error::ErrorState) -> ::peg::RuleResult<T>) -> (T, ::peg::RuleResult<()>),
                 ) -> ::peg::RuleResult<T> {
                     let initial = {
-                        prefix_atom(pos, state, err_state, &|pos, min_prec, state, err_state| {
+                        prefix_atom(lpos, state, err_state, &|pos, min_prec, state, err_state| {
                             __infix_parse(state, err_state, min_prec, pos, prefix_atom, level_code)
                         })
                     };
@@ -701,6 +724,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                         loop {
                             let (val, res) = level_code(
                                 repeat_pos,
+                                lpos,
                                 min_prec,
                                 infix_result,
                                 state,
@@ -727,6 +751,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 
                 __infix_parse(__state, __err_state, 0, __pos, 
                     &|__pos, __state, __err_state, __recurse| {
+                        let __lpos = __pos;
                         #(
                             if let ::peg::RuleResult::Matched(__pos, __v) = #pre_rules {
                                 return ::peg::RuleResult::Matched(__pos, __v);
@@ -735,7 +760,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 
                         ::peg::RuleResult::Failed
                     },
-                    &|__pos, __min_prec, mut __infix_result, __state, __err_state, __recurse| {
+                    &|__pos, __lpos, __min_prec, mut __infix_result, __state, __err_state, __recurse| {
                         #(#level_code)*
                         (__infix_result, ::peg::RuleResult::Failed)
                     }
