@@ -1,15 +1,15 @@
 #!/bin/sh
 set -e
 
-cargo run -- peg-codegen/grammar.rustpeg > peg-codegen/grammar_new.rs
+cargo run -p peg-macros -- peg-macros/grammar.rustpeg > peg-macros/grammar_new.rs
 
-mv peg-codegen/grammar.rs peg-codegen/grammar_old.rs
-cp peg-codegen/grammar_new.rs peg-codegen/grammar.rs
+mv peg-macros/grammar.rs peg-macros/grammar_old.rs
+cp peg-macros/grammar_new.rs peg-macros/grammar.rs
 
-if cargo run -- peg-codegen/grammar.rustpeg > peg-codegen/grammar_new.rs
+if cargo run -p peg-macros -- peg-macros/grammar.rustpeg > peg-macros/grammar_new.rs
 then
-    diff -qs peg-codegen/grammar.rs peg-codegen/grammar_new.rs
-    rustfmt peg-codegen/grammar.rs
+    diff -qs peg-macros/grammar.rs peg-macros/grammar_new.rs
+    rustfmt peg-macros/grammar.rs
 else
     echo "Failed"
 fi

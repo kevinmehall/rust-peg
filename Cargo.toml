@@ -1,5 +1,5 @@
 [workspace]
-members = ["./peg-syntax-ext", "./peg-codegen", "./peg-runtime"]
+members = ["./peg-macros", "./peg-runtime"]
 
 [package]
 name = "peg"
@@ -14,18 +14,11 @@ categories = ["parsing"]
 readme = "README.md"
 
 [dependencies]
-peg-codegen = { path = "./peg-codegen", version = "0.6" }
-peg-syntax-ext = { path = "./peg-syntax-ext", version = "0.6" }
+peg-macros = { path = "./peg-macros", version = "0.6" }
 peg-runtime = { path = "./peg-runtime", version = "0.6" }
 
 [dev-dependencies]
 trybuild = "1.0"
-
-[[bin]]
-name = "rust-peg"
-path = "src/bin.rs"
-test = false
-bench = false
 
 [[test]]
 name = "trybuild"

@@ -1,5 +1,5 @@
 [package]
-name = "peg-syntax-ext"
+name = "peg-macros"
 version = "0.6.0"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
@@ -7,9 +7,20 @@ repository = "https://github.com/kevinmehall/rust-peg"
 description = "Procedural macros for rust-peg. To use rust-peg, see the `peg` crate."
 
 [dependencies]
-peg-codegen = { version = "0.6", path = "../peg-codegen" }
+quote = "1.0"
+proc-macro2 = "1.0"
+peg-runtime = { version = "0.6", path = "../peg-runtime" }
+
+[features]
+trace = []
 
 [lib]
 proc-macro = true
-name = "peg_syntax_ext"
+name = "peg_macros"
 path = "lib.rs"
+
+[[bin]]
+name = "rust-peg"
+path = "bin.rs"
+test = false
+bench = false
