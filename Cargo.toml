@@ -26,4 +26,4 @@ path = "tests/trybuild.rs"
 harness = false
 
 [features]
-trace = []
+trace = ["peg-macros/trace"]

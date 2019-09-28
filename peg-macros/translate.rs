@@ -137,18 +137,22 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let body = compile_expr(&context, &rule.expr, result_used);
 
     let wrapped_body = if cfg!(feature = "trace") {
+        let str_rule_name = rule_name.to_string();
         quote!{{
-            let loc = ::peg::Parse::position_repr(__input, pos);
-            println!("[PEG_TRACE] Attempting to match rule {} at {}", #rule_name, loc);
-            let mut __peg_closure = || {
-                #body
-            };
-            let __peg_result = __peg_closure();
+            let loc = ::peg::Parse::position_repr(__input, __pos);
+            println!("[PEG_TRACE] Attempting to match rule `{}` at {}", #str_rule_name, loc);
+            let __peg_result: ::peg::RuleResult<#ret_ty> = {#body};
             match __peg_result {
-                ::peg::RuleResult::Matched(_, _) => println!("[PEG_TRACE] Matched rule {} at {}:{}", #rule_name, loc),
-                ::peg::RuleResult::Failed => println!("[PEG_TRACE] Failed to match rule {} at {}:{}", #rule_name, loc)
+                ::peg::RuleResult::Matched(epos, v) => {
+                    let eloc = ::peg::Parse::position_repr(__input, epos);
+                    println!("[PEG_TRACE] Matched rule `{}` at {} to {}", #str_rule_name, loc, eloc);
+                    ::peg::RuleResult::Matched(epos, v)
+                }
+                ::peg::RuleResult::Failed => {
+                    println!("[PEG_TRACE] Failed to match rule `{}` at {}", #str_rule_name, loc);
+                    ::peg::RuleResult::Failed
+                }
             }
-            __peg_result
         }}
     } else { body };
 
@@ -168,11 +172,12 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         let cache_field = format_ident!("{}_cache", rule.name);
 
         let cache_trace = if cfg!(feature = "trace") {
+            let str_rule_name = rule.name.to_string();
             quote!{
-                let loc = ::peg::Parse::position_repr(__input, pos);
-                match entry {
-                    &::peg::RuleResult::Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}", #rule_name, loc),
-                    &Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}", #rule_name, loc),
+                let loc = ::peg::Parse::position_repr(__input, __pos);
+                match &entry {
+                    &::peg::RuleResult::Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}", #str_rule_name, loc),
+                    &Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}", #str_rule_name, loc),
                 };
             }
         } else {
@@ -694,8 +699,8 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
             }
 
             let (enter, leave) = if cfg!(feature = "trace") {
-                (quote!{println!("[PEG_TRACE] Entering level {}", __min_prec);},
-                 quote!{println!("[PEG_TRACE] Leaving level {}", __min_prec);})
+                (quote!{println!("[PEG_TRACE] Entering level {}", min_prec);},
+                 quote!{println!("[PEG_TRACE] Leaving level {}", min_prec);})
             } else {
                 (quote!(), quote!())
             };
