@@ -1,0 +1,10 @@
+error[E0308]: mismatched types
+ --> $DIR/rust_action_type_error.rs:4:31
+  |
+4 |     rule foo() -> u32 = "a" { "a" } //~ ERROR
+  |                               ^^^ expected u32, found reference
+  |
+  = note: expected type `u32`
+             found type `&'static str`
+
+For more information about this error, try `rustc --explain E0308`.
