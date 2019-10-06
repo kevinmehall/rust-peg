@@ -5,8 +5,13 @@ rust:
     - nightly
 
 script:
-  - rustup component add rustfmt
-  - ./bootstrap.sh
-  - git diff --exit-code # Check that src/grammar.rs is updated to match src/grammar.rustpeg
+  # Rustfmt is often missing on nightly
+  - |
+      if [ $TRAVIS_RUST_VERSION != "nightly" ]; then
+        rustup component add rustfmt
+        ./bootstrap.sh
+        # Check that src/grammar.rs is updated to match src/grammar.rustpeg
+        git diff --exit-code
+      fi
   - cargo test --all
   - (test $TRAVIS_RUST_VERSION != "nightly" || cargo bench)
