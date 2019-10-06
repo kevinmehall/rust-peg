@@ -1,10 +1,18 @@
+//! Utilities for `str` input
+
 use std::fmt::Display;
 use super::{RuleResult, Parse, ParseElem, ParseLiteral, ParseSlice};
 
+/// Line and column within a string
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct LineCol {
+    /// Line (1-indexed)
     pub line: usize,
+
+    /// Column (1-indexed)
     pub column: usize,
+
+    /// Byte offset from start of string (0-indexed)
     pub offset: usize,
 }
 

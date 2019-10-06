@@ -14,6 +14,9 @@ mod grammar;
 mod translate;
 mod analysis;
 
+/// The main macro for creating a PEG parser.
+/// 
+/// For the grammar syntax, see the `peg` crate documentation.
 #[proc_macro]
 pub fn parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let tokens = tokens::FlatTokenStream::new(input.into());

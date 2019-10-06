@@ -1,13 +1,17 @@
+//! Parse error reporting
+
 use std::fmt::{ self, Display, Debug };
 use crate::{ RuleResult, Parse };
 use std::collections::HashSet;
 
+/// A set of literals or names that failed to match
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct ExpectedSet {
     expected: HashSet<&'static str>,
 }
 
 impl ExpectedSet {
+    /// Iterator of expected literals
     pub fn tokens<'a>(&'a self) -> impl Iterator<Item = &'static str> + 'a {
         self.expected.iter().map(|x| *x)
     }
@@ -34,9 +38,13 @@ impl Display for ExpectedSet {
     }
 }
 
+/// An error from a parse failure
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct ParseError<L> {
+    /// The furthest position the parser reached in the input
     pub location: L,
+
+    /// The set of literals that failed to match at that position
     pub expected: ExpectedSet,
 }
 
@@ -52,6 +60,7 @@ impl<L: Display + Debug> ::std::error::Error for ParseError<L> {
     }
 }
 
+#[doc(hidden)]
 pub struct ErrorState {
     pub max_err_pos: usize,
     pub suppress_fail: usize,
