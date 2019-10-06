@@ -9,7 +9,7 @@ description = "Procedural macros for rust-peg. To use rust-peg, see the `peg` cr
 [dependencies]
 quote = "1.0"
 proc-macro2 = "1.0"
-peg-runtime = { version = "0.6", path = "../peg-runtime" }
+peg-runtime = { version = "= 0.6.0", path = "../peg-runtime" }
 
 [features]
 trace = []

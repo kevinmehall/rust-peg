@@ -14,8 +14,8 @@ categories = ["parsing"]
 readme = "README.md"
 
 [dependencies]
-peg-macros = { path = "./peg-macros", version = "0.6" }
-peg-runtime = { path = "./peg-runtime", version = "0.6" }
+peg-macros = { path = "./peg-macros", version = "= 0.6.0" }
+peg-runtime = { path = "./peg-runtime", version = "= 0.6.0" }
 
 [dev-dependencies]
 trybuild = "1.0"
