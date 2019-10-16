@@ -6,13 +6,13 @@
 
 ## Features
 
-* Parse input from `&str`, `&[u8]`, `&[T]` or custom types implementing traits
-* Customizable reporting of parse errors
-* Rules can accept arguments to create reusable rule templates
-* Precedence climbing for prefix/postfix/infix expressions
-* Helpful `rustc` error messages for errors in the grammar definition or the Rust
+- Parse input from `&str`, `&[u8]`, `&[T]` or custom types implementing traits
+- Customizable reporting of parse errors
+- Rules can accept arguments to create reusable rule templates
+- Precedence climbing for prefix/postfix/infix expressions
+- Helpful `rustc` error messages for errors in the grammar definition or the Rust
   code embedded within it
-* Rule-level tracing to debug grammars
+- Rule-level tracing to debug grammars
 
 ## Example
 
@@ -23,7 +23,7 @@ parser!{
   grammar list_parser() for str {
     rule number() -> u32
       = n:$(['0'..='9']+) { n.parse().unwrap() }
-    
+
     pub rule list() -> Vec<u32>
       = "[" l:number() ** "," "]" { l }
   }
@@ -39,12 +39,12 @@ pub fn main() {
 
 ## Comparison with similar parser generators
 
-| crate     	| parser type 	| action code 	| integration        	| input type             	| precedence climbing 	| parameterizd rules 	| streaming input 	|
-|-----------	|-------------	|-------------	|--------------------	|------------------------	|---------------------	|--------------------	|-----------------	|
-| peg       	| PEG         	| in grammar  	| proc macro (block) 	| `&str`, `&[T]`, custom 	| Yes                 	| Yes                	| No              	|
-| [pest]    	| PEG         	| external    	| proc macro (file)  	| `&str`                 	| Yes                 	| No                 	| No              	|
-| [nom]     	| combinators 	| in source   	| library            	| `&[u8]`, custom        	| No                  	| Yes                	| Yes             	|
-| [lalrpop] 	| LR(1)       	| in grammar  	| build script       	| `&str`                 	| No                  	| Yes                	| No              	|
+| crate     | parser type | action code | integration        | input type             | precedence climbing | parameterizd rules | streaming input |
+| --------- | ----------- | ----------- | ------------------ | ---------------------- | ------------------- | ------------------ | --------------- |
+| peg       | PEG         | in grammar  | proc macro (block) | `&str`, `&[T]`, custom | Yes                 | Yes                | No              |
+| [pest]    | PEG         | external    | proc macro (file)  | `&str`                 | Yes                 | No                 | No              |
+| [nom]     | combinators | in source   | library            | `&[u8]`, custom        | No                  | Yes                | Yes             |
+| [lalrpop] | LR(1)       | in grammar  | build script       | `&str`                 | No                  | Yes                | No              |
 
 [pest]: https://github.com/pest-parser/pest
 [nom]: https://github.com/geal/nom

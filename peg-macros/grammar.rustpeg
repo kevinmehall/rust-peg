@@ -106,10 +106,10 @@ rule prefixed() -> Expr
 
 #[cache]
 rule primary() -> Expr
-  = "precedence" "!" "{" levels:precedence_level()**"--" "}" { PrecedenceExpr{ levels:levels }}
-  / "position" "!" "(" ")" { PositionExpr }
-  / "quiet" "!" "{" e:expression() "}" { QuietExpr(Box::new(e)) }
-  / "expected" "!" "(" s:LITERAL() ")" { FailExpr(s) }
+  = "precedence!" "{" levels:precedence_level()**"--" "}" { PrecedenceExpr{ levels:levels }}
+  / "position!" "(" ")" { PositionExpr }
+  / "quiet!" "{" e:expression() "}" { QuietExpr(Box::new(e)) }
+  / "expected!" "(" s:LITERAL() ")" { FailExpr(s) }
   / &("_" / "__" / "___") name:IDENT() { RuleExpr(name, Vec::new()) }
   / name:IDENT() "(" args:(rule_arg() ** ",") ")" { RuleExpr(name, args) }
   / l:LITERAL() { LiteralExpr(l) }
