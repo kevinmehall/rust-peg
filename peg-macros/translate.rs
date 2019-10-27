@@ -254,31 +254,40 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     }
 }
 
-fn compile_match_and_then(context: &Context, e: &Expr, value_name: Option<&Ident>, then: TokenStream) -> TokenStream {
-    let seq_res = compile_expr(context, e, value_name.is_some());
-    let name_pat = match value_name {
-        Some(x) => quote!(#x),
+fn name_or_ignore(n: Option<&Ident>) -> TokenStream {
+    match n {
+        Some(n) => quote!(#n),
         None => quote!(_)
-    };
+    }
+}
 
-    quote! {{
-        let __seq_res = #seq_res;
-        match __seq_res {
-            ::peg::RuleResult::Matched(__pos, #name_pat) => { #then }
-            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
-        }
-    }}
+fn ordered_choice(mut rs: impl DoubleEndedIterator<Item=TokenStream>) -> TokenStream {
+    rs.next_back().map(|last| rs.rfold(last, |fallback, preferred| {
+        quote! {{
+            let __choice_res = #preferred;
+            match __choice_res {
+                ::peg::RuleResult::Matched(__pos, __value) => ::peg::RuleResult::Matched(__pos, __value),
+                ::peg::RuleResult::Failed => #fallback
+            }
+        }}
+    })).expect("ordered choice must not be empty")
 }
 
 fn labeled_seq(context: &Context, exprs: &[TaggedExpr], inner: TokenStream) -> TokenStream {
-    match exprs.first() {
-        Some(ref first) => {
-            let name = first.name.as_ref();
-            let seq = labeled_seq(context, &exprs[1..], inner);
-            compile_match_and_then(context, &first.expr, name, seq)
-        }
-        None => inner
-    }
+    exprs.iter().rfold(inner, |then, expr| {
+        let value_name = expr.name.as_ref();
+        let name_pat = name_or_ignore(value_name);
+
+        let seq_res = compile_expr(context, &expr.expr, value_name.is_some());
+
+        quote!{{
+            let __seq_res = #seq_res;
+            match __seq_res {
+                ::peg::RuleResult::Matched(__pos, #name_pat) => { #then }
+                ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+            }
+        }}  
+    })
 }
 
 fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
@@ -394,28 +403,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
         }
 
         ChoiceExpr(ref exprs) => {
-            fn write_choice(context: &Context, exprs: &[Expr], result_used: bool) -> TokenStream  {
-                if exprs.len() == 1 {
-                    compile_expr(context, &exprs[0], result_used)
-                } else {
-                    let choice_res = compile_expr(context, &exprs[0], result_used);
-                    let next = write_choice(context, &exprs[1..], result_used);
-
-                    quote! {{
-                        let __choice_res = #choice_res;
-                        match __choice_res {
-                            ::peg::RuleResult::Matched(__pos, __value) => ::peg::RuleResult::Matched(__pos, __value),
-                            ::peg::RuleResult::Failed => #next
-                        }
-                    }}
-                }
-            }
-
-            if exprs.is_empty() {
-                quote!{ ::peg::RuleResult::Matched(__pos, ()) }
-            } else {
-                write_choice(context, &exprs, result_used)
-            }
+            ordered_choice(exprs.iter().map(|expr| compile_expr(context, expr, result_used)))
         }
 
         OptionalExpr(ref e) => {
@@ -599,15 +587,11 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                         return quote!(compile_error!("incomplete rule"));
                     }
 
-                    fn name_pat(n: &Option<Ident>) -> TokenStream {
-                        n.as_ref().map_or_else(|| quote!(_), |n| quote!(#n))
-                    }
-
                     let left_arg = &op.elements[0];
-                    let l_arg = name_pat(&left_arg.name);
+                    let l_arg = name_or_ignore(left_arg.name.as_ref());
 
                     let right_arg = &op.elements[op.elements.len() - 1];
-                    let r_arg = name_pat(&right_arg.name);
+                    let r_arg = name_or_ignore(right_arg.name.as_ref());
 
                     let action = &op.action;
                     let action = if let Some((lpos_name, val_name, rpos_name, wrap_action)) = &span_capture {
@@ -624,9 +608,9 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                             }
 
                             span_capture = Some((
-                                name_pat(&op.elements[0].name),
-                                name_pat(&op.elements[1].name),
-                                name_pat(&op.elements[2].name),
+                                name_or_ignore(op.elements[0].name.as_ref()),
+                                name_or_ignore(op.elements[1].name.as_ref()),
+                                name_or_ignore(op.elements[2].name.as_ref()),
                                 &op.action
                             ));
                         }
