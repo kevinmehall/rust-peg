@@ -43,7 +43,8 @@ rule rust_use() -> TokenStream
         / ("as" IDENT())?
     ) ";") { v.to_owned() }
 
-rule rust_path() = IDENT() ++ "::"
+rule rust_path()
+    = ("crate" "::")? IDENT() ++ "::"
 
 rule rust_type()
     = BRACKET_GROUP()
