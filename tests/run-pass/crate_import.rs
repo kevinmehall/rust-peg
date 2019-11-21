@@ -10,6 +10,7 @@ peg::parser!{
 }
 
 mod types {
+    #[derive(PartialEq, Debug)]
     pub struct Foo;
 }
 
