@@ -219,7 +219,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     quote! {
         #doc
-        #visibility fn #name<'input #(, #ty_params)*>(__input: &'input Input #extra_args_def) -> Result<#ret_ty, ::peg::error::ParseError<PositionRepr>> {
+        #visibility fn #name<'input #(, #ty_params)*>(__input: &'input Input #extra_args_def) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr>> {
             #![allow(non_snake_case, unused)]
 
             let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));

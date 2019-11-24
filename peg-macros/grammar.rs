@@ -22,7 +22,7 @@ pub mod peg {
     use tokens::FlatTokenStream;
     pub fn peg_grammar<'input>(
         __input: &'input Input,
-    ) -> Result<Grammar, ::peg::error::ParseError<PositionRepr>> {
+    ) -> ::std::result::Result<Grammar, ::peg::error::ParseError<PositionRepr>> {
         #![allow(non_snake_case, unused)]
         let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
         let mut __state = ParseState::new();
