@@ -16,10 +16,10 @@ pub mod peg {
             }
         }
     }
-    use self::Expr::*;
-    use ast::*;
+    use crate::ast::Expr::*;
+    use crate::ast::*;
+    use crate::tokens::FlatTokenStream;
     use proc_macro2::{Delimiter, Ident, Literal, TokenStream};
-    use tokens::FlatTokenStream;
     pub fn peg_grammar<'input>(
         __input: &'input Input,
     ) -> ::std::result::Result<Grammar, ::peg::error::ParseError<PositionRepr>> {

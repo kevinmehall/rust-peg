@@ -7,6 +7,7 @@ struct ParseState;
 struct ErrorState;
 struct Vec;
 struct HashMap;
+mod peg {}
 
 realpeg::parser!{
     grammar p() for str {

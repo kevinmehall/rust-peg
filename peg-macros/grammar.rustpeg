@@ -1,8 +1,8 @@
 pub grammar peg() for FlatTokenStream {
 
-use ast::*;
-use self::Expr::*; 
-use tokens::FlatTokenStream;
+use crate::ast::*;
+use crate::ast::Expr::*;
+use crate::tokens::FlatTokenStream;
 use proc_macro2::{ TokenStream, Ident, Literal, Delimiter };
 
 pub rule peg_grammar() -> Grammar
