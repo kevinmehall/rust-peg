@@ -58,6 +58,10 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
             Item::Use(tt) => items.push(tt.clone()),
             Item::Rule(rule) => {
                 if seen_rule_names.insert(rule.name.to_string()) {
+                    if rule.cached && !(rule.params.is_empty() && rule.ty_params.is_none()) {
+                        items.push(report_error(rule.name.span(), format!("rules with arguments cannot use #[cache]")));
+                    }
+
                     if rule.visibility.is_some() {
                         items.push(compile_rule_export(context, rule));
                     }

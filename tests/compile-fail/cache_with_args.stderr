@@ -1,0 +1,5 @@
+error: rules with arguments cannot use #[cache]
+ --> $DIR/cache_with_args.rs:5:10
+  |
+5 |     rule foo(x: u32) = "foo" //~ ERROR
+  |          ^^^
