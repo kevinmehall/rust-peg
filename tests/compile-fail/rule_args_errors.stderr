@@ -21,3 +21,9 @@ error: parameter `y` expects a PEG expression, but a value was passed
    |
 11 |     rule wrong_type2() = foo(1, 1) //~ ERROR
    |                          ^^^
+
+error: parameters on `pub rule` must be Rust types
+  --> $DIR/rule_args_errors.rs:13:27
+   |
+13 |     pub rule pub_rule_arg(x: rule<()>) = "foo" //~ ERROR
+   |                           ^

@@ -63,6 +63,15 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
                     }
 
                     if rule.visibility.is_some() {
+                        for param in &rule.params {
+                            match &param.ty {
+                                 RuleParamTy::Rule(..) => items.push(
+                                     report_error(param.name.span(), format!("parameters on `pub rule` must be Rust types"))
+                                 ),
+                                 _ => {}
+                            }
+                        }
+
                         items.push(compile_rule_export(context, rule));
                     }
 
@@ -128,6 +137,18 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
     }
 }
 
+fn rule_params_list(rule: &Rule) -> Vec<TokenStream> {
+    rule.params.iter().map(|param| {
+        let name = &param.name;
+        match &param.ty {
+            RuleParamTy::Rust(ty) => quote!{ #name: #ty },
+            RuleParamTy::Rule(ty) => quote!{
+                #name: impl Fn(&'input Input, &mut ParseState<'input>, &mut ::peg::error::ErrorState, usize) -> ::peg::RuleResult<#ty>
+            },
+        }
+    }).collect()
+}
+
 fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let ref rule_name = rule.name;
     let name = format_ident!("__parse_{}", rule.name);
@@ -162,15 +183,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
     let extra_args_def = &context.extra_args_def;
 
-    let rule_params: Vec<TokenStream> = rule.params.iter().map(|param| {
-        let name = &param.name;
-        match &param.ty {
-            RuleParamTy::Rust(ty) => quote!{ #name: #ty },
-            RuleParamTy::Rule(ty) => quote!{
-                #name: impl Fn(&'input Input, &mut ParseState<'input>, &mut ::peg::error::ErrorState, usize) -> ::peg::RuleResult<#ty>
-            },
-        }
-    }).collect();
+    let rule_params = rule_params_list(rule);
 
     if rule.cached {
         let cache_field = format_ident!("{}_cache", rule.name);
@@ -217,18 +230,23 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let visibility = &rule.visibility;
     let parse_fn = format_ident!("__parse_{}", rule.name.to_string(), span = name.span());
     let ty_params = rule.ty_params.as_ref().map(|x| &x[..]).unwrap_or(&[]);
+    let rule_params = rule_params_list(rule);
+    let rule_params_call: Vec<TokenStream> = rule.params.iter().map(|param| {
+        let param_name = &param.name;
+        quote!(#param_name)
+    }).collect();
 
     let extra_args_def = &context.extra_args_def;
     let extra_args_call = &context.extra_args_call;
 
     quote! {
         #doc
-        #visibility fn #name<'input #(, #ty_params)*>(__input: &'input Input #extra_args_def) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr>> {
+        #visibility fn #name<'input #(, #ty_params)*>(__input: &'input Input #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr>> {
             #![allow(non_snake_case, unused)]
 
             let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
             let mut __state = ParseState::new();
-            match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call) {
+            match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call #(, #rule_params_call)*) {
                 ::peg::RuleResult::Matched(__pos, __value) => {
                     if __pos == __input.len() {
                         return Ok(__value)
@@ -242,7 +260,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
             __state = ParseState::new();
             __err_state.reparse_for_error();
 
-            match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call) {
+            match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call #(, #rule_params_call)*) {
                 ::peg::RuleResult::Matched(__pos, __value) => {
                     if __pos == __input.len() {
                         panic!("Parser is nondeterministic: succeeded when reparsing for error position");

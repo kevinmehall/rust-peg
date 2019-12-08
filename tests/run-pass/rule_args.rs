@@ -16,6 +16,8 @@ peg::parser!( grammar ra() for str {
     rule ident() = ['a'..='z']+
     rule _() = [' ']*
     pub rule ifelse() = keyword("if") _ ident() _ keyword("then") _ ident() _ keyword("else") _ ident()
+    
+    pub rule repeated_a(i: usize) = ['a']*<{i}>
 });
 
 use ra::*;
@@ -26,4 +28,8 @@ fn main() {
 
     assert!(ifelse("if foo then x else y").is_ok());
     assert!(ifelse("iffoothenxelsey").is_err());
+
+    assert!(repeated_a("aa", 2).is_ok());
+    assert!(repeated_a("aaa", 2).is_err());
+    assert!(repeated_a("aaaaa", 5).is_ok());
 }

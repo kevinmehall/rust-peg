@@ -9,6 +9,8 @@ peg::parser!(grammar foo() for str {
 
     rule wrong_type1() = foo(<[_]>, 1) //~ ERROR
     rule wrong_type2() = foo(1, 1) //~ ERROR
+
+    pub rule pub_rule_arg(x: rule<()>) = "foo" //~ ERROR
 });
 
 fn main() {}
