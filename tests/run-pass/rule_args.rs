@@ -18,6 +18,10 @@ peg::parser!( grammar ra() for str {
     pub rule ifelse() = keyword("if") _ ident() _ keyword("then") _ ident() _ keyword("else") _ ident()
     
     pub rule repeated_a(i: usize) = ['a']*<{i}>
+
+    rule i(literal: &'static str) = input:$([_]*<{literal.len()}>) {? if input.eq_ignore_ascii_case(literal) { Ok(()) } else { Err(literal) } }
+    
+    pub rule test_i() = i("foo") i("bar")
 });
 
 use ra::*;
@@ -32,4 +36,8 @@ fn main() {
     assert!(repeated_a("aa", 2).is_ok());
     assert!(repeated_a("aaa", 2).is_err());
     assert!(repeated_a("aaaaa", 5).is_ok());
+
+    assert!(test_i("fOoBaR").is_ok());
+    assert!(test_i("fOoBaZ").is_err());
+    assert!(test_i("fOoX").is_err());
 }
