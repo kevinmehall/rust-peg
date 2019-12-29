@@ -7,7 +7,7 @@ pub mod error;
 /// The result type used internally in the parser.
 /// 
 /// You'll only need this if implementing the `Parse*` traits for a custom input
-/// type. The public API of a parser adapts errors to `std::Result`.
+/// type. The public API of a parser adapts errors to `std::result::Result`.
 #[derive(Clone)]
 pub enum RuleResult<T> {
     Matched(usize, T),

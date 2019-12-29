@@ -17,9 +17,7 @@
 ## Example
 
 ```rust
-use peg::parser;
-
-parser!{
+peg::parser!{
   grammar list_parser() for str {
     rule number() -> u32
       = n:$(['0'..='9']+) { n.parse().unwrap() }
