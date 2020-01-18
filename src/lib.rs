@@ -222,6 +222,27 @@
 //! As with all procedural macros, non-doc comments are ignored by the lexer and can be used like
 //! in any other Rust code.
 //!
+//! ## Caching
+//! 
+//! A `rule` without parameters can be prefixed with `#[cache]` if it is likely
+//! to be checked repeatedly in the same position. This memoizes the rule result
+//! as a function of input position, in the style of a [packrat
+//! parser][wp-peg-packrat].
+//! 
+//! [wp-peg-packrat]: https://en.wikipedia.org/wiki/Parsing_expression_grammar#Implementing_parsers_from_parsing_expression_grammars
+//! 
+//! However, idiomatic code avoids structures that parse the same input
+//! repeatedly, so the use of `#[cache]` is often not a performance win. Simple
+//! rules may also be faster to re-match than the additional cost of the hash
+//! table lookup and insert.
+//! 
+//! For example, a complex rule called `expr` might benefit from caching if used
+//! like `expr "x" / expr "y" / expr "z"`, but this could be rewritten to
+//! `expr ("x" / "y" / "z")` which would be even faster.
+//! 
+//! The `precedence!{}` syntax is another way to avoid repeatedly matching
+//! an expression rule.
+//! 
 //! ## Tracing
 //!
 //! If you pass the `peg/trace` feature to Cargo when building your project, a
