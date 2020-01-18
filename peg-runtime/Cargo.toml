@@ -1,6 +1,6 @@
 [package]
 name = "peg-runtime"
-version = "0.6.0"
+version = "0.6.1"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
