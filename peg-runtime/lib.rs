@@ -8,7 +8,7 @@ pub mod error;
 /// 
 /// You'll only need this if implementing the `Parse*` traits for a custom input
 /// type. The public API of a parser adapts errors to `std::result::Result`.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub enum RuleResult<T> {
     Matched(usize, T),
     Failed,
