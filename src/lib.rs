@@ -48,6 +48,9 @@
 //!   * `_` or `__` or `___`: _Rule (underscore):_ As a special case, rule names
 //!     consisting of underscores are invoked without parentheses. These are
 //!     conventionally used to match whitespace between tokens.
+//!   * `(e)` - _Parentheses:_ wrap an expression into a group to override
+//!     normal precedence. Returns the same value as the inner expression. (Use
+//!     an _Action_ block to set the return value for a sequence).
 //!   * `e1 e2 e3` - _Sequence:_ match expressions in sequence (`e1` followed by `e2` followed by
 //!     `e3`).
 //!   * `a:e1 e2 b:e3 c:e4 { rust }` - _Action:_ Match `e1`, `e2`, `e3`, `e4` in
