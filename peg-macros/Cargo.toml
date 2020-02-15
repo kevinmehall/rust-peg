@@ -1,6 +1,6 @@
 [package]
 name = "peg-macros"
-version = "0.6.1"
+version = "0.6.2"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
@@ -10,7 +10,7 @@ edition = "2018"
 [dependencies]
 quote = "1.0"
 proc-macro2 = "1.0"
-peg-runtime = { version = "= 0.6.1", path = "../peg-runtime" }
+peg-runtime = { version = "= 0.6.2", path = "../peg-runtime" }
 
 [features]
 trace = []
