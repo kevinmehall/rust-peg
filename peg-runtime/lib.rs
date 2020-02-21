@@ -1,11 +1,11 @@
 use std::fmt::Display;
 
-pub mod str;
-mod slice;
 pub mod error;
+mod slice;
+pub mod str;
 
 /// The result type used internally in the parser.
-/// 
+///
 /// You'll only need this if implementing the `Parse*` traits for a custom input
 /// type. The public API of a parser adapts errors to `std::result::Result`.
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
@@ -45,4 +45,3 @@ pub trait ParseSlice<'input>: Parse {
     /// Get a slice of input.
     fn parse_slice(&'input self, p1: usize, p2: usize) -> Self::Slice;
 }
-

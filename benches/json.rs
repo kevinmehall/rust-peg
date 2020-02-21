@@ -45,7 +45,7 @@ rule string()
 
 #[bench]
 fn json(b: &mut Bencher) {
-	let bench_str = r#"
+    let bench_str = r#"
 {
 	"X": 0.6e2,
 	"Y": 5,
@@ -69,8 +69,8 @@ fn json(b: &mut Bencher) {
 }
 "#;
 
-	b.bytes = bench_str.len() as u64;
-	b.iter(|| {
-		parser::json(bench_str).unwrap();
-	});
+    b.bytes = bench_str.len() as u64;
+    b.iter(|| {
+        parser::json(bench_str).unwrap();
+    });
 }

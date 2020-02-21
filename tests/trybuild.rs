@@ -5,7 +5,9 @@ fn main() {
 
     let rust_ver = option_env!("TRAVIS_RUST_VERSION");
     if rust_ver.is_none() {
-        println!("Note: compile-fail tests are normally only tested on the stable rust compiler in CI.");
+        println!(
+            "Note: compile-fail tests are normally only tested on the stable rust compiler in CI."
+        );
     }
 
     if rust_ver.is_none() || rust_ver == Some("stable") {
@@ -13,6 +15,6 @@ fn main() {
     } else {
         println!("Skipping compile-fail tests.");
     }
-    
+
     t.pass("tests/run-pass/*.rs");
 }

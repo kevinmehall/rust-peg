@@ -6,21 +6,21 @@
 //!
 //! The `parser!{}` macro encloses a `grammar` definition and expands to a Rust
 //! `mod`. The `grammar` contains a set of `rule`s which match components of your language.
-//! 
+//!
 //! Rules can accept parameters and optionally return a value when they match. A
 //! `rule` not marked `pub` can only be called from other rules within the
 //! grammar.
-//! 
+//!
 //! Each `rule` marked `pub` expands to a function in the module. To parse an
 //! input, call this function, passing a reference to the input sequence, along
 //! with any additional parameters defined on the `rule`. The call returns a
 //! `Result<T, ParseError>` carrying either the successfully parsed value, or a
 //! `ParseError` containing the failure position and the set of tokens expected
 //! there.
-//! 
+//!
 //! The body of the rule, following the `=`, is a PEG expression, definining how
 //! the input is matched to produce a value.
-//! 
+//!
 //! ```rust
 //! peg::parser!{
 //!   grammar list_parser() for str {
@@ -36,11 +36,11 @@
 //!     assert_eq!(list_parser::list("[1,1,2,3,5,8]"), Ok(vec![1, 1, 2, 3, 5, 8]));
 //! }
 //! ```
-//! 
+//!
 //! ## Expression Reference
 //!
 //! ### Atoms
-//! 
+//!
 //!   * `"keyword"` - _Literal:_ match a literal string.
 //!   * `['0'..='9']`  - _Pattern:_ match a single element that matches a Rust `match`-style
 //!     pattern. [(details)](#match-expressions)
@@ -52,9 +52,9 @@
 //!   * `(e)` - _Parentheses:_ wrap an expression into a group to override
 //!     normal precedence. Returns the same value as the inner expression. (Use
 //!     an _Action_ block to set the return value for a sequence).
-//! 
+//!
 //! ### Combining
-//! 
+//!
 //!   * `e1 e2 e3` - _Sequence:_ match expressions in sequence (`e1` followed by `e2` followed by
 //!     `e3`), ignoring the return values.
 //!   * `a:e1 e2 b:e3 c:e4 { rust }` - _Action:_ match `e1`, `e2`, `e3`, `e4` in
@@ -71,7 +71,7 @@
 //!     parse error with the `&str` `e`.
 //!   * `e1 / e2 / e3` - _Ordered choice:_ try to match `e1`. If the match succeeds, return its
 //!     result, otherwise try `e2`, and so on.
-//! 
+//!
 //! ### Repetition
 //!   * `expression?` - _Optional:_ match zero or one repetitions of `expression`. Returns an
 //!     `Option`.
@@ -83,7 +83,7 @@
 //!     return the results as a `Vec`. [(details)](#repeat-ranges)
 //!   * `expression ** delim` - _Delimited repeat:_ match zero or more repetitions of `expression`
 //!     delimited with `delim` and return the results as a `Vec`.
-//! 
+//!
 //!  ### Special
 //!   * `$(e)` - _Slice:_ match the expression `e`, and return the slice of the input
 //!     corresponding to the match.
@@ -101,7 +101,7 @@
 //!     [(details)](#precedence-climbing)
 //!
 //! ## Expression details
-//! 
+//!
 //! ### Pattern expressions
 //!
 //! The `[pat]` syntax expands into a [Rust `match`
@@ -175,9 +175,9 @@
 //! As a more complex example, the body of the `peg::parser!{}` macro itself is
 //! parsed with `peg`, using a [definition of these traits][gh-flat-token-tree]
 //! for a type that wraps Rust's `TokenTree`.
-//! 
+//!
 //! [gh-flat-token-tree]: https://github.com/kevinmehall/rust-peg/blob/master/peg-macros/tokens.rs
-//! 
+//!
 //! ## Error reporting
 //!
 //! When a match fails, position information is automatically recorded to report a set of
@@ -237,26 +237,26 @@
 //! in any other Rust code.
 //!
 //! ## Caching
-//! 
+//!
 //! A `rule` without parameters can be prefixed with `#[cache]` if it is likely
 //! to be checked repeatedly in the same position. This memoizes the rule result
 //! as a function of input position, in the style of a [packrat
 //! parser][wp-peg-packrat].
-//! 
+//!
 //! [wp-peg-packrat]: https://en.wikipedia.org/wiki/Parsing_expression_grammar#Implementing_parsers_from_parsing_expression_grammars
-//! 
+//!
 //! However, idiomatic code avoids structures that parse the same input
 //! repeatedly, so the use of `#[cache]` is often not a performance win. Simple
 //! rules may also be faster to re-match than the additional cost of the hash
 //! table lookup and insert.
-//! 
+//!
 //! For example, a complex rule called `expr` might benefit from caching if used
 //! like `expr "x" / expr "y" / expr "z"`, but this could be rewritten to
 //! `expr ("x" / "y" / "z")` which would be even faster.
-//! 
+//!
 //! The `precedence!{}` syntax is another way to avoid repeatedly matching
 //! an expression rule.
-//! 
+//!
 //! ## Tracing
 //!
 //! If you pass the `peg/trace` feature to Cargo when building your project, a

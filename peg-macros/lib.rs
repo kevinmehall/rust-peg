@@ -1,6 +1,6 @@
-extern crate quote;
-extern crate proc_macro2;
 extern crate proc_macro;
+extern crate proc_macro2;
+extern crate quote;
 
 use quote::quote_spanned;
 
@@ -8,14 +8,14 @@ use quote::quote_spanned;
 // requires `::peg` paths.
 extern crate peg_runtime as peg;
 
-mod ast;
-mod tokens;
-mod grammar;
-mod translate;
 mod analysis;
+mod ast;
+mod grammar;
+mod tokens;
+mod translate;
 
 /// The main macro for creating a PEG parser.
-/// 
+///
 /// For the grammar syntax, see the `peg` crate documentation.
 #[proc_macro]
 pub fn parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

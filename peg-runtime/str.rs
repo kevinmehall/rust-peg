@@ -1,7 +1,7 @@
 //! Utilities for `str` input
 
+use super::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
 use std::fmt::Display;
-use super::{RuleResult, Parse, ParseElem, ParseLiteral, ParseSlice};
 
 /// Line and column within a string
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -24,13 +24,19 @@ impl Display for LineCol {
 
 impl Parse for str {
     type PositionRepr = LineCol;
-    fn start(&self) -> usize { 0 }
+    fn start(&self) -> usize {
+        0
+    }
 
     fn position_repr(&self, pos: usize) -> LineCol {
         let before = &self[..pos];
-		let line = before.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;
-		let column = before.chars().rev().take_while(|&c| c != '\n').count() + 1;
-		LineCol { line, column, offset: pos}
+        let line = before.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;
+        let column = before.chars().rev().take_while(|&c| c != '\n').count() + 1;
+        LineCol {
+            line,
+            column,
+            offset: pos,
+        }
     }
 }
 
@@ -40,7 +46,7 @@ impl ParseElem for str {
     fn parse_elem(&self, pos: usize) -> RuleResult<char> {
         match self[pos..].chars().next() {
             Some(c) => RuleResult::Matched(pos + c.len_utf8(), c),
-            None => RuleResult::Failed
+            None => RuleResult::Failed,
         }
     }
 }
@@ -48,8 +54,8 @@ impl ParseElem for str {
 impl ParseLiteral for str {
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
         let l = literal.len();
-        if self.len() >= pos + l && &self.as_bytes()[pos..pos+l] == literal.as_bytes() {
-            RuleResult::Matched(pos+l, ())
+        if self.len() >= pos + l && &self.as_bytes()[pos..pos + l] == literal.as_bytes() {
+            RuleResult::Matched(pos + l, ())
         } else {
             RuleResult::Failed
         }
