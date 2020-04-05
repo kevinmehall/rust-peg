@@ -24,6 +24,7 @@ impl Grammar {
 #[derive(Debug)]
 pub enum Item {
     Use(TokenStream),
+    MemberVariable(Ident, TokenStream),
     Rule(Rule),
 }
 

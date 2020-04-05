@@ -30,6 +30,7 @@ rule peg_rule() -> Rule
 
 rule item() -> Item
     = u:rust_use()     { Item::Use(u) }
+    / v:rust_var()     { v }
     / r:peg_rule()     { Item::Rule(r) }
 
 rule rust_doc_comment() -> Option<TokenStream> = $("#" "[" "doc" "=" LITERAL() "]")?
@@ -42,6 +43,9 @@ rule rust_use() -> TokenStream
         / "::" "{" ((IDENT() ("as" IDENT())?) ++ ",") "}"
         / ("as" IDENT())?
     ) ";") { v.to_owned() }
+
+rule rust_var() -> Item
+    = name: IDENT() ":" rt:$(rust_type()) ";" { Item::MemberVariable(name, rt.to_owned()) }
 
 rule rust_path()
     = ("crate" "::")? IDENT() ++ "::"

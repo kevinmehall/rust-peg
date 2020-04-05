@@ -56,6 +56,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     for item in &grammar.items {
         match item {
             Item::Use(tt) => items.push(tt.clone()),
+            Item::MemberVariable(_, _) => { /* do nothing */ }
             Item::Rule(rule) => {
                 if seen_rule_names.insert(rule.name.to_string()) {
                     if rule.cached && !(rule.params.is_empty() && rule.ty_params.is_none()) {
@@ -111,18 +112,33 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 fn make_parse_state(grammar: &Grammar) -> TokenStream {
     let mut cache_fields_def: Vec<TokenStream> = Vec::new();
     let mut cache_fields: Vec<Ident> = Vec::new();
-    for rule in grammar.iter_rules() {
-        if rule.cached {
-            let name = format_ident!("{}_cache", rule.name);
-            let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
-            cache_fields_def.push(quote!{ #name: ::std::collections::HashMap<usize, ::peg::RuleResult<#ret_ty>> });
-            cache_fields.push(name);
+    let mut user_var_defs: Vec<TokenStream> = Vec::new();
+    let mut user_var_inits: Vec<TokenStream> = Vec::new();
+
+    for item in &grammar.items {
+        match item {
+            Item::Rule(rule) => {
+                if rule.cached {
+                    let name = format_ident!("{}_cache", rule.name);
+                    let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
+                    cache_fields_def.push(quote!{ #name: ::std::collections::HashMap<usize, ::peg::RuleResult<#ret_ty>> });
+                    cache_fields.push(name);
+                }
+            }
+            Item::MemberVariable(name, ty) => {
+                user_var_defs.push(quote!{ #name: #ty });
+                user_var_inits.push(quote!{ #name: Default::default() });
+            }
+            Item::Use(_) => {
+                // Do nothing
+            }
         }
     }
 
     quote! {
         struct ParseState<'input> {
             _phantom: ::std::marker::PhantomData<&'input ()>,
+            #(#user_var_defs),*
             #(#cache_fields_def),*
         }
 
@@ -130,6 +146,7 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
             fn new() -> ParseState<'input> {
                 ParseState {
                     _phantom: ::std::marker::PhantomData,
+                    #(#user_var_inits),*
                     #(#cache_fields: ::std::collections::HashMap::new()),*
                 }
             }
