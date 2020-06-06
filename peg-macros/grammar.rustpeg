@@ -32,7 +32,7 @@ rule item() -> Item
     = u:rust_use()     { Item::Use(u) }
     / r:peg_rule()     { Item::Rule(r) }
 
-rule rust_doc_comment() -> Option<TokenStream> = $("#" "[" "doc" "=" LITERAL() "]")?
+rule rust_doc_comment() -> Option<TokenStream> = $(("#" "[" "doc" "=" LITERAL() "]")*)?
 
 rule rust_visibility() -> Option<TokenStream> = $("pub" PAREN_GROUP()? / "crate")?
 
