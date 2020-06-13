@@ -12,6 +12,7 @@ parser!{
 /// Doc comment
 grammar arithmetic() for str {
     /// Top level parser rule
+    /// This doc comment has multiple lines to test support for that as well
     pub rule expression() -> Expression
         = sum()
 
