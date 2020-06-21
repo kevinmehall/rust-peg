@@ -81,7 +81,6 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
                 }
             }
         }
-        
     }
 
     let doc = &grammar.doc;
@@ -239,6 +238,20 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let extra_args_def = &context.extra_args_def;
     let extra_args_call = &context.extra_args_call;
 
+    let matched_action = if rule.nonexhaustive {
+        quote! {
+            return Ok(__value)
+        }
+    } else {
+        quote! {
+            if __pos == __input.len() {
+                return Ok(__value)
+            } else {
+                __err_state.mark_failure(__pos, "EOF");
+            }
+        }
+    };
+
     quote! {
         #doc
         #visibility fn #name<'input #(, #ty_params)*>(__input: &'input Input #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr>> {
@@ -248,11 +261,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
             let mut __state = ParseState::new();
             match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call #(, #rule_params_call)*) {
                 ::peg::RuleResult::Matched(__pos, __value) => {
-                    if __pos == __input.len() {
-                        return Ok(__value)
-                    } else {
-                        __err_state.mark_failure(__pos, "EOF");
-                    }
+                    #matched_action
                 }
                 _ => ()
             }
