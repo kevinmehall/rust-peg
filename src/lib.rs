@@ -1,25 +1,45 @@
-//! `rust-peg` is a simple yet flexible parser generator based on the [Parsing Expression
-//! Grammar][wikipedia-peg] formalism. It provides the `parser!{}` macro that builds a recursive
-//! descent parser from a concise definition of the grammar.
+//! `rust-peg` is a simple yet flexible parser generator that makes it easy to
+//! write robust parsers. Based on the [Parsing Expression
+//! Grammar][wikipedia-peg] formalism, it provides a Rust macro that builds a
+//! recursive descent parser from a concise definition of the grammar. 
 //!
 //! [wikipedia-peg]: https://en.wikipedia.org/wiki/Parsing_expression_grammar
 //!
-//! The `parser!{}` macro encloses a `grammar` definition and expands to a Rust
-//! `mod`. The `grammar` contains a set of `rule`s which match components of your language.
-//! 
-//! Rules can accept parameters and optionally return a value when they match. A
-//! `rule` not marked `pub` can only be called from other rules within the
-//! grammar.
-//! 
-//! Each `rule` marked `pub` expands to a function in the module. To parse an
-//! input, call this function, passing a reference to the input sequence, along
-//! with any additional parameters defined on the `rule`. The call returns a
-//! `Result<T, ParseError>` carrying either the successfully parsed value, or a
-//! `ParseError` containing the failure position and the set of tokens expected
-//! there.
-//! 
+//! ## Features
+//!
+//! * Parse input from `&str`, `&[u8]`, `&[T]` or custom types implementing
+//!   traits
+//! * Customizable reporting of parse errors
+//! * Rules can accept arguments to create reusable rule templates
+//! * Precedence climbing for prefix/postfix/infix expressions
+//! * Helpful `rustc` error messages for errors in the grammar definition or the
+//!   Rust code embedded within it
+//! * Rule-level tracing to debug grammars
+//!
+//! ## Overview 
+//!
+//! The `peg::parser!{}` macro encloses a `grammar NAME() for INPUT_TYPE { ...
+//! }` definition containing a set of rules which match components of your
+//! language.
+//!
+//! Rules are defined with `rule NAME(PARAMETERS) -> RETURN_TYPE = PEG_EXPR`.
 //! The body of the rule, following the `=`, is a PEG expression, definining how
 //! the input is matched to produce a value.
+//!
+//! PEG expressions are evaluated at a particular position of the input. When an
+//! expression matches, it advances the position and optionally returns a value.
+//! The expression syntax and behavior is [documented
+//! below](#expression-reference).
+//!
+//! The macro expands to a Rust `mod` containing a function for each rule marked
+//! `pub` in the grammar. To parse an input sequence, call one of these
+//! functions. The call returns a `Result<T, ParseError>` carrying either the
+//! successfully parsed value returned by the rule, or a `ParseError` containing
+//! the failure position and the set of tokens expected there.
+//!
+//! ## Example
+//!
+//! Parse a comma-separated list of numbers surrounded by brackets into a `Vec<u32>`:
 //! 
 //! ```rust
 //! peg::parser!{

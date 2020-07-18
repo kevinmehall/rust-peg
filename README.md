@@ -2,7 +2,7 @@
 
 [Documentation](https://docs.rs/peg) | [Release Notes](https://github.com/kevinmehall/rust-peg/releases)
 
-`rust-peg` is a simple yet flexible parser generator based on the [Parsing Expression Grammar](https://en.wikipedia.org/wiki/Parsing_expression_grammar) formalism. It provides a Rust macro that builds a recursive descent parser from a concise definition of the grammar.
+`rust-peg` is a simple yet flexible parser generator that makes it easy to write robust parsers. Based on the [Parsing Expression Grammar](https://en.wikipedia.org/wiki/Parsing_expression_grammar) formalism, it provides a Rust macro that builds a recursive descent parser from a concise definition of the grammar. 
 
 ## Features
 
@@ -15,6 +15,8 @@
 * Rule-level tracing to debug grammars
 
 ## Example
+
+Parse a comma-separated list of numbers surrounded by brackets into a `Vec<u32>`:
 
 ```rust
 peg::parser!{
@@ -37,7 +39,7 @@ pub fn main() {
 
 ## Comparison with similar parser generators
 
-| crate     	| parser type 	| action code 	| integration        	| input type             	| precedence climbing 	| parameterizd rules 	| streaming input 	|
+| crate     	| parser type 	| action code 	| integration        	| input type             	| precedence climbing 	| parameterized rules 	| streaming input 	|
 |-----------	|-------------	|-------------	|--------------------	|------------------------	|---------------------	|--------------------	|-----------------	|
 | peg       	| PEG         	| in grammar  	| proc macro (block) 	| `&str`, `&[T]`, custom 	| Yes                 	| Yes                	| No              	|
 | [pest]    	| PEG         	| external    	| proc macro (file)  	| `&str`                 	| Yes                 	| No                 	| No              	|
