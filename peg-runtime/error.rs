@@ -1,8 +1,8 @@
 //! Parse error reporting
 
-use std::fmt::{ self, Display, Debug };
-use crate::{ RuleResult, Parse };
+use crate::{Parse, RuleResult};
 use std::collections::HashSet;
+use std::fmt::{self, Debug, Display};
 
 /// A set of literals or names that failed to match
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -19,7 +19,7 @@ impl ExpectedSet {
 
 impl Display for ExpectedSet {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-         if self.expected.is_empty() {
+        if self.expected.is_empty() {
             write!(fmt, "<unreported>")?;
         } else if self.expected.len() == 1 {
             write!(fmt, "{}", self.expected.iter().next().unwrap())?;
@@ -50,7 +50,11 @@ pub struct ParseError<L> {
 
 impl<L: Display> Display for ParseError<L> {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
-        write!(fmt, "error at {}: expected {}", self.location, self.expected)
+        write!(
+            fmt,
+            "error at {}: expected {}",
+            self.location, self.expected
+        )
     }
 }
 
@@ -74,7 +78,9 @@ impl ErrorState {
             max_err_pos: initial_pos,
             suppress_fail: 0,
             reparsing_on_error: false,
-            expected: ExpectedSet { expected: HashSet::new() },
+            expected: ExpectedSet {
+                expected: HashSet::new(),
+            },
         }
     }
 

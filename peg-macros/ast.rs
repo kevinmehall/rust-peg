@@ -1,4 +1,4 @@
-use proc_macro2::{ TokenStream, Ident, Literal };
+use proc_macro2::{Ident, Literal, TokenStream};
 
 #[derive(Debug)]
 pub struct Grammar {
@@ -11,12 +11,10 @@ pub struct Grammar {
 }
 
 impl Grammar {
-    pub fn iter_rules(&self) -> impl Iterator<Item=&Rule> {
-        self.items.iter().filter_map(|item| {
-            match item {
-                Item::Rule(r) => Some(r),
-                _ => None
-            }
+    pub fn iter_rules(&self) -> impl Iterator<Item = &Rule> {
+        self.items.iter().filter_map(|item| match item {
+            Item::Rule(r) => Some(r),
+            _ => None,
         })
     }
 }
@@ -68,12 +66,18 @@ pub enum Expr {
     Repeat(Box<Expr>, BoundedRepeat, /*sep*/ Option<Box<Expr>>),
     PosAssertExpr(Box<Expr>),
     NegAssertExpr(Box<Expr>),
-    ActionExpr(Vec<TaggedExpr>, /*action*/ Option<TokenStream>, /*cond*/ bool),
+    ActionExpr(
+        Vec<TaggedExpr>,
+        /*action*/ Option<TokenStream>,
+        /*cond*/ bool,
+    ),
     MatchStrExpr(Box<Expr>),
     PositionExpr,
     QuietExpr(Box<Expr>),
     FailExpr(Literal),
-    PrecedenceExpr{ levels: Vec<PrecedenceLevel> },
+    PrecedenceExpr {
+        levels: Vec<PrecedenceLevel>,
+    },
     MarkerExpr(bool),
 }
 

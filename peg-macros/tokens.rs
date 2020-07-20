@@ -1,9 +1,9 @@
-use proc_macro2::{ TokenStream, TokenTree, Ident, Group, Punct, Literal, Delimiter, Span, Spacing };
-use peg::{RuleResult, Parse, ParseElem, ParseLiteral, ParseSlice};
+use peg::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
+use proc_macro2::{Delimiter, Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree};
 
 #[derive(Debug, Clone)]
 pub struct FlatTokenStream {
-    tokens: Vec<Token>
+    tokens: Vec<Token>,
 }
 
 #[derive(Debug, Clone)]
@@ -12,7 +12,7 @@ pub enum Token {
     Literal(Literal),
     Punct(Punct),
     Begin(Group, usize),
-    End(Delimiter, Span)
+    End(Delimiter, Span),
 }
 
 impl FlatTokenStream {
@@ -46,25 +46,29 @@ impl FlatTokenStream {
         FlatTokenStream { tokens }
     }
 
-    pub fn len(&self) -> usize { self.tokens.len() } //TODO
+    pub fn len(&self) -> usize {
+        self.tokens.len()
+    } //TODO
 
     pub fn ident(&self, pos: usize) -> RuleResult<Ident> {
         match self.tokens.get(pos) {
-            Some(Token::Ident(i)) => RuleResult::Matched(pos+1, i.clone()),
+            Some(Token::Ident(i)) => RuleResult::Matched(pos + 1, i.clone()),
             _ => RuleResult::Failed,
         }
     }
 
     pub fn literal(&self, pos: usize) -> RuleResult<Literal> {
         match self.tokens.get(pos) {
-            Some(Token::Literal(i)) => RuleResult::Matched(pos+1, i.clone()),
+            Some(Token::Literal(i)) => RuleResult::Matched(pos + 1, i.clone()),
             _ => RuleResult::Failed,
         }
     }
 
     pub fn group(&self, pos: usize, delim: Delimiter) -> RuleResult<TokenStream> {
         match self.tokens.get(pos) {
-            Some(Token::Begin(g, n)) if g.delimiter() == delim => RuleResult::Matched(*n, g.stream()),
+            Some(Token::Begin(g, n)) if g.delimiter() == delim => {
+                RuleResult::Matched(*n, g.stream())
+            }
             _ => RuleResult::Failed,
         }
     }
@@ -100,16 +104,21 @@ impl ::std::fmt::Display for Sp {
 
 impl Parse for FlatTokenStream {
     type PositionRepr = Sp;
-    fn start(&self) -> usize { 0 }
+    fn start(&self) -> usize {
+        0
+    }
 
     fn position_repr(&self, pos: usize) -> Sp {
-        Sp(match &self.tokens[pos] {
-            Token::Ident(i) => i.span(),
-            Token::Literal(l) => l.span(),
-            Token::Punct(p) => p.span(),
-            Token::Begin(g, _) => g.span(),
-            Token::End(_, span) => span.clone()
-        }, pos)
+        Sp(
+            match &self.tokens[pos] {
+                Token::Ident(i) => i.span(),
+                Token::Literal(l) => l.span(),
+                Token::Punct(p) => p.span(),
+                Token::Begin(g, _) => g.span(),
+                Token::End(_, span) => span.clone(),
+            },
+            pos,
+        )
     }
 }
 
@@ -119,7 +128,7 @@ impl ParseElem for FlatTokenStream {
     fn parse_elem(&self, pos: usize) -> RuleResult<Token> {
         match self.tokens.get(pos) {
             Some(c) => RuleResult::Matched(pos + 1, c.clone()),
-            None => RuleResult::Failed
+            None => RuleResult::Failed,
         }
     }
 }
@@ -129,7 +138,7 @@ fn delimiter_start(d: Delimiter) -> &'static str {
         Delimiter::Brace => "{",
         Delimiter::Bracket => "[",
         Delimiter::Parenthesis => "(",
-        _ => ""
+        _ => "",
     }
 }
 
@@ -138,7 +147,7 @@ fn delimiter_end(d: Delimiter) -> &'static str {
         Delimiter::Brace => "}",
         Delimiter::Bracket => "]",
         Delimiter::Parenthesis => ")",
-        _ => ""
+        _ => "",
     }
 }
 
@@ -150,14 +159,18 @@ impl ParseLiteral for FlatTokenStream {
                 if literal.len() == 1 {
                     RuleResult::Matched(pos + 1, ())
                 } else if p.spacing() == Spacing::Joint {
-                    self.parse_string_literal(pos+1, &literal[1..])
+                    self.parse_string_literal(pos + 1, &literal[1..])
                 } else {
                     RuleResult::Failed
                 }
-            },
-            Some(Token::Begin(g, _)) if delimiter_start(g.delimiter()) == literal => RuleResult::Matched(pos + 1, ()),
-            Some(Token::End(d, _)) if delimiter_end(*d) == literal => RuleResult::Matched(pos + 1, ()),
-            _ => RuleResult::Failed
+            }
+            Some(Token::Begin(g, _)) if delimiter_start(g.delimiter()) == literal => {
+                RuleResult::Matched(pos + 1, ())
+            }
+            Some(Token::End(d, _)) if delimiter_end(*d) == literal => {
+                RuleResult::Matched(pos + 1, ())
+            }
+            _ => RuleResult::Failed,
         }
     }
 }
@@ -170,11 +183,11 @@ impl<'input> ParseSlice<'input> for FlatTokenStream {
 
         while pos < p2 {
             let (t, next_pos): (TokenTree, usize) = match &self.tokens[pos] {
-                Token::Ident(i) => (i.clone().into(), pos+1),
-                Token::Literal(l) => (l.clone().into(), pos+1),
-                Token::Punct(p) => (p.clone().into(), pos+1),
+                Token::Ident(i) => (i.clone().into(), pos + 1),
+                Token::Literal(l) => (l.clone().into(), pos + 1),
+                Token::Punct(p) => (p.clone().into(), pos + 1),
                 Token::Begin(g, end) => (g.clone().into(), *end),
-                Token::End(..) => panic!("$-expr containing unmatched group end")
+                Token::End(..) => panic!("$-expr containing unmatched group end"),
             };
             ts.extend(Some(t));
             pos = next_pos;

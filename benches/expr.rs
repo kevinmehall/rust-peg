@@ -23,10 +23,10 @@ rule atom() = ['0'..='9']+ / "(" expr() ")"
 
 #[bench]
 fn expr(b: &mut Bencher) {
-	let bench_str = "1+2+3+4*5*6^7^8^(0^1*2+1)";
+    let bench_str = "1+2+3+4*5*6^7^8^(0^1*2+1)";
 
-	b.bytes = bench_str.len() as u64;
-	b.iter(|| {
-		parser::expr(bench_str).unwrap();
-	});
+    b.bytes = bench_str.len() as u64;
+    b.iter(|| {
+        parser::expr(bench_str).unwrap();
+    });
 }
