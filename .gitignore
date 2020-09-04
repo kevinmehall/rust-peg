@@ -1,7 +1,5 @@
 *~
 target
-Cargo.lock
-
 peg-macros/grammar_new.rs
 peg-macros/grammar_old.rs
 peg-macros/grammar.rs
