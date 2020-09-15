@@ -6,6 +6,7 @@ license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
 description = "Procedural macros for rust-peg. To use rust-peg, see the `peg` crate."
 edition = "2018"
+include = [ "../LICENSE" ]
 
 [dependencies]
 quote = "1.0"

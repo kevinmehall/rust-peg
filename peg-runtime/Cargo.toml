@@ -6,6 +6,7 @@ license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
 description = "Runtime support for rust-peg grammars. To use rust-peg, see the `peg` crate."
 edition = "2018"
+include = [ "../LICENSE" ]
 
 [lib]
 path = "lib.rs"
