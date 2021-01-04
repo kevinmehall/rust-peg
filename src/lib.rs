@@ -141,6 +141,9 @@
 //!
 //! If your input type is a slice of an enum type, a pattern could match an enum variant like
 //! `[Token::Operator('+')]`.
+//! 
+//! Variables captured by the pattern are accessible in a subsequent action
+//! block: `[Token::Integer(i)] { i }`
 //!
 //! `[_]` matches any single element. As this always matches except at end-of-file, combining it
 //! with negative lookahead as `![_]` is the idiom for matching EOF in PEG.

@@ -1,4 +1,4 @@
-use proc_macro2::{Group, Ident, Span, TokenStream, TokenTree};
+use proc_macro2::{Group, Ident, Literal, Span, TokenStream, TokenTree};
 use std::collections::{HashMap, HashSet};
 
 use quote::{format_ident, quote, quote_spanned};
@@ -328,54 +328,79 @@ fn ordered_choice(mut rs: impl DoubleEndedIterator<Item = TokenStream>) -> Token
 
 fn labeled_seq(context: &Context, exprs: &[TaggedExpr], inner: TokenStream) -> TokenStream {
     exprs.iter().rfold(inner, |then, expr| {
-        let value_name = expr.name.as_ref();
-        let name_pat = name_or_ignore(value_name);
-
-        let seq_res = compile_expr(context, &expr.expr, value_name.is_some());
-
-        quote! {{
-            let __seq_res = #seq_res;
-            match __seq_res {
-                ::peg::RuleResult::Matched(__pos, #name_pat) => { #then }
-                ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
-            }
-        }}
+        compile_expr_continuation(context, &expr.expr, expr.name.as_ref(), then)
     })
+}
+
+fn compile_expr_continuation(context: &Context, e: &Expr, result_name: Option<&Ident>, continuation: TokenStream) -> TokenStream {
+    let result_pat = name_or_ignore(result_name);
+    match e {
+        LiteralExpr(ref s) => {
+            compile_literal_expr(s, continuation)
+        }
+
+        PatternExpr(ref pattern) => {
+            compile_pattern_expr(pattern, quote_spanned!{ pattern.span() =>
+                { let __pos = __next; let #result_pat = (); { #continuation } }
+            })
+        }
+
+        e => {
+            let seq_res = compile_expr(context, e, result_name.is_some());
+            quote! {{
+                let __seq_res = #seq_res;
+                match __seq_res {
+                    ::peg::RuleResult::Matched(__pos, #result_pat) => { #continuation }
+                    ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                }
+            }}
+        }
+    }
+}
+
+fn compile_literal_expr(s: &Literal, continuation: TokenStream) -> TokenStream {
+    let escaped_str = s.to_string();
+    quote_spanned! { s.span() => 
+            match ::peg::ParseLiteral::parse_string_literal(__input, __pos, #s) {
+            ::peg::RuleResult::Matched(__pos, __val) => { #continuation }
+            ::peg::RuleResult::Failed => { __err_state.mark_failure(__pos, #escaped_str); ::peg::RuleResult::Failed }
+        }
+    }
+}
+
+fn compile_pattern_expr(pattern_group: &Group, success_res: TokenStream) -> TokenStream {
+    let pat_str = pattern_group.to_string();
+    let failure_res = quote! { { __err_state.mark_failure(__pos, #pat_str); ::peg::RuleResult::Failed } };
+
+    let (pattern, in_set, not_in_set) = if let Some(pattern) = group_check_prefix(pattern_group, '^') {
+        (pattern, failure_res, success_res)
+    } else {
+        (pattern_group.stream(), success_res, failure_res)
+    };
+
+    quote_spanned! { pattern_group.span() =>
+        match ::peg::ParseElem::parse_elem(__input, __pos) {
+            ::peg::RuleResult::Matched(__next, __ch) => match __ch {
+                #pattern => #in_set,
+                _ => #not_in_set,
+            }
+            ::peg::RuleResult::Failed => { __err_state.mark_failure(__pos, #pat_str); ::peg::RuleResult::Failed }
+        }
+    }
 }
 
 fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
     match e {
         LiteralExpr(ref s) => {
-            let escaped_str = s.to_string();
-            quote! { match ::peg::ParseLiteral::parse_string_literal(__input, __pos, #s) {
-                ::peg::RuleResult::Matched(__pos, __val) => ::peg::RuleResult::Matched(__pos, __val),
-                ::peg::RuleResult::Failed => __err_state.mark_failure(__pos, #escaped_str)
-            }}
+            compile_literal_expr(s, quote_spanned! { s.span() =>
+                 ::peg::RuleResult::Matched(__pos, __val)
+            })
         }
 
         PatternExpr(ref pattern_group) => {
-            let pat_str = pattern_group.to_string();
-
-            let success_res = quote! { ::peg::RuleResult::Matched(__next, ()) };
-            let failure_res = quote! { __err_state.mark_failure(__pos, #pat_str) };
-
-            let (pattern, in_set, not_in_set) = if let Some(pattern) = group_check_prefix(pattern_group, '^') {
-                (pattern, failure_res, success_res)
-            } else {
-                (pattern_group.stream(), success_res, failure_res)
-            };
-
-            let in_set_arm = quote!( #pattern => #in_set, );
-
-            quote! {
-                match ::peg::ParseElem::parse_elem(__input, __pos) {
-                    ::peg::RuleResult::Matched(__next, __ch) => match __ch {
-                        #in_set_arm
-                        _ => #not_in_set,
-                    }
-                    ::peg::RuleResult::Failed => __err_state.mark_failure(__pos, #pat_str)
-                }
-            }
+            compile_pattern_expr(pattern_group, quote_spanned! { pattern_group.span() =>
+                ::peg::RuleResult::Matched(__next, ())
+            })
         }
 
         RuleExpr(ref rule_name, ref rule_args)
