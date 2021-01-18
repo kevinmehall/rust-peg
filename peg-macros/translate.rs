@@ -613,7 +613,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
         ActionExpr(ref exprs, ref code, is_cond) => labeled_seq(context, &exprs, {
             if *is_cond {
                 quote! {
-                    match { #code } {
+                    match (||{ #code })() {
                         Ok(res) => ::peg::RuleResult::Matched(__pos, res),
                         Err(expected) => {
                             __err_state.mark_failure(__pos, expected);
@@ -622,7 +622,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                     }
                 }
             } else {
-                quote! { ::peg::RuleResult::Matched(__pos, { #code }) }
+                quote! { ::peg::RuleResult::Matched(__pos, (||{ #code })()) }
             }
         }),
         MatchStrExpr(ref expr) => {
