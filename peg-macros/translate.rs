@@ -1,4 +1,4 @@
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::{Group, Ident, Span, TokenStream, TokenTree};
 use std::collections::{HashMap, HashSet};
 
 use quote::{format_ident, quote, quote_spanned};
@@ -351,8 +351,9 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
             }}
         }
 
-        PatternExpr(ref pattern) => {
+        PatternExpr(ref pattern_group) => {
             let invert = false;
+            let pattern = pattern_group.stream();
             let pat_str = pattern.to_string();
 
             let (in_set, not_in_set) = cond_swap(
@@ -610,19 +611,29 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
             }}
         }
 
-        ActionExpr(ref exprs, ref code, is_cond) => labeled_seq(context, &exprs, {
-            if *is_cond {
-                quote! {
-                    match (||{ #code })() {
-                        Ok(res) => ::peg::RuleResult::Matched(__pos, res),
-                        Err(expected) => {
-                            __err_state.mark_failure(__pos, expected);
-                            ::peg::RuleResult::Failed
-                        },
+        ActionExpr(ref exprs, ref code) => labeled_seq(context, &exprs, {
+            if let Some(code) = code {
+                // Peek and see if the first token in the code is '?'. If so, it's a conditional block
+                let mut ts = code.stream().into_iter();
+                match ts.next() {
+                    Some(TokenTree::Punct(p)) if p.as_char() == '?' => {
+                        let body: TokenStream = ts.collect();
+                        quote_spanned!{code.span()=>
+                            match (||{ #body })() {
+                                Ok(res) => ::peg::RuleResult::Matched(__pos, res),
+                                Err(expected) => {
+                                    __err_state.mark_failure(__pos, expected);
+                                    ::peg::RuleResult::Failed
+                                },
+                            }
+                        }
+                    },
+                    _ => {
+                        quote_spanned!{code.span() => ::peg::RuleResult::Matched(__pos, (||#code)()) }
                     }
                 }
             } else {
-                quote! { ::peg::RuleResult::Matched(__pos, (||{ #code })()) }
+                quote!(::peg::RuleResult::Matched(__pos, ()))
             }
         }),
         MatchStrExpr(ref expr) => {
@@ -654,7 +665,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
         PrecedenceExpr { ref levels } => {
             let mut pre_rules = Vec::new();
             let mut level_code = Vec::new();
-            let mut span_capture = None;
+            let mut span_capture: Option<(TokenStream, TokenStream, TokenStream, &Group)> = None;
 
             for (prec, level) in levels.iter().enumerate() {
                 let prec = prec as i32;
@@ -673,12 +684,14 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                     let r_arg = name_or_ignore(right_arg.name.as_ref());
 
                     let action = &op.action;
+                    let action = quote_spanned!(op.action.span()=>(||#action)());
+
                     let action = if let Some((lpos_name, val_name, rpos_name, wrap_action)) =
                         &span_capture
                     {
-                        quote!((|#lpos_name, #val_name, #rpos_name| {#wrap_action})(__lpos, #action, __pos))
+                        quote_spanned!(wrap_action.span()=> (|#lpos_name, #val_name, #rpos_name|#wrap_action)(__lpos, #action, __pos))
                     } else {
-                        quote!({#action})
+                        action
                     };
 
                     match (&left_arg.expr, &right_arg.expr) {

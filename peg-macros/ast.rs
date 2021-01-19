@@ -1,4 +1,4 @@
-use proc_macro2::{Ident, Literal, TokenStream};
+use proc_macro2::{Ident, Literal, Group, TokenStream};
 
 #[derive(Debug)]
 pub struct Grammar {
@@ -58,7 +58,7 @@ pub struct TaggedExpr {
 #[derive(Debug, Clone)]
 pub enum Expr {
     LiteralExpr(Literal),
-    PatternExpr(TokenStream),
+    PatternExpr(Group),
     RuleExpr(Ident, Vec<RuleArg>),
     MethodExpr(Ident, TokenStream),
     ChoiceExpr(Vec<Expr>),
@@ -66,11 +66,7 @@ pub enum Expr {
     Repeat(Box<Expr>, BoundedRepeat, /*sep*/ Option<Box<Expr>>),
     PosAssertExpr(Box<Expr>),
     NegAssertExpr(Box<Expr>),
-    ActionExpr(
-        Vec<TaggedExpr>,
-        /*action*/ Option<TokenStream>,
-        /*cond*/ bool,
-    ),
+    ActionExpr(Vec<TaggedExpr>, Option<Group>),
     MatchStrExpr(Box<Expr>),
     PositionExpr,
     QuietExpr(Box<Expr>),
@@ -95,7 +91,7 @@ pub struct PrecedenceLevel {
 #[derive(Debug, Clone)]
 pub struct PrecedenceOperator {
     pub elements: Vec<TaggedExpr>,
-    pub action: TokenStream,
+    pub action: Group,
 }
 
 #[derive(Debug, Clone)]

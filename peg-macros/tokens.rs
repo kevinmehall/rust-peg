@@ -64,32 +64,13 @@ impl FlatTokenStream {
         }
     }
 
-    pub fn group(&self, pos: usize, delim: Delimiter) -> RuleResult<TokenStream> {
+    pub fn group(&self, pos: usize, delim: Delimiter) -> RuleResult<Group> {
         match self.tokens.get(pos) {
             Some(Token::Begin(g, n)) if g.delimiter() == delim => {
-                RuleResult::Matched(*n, g.stream())
+                RuleResult::Matched(*n, g.clone())
             }
             _ => RuleResult::Failed,
         }
-    }
-
-    pub fn group_body(&self, mut pos: usize) -> RuleResult<TokenStream> {
-        let mut r: Vec<TokenTree> = Vec::new();
-        while let Some(t) = self.tokens.get(pos) {
-            match t {
-                Token::Ident(i) => r.push(i.clone().into()),
-                Token::Literal(i) => r.push(i.clone().into()),
-                Token::Punct(i) => r.push(i.clone().into()),
-                Token::Begin(g, n) => {
-                    r.push(g.clone().into());
-                    pos = *n;
-                    continue;
-                }
-                Token::End(..) => break,
-            }
-            pos += 1;
-        }
-        RuleResult::Matched(pos, r.into_iter().collect())
     }
 }
 
