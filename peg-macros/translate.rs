@@ -134,23 +134,43 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
 
     let (trace_def, trace_set, trace_push_pop) = if cfg!(feature = "trace") {
         (
-            quote! { __trace_depth: usize, },
-            quote! { __trace_depth: 1, },
+            quote! { __trace_depth: usize, __trace_want_prefix: bool, __trace_follows_start: bool, },
+            quote! { __trace_depth: 0, __trace_want_prefix: true, __trace_follows_start: false, },
             quote! {
-                fn __indent_depth(&self) -> usize {
-                    self.__trace_depth
-                }
-                fn __trace_print(&self) {
-                    print!("[PEG_TRACE]");
-                    for _ in 0..self.__trace_depth {
-                        print!(" ");
+                fn __trace_print_impl(&mut self) {
+                    if self.__trace_want_prefix {
+                        if self.__trace_follows_start {
+                            print!(" {{\n");
+                        }
+                        print!("[PEG_TRACE] ");
+                        for _ in 0..self.__trace_depth {
+                            print!("  ");
+                        }
                     }
                 }
-                fn __trace_push(&mut self) {
+                fn __trace_print(&mut self) {
+                    self.__trace_want_prefix = true;
+                    self.__trace_print_impl();
+                    self.__trace_follows_start = false;
+                    self.__trace_want_prefix = true;
+                }
+                fn __trace_print_start(&mut self) {
+                    self.__trace_want_prefix = true;
+                    self.__trace_print_impl();
+                    self.__trace_follows_start = true;
+                    self.__trace_want_prefix = false;
                     self.__trace_depth += 1;
                 }
-                fn __trace_pop(&mut self) {
+                fn __trace_print_end(&mut self) {
                     self.__trace_depth -= 1;
+                    self.__trace_print_impl();
+                    if self.__trace_want_prefix {
+                        print!("}} ");
+                    } else {
+                        print!(", ");
+                    }
+                    self.__trace_follows_start = false;
+                    self.__trace_want_prefix = true;
                 }
             },
         )
@@ -212,20 +232,19 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         let str_rule_name = rule_name.to_string();
         quote! {{
             let loc = ::peg::Parse::position_repr(__input, __pos);
-            let indent = __state.__indent_depth();
-            __state.__trace_print();
-            println!("Attempting to match rule `{}` at {} {{", #str_rule_name, loc);
+            __state.__trace_print_start();
+            print!("Attempting rule `{}` at {}", #str_rule_name, loc);
             let __peg_result: ::peg::RuleResult<#ret_ty> = {#body};
             match __peg_result {
                 ::peg::RuleResult::Matched(epos, v) => {
                     let eloc = ::peg::Parse::position_repr(__input, epos);
-                    __state.__trace_print();
-                    println!("}} Matched rule `{}` at {} to {}", #str_rule_name, loc, eloc);
+                    __state.__trace_print_end();
+                    println!("matched `{}` from {} to {}", #str_rule_name, loc, eloc);
                     ::peg::RuleResult::Matched(epos, v)
                 }
                 ::peg::RuleResult::Failed => {
-                    __state.__trace_print();
-                    println!("}} Failed to match rule `{}` at {}", #str_rule_name, loc);
+                    __state.__trace_print_end();
+                    println!("failed `{}` at {}", #str_rule_name, loc);
                     ::peg::RuleResult::Failed
                 }
             }
@@ -429,14 +448,7 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                 );
             }
 
-            let rule_name_call = quote! { #rule_name(__input, __state, __err_state, __pos) };
-            if cfg!(feature = "trace") {
-                quote! { 
-                    (__state.__trace_push(), #rule_name_call, __state.__trace_pop()).1
-                }
-            } else {
-                rule_name_call
-            }
+            quote! { #rule_name(__input, __state, __err_state, __pos) }
         }
 
         RuleExpr(ref rule_name, ref rule_args) => {
@@ -511,11 +523,6 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 
             let call_func = quote! { 
                 #func(__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*)
-            };
-            let call_func = if cfg!(feature = "trace") {
-                quote! { (__state.__trace_push(), #call_func, __state.__trace_pop()).1 }
-            } else {
-                call_func
             };
             if result_used {
                 call_func
