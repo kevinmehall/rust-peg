@@ -103,6 +103,10 @@
 //!     return the results as a `Vec`. [(details)](#repeat-ranges)
 //!   * `expression ** delim` - _Delimited repeat:_ match zero or more repetitions of `expression`
 //!     delimited with `delim` and return the results as a `Vec`.
+//!   * `expression **<n,m> delim` - _Delimited repeat (range):_ match between `n` and `m` repetitions of `expression`
+//!     delimited with `delim` and return the results as a `Vec`. [(details)](#repeat-ranges)
+//!   * `expression ++ delim` - _Delimited repeat (one or more):_ match one or more repetitions of `expression`
+//!     delimited with `delim` and return the results as a `Vec`.
 //!
 //!  ### Special
 //!   * `$(e)` - _Slice:_ match the expression `e`, and return the slice of the input
