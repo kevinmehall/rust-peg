@@ -16,6 +16,17 @@ pub fn report_error_expr(span: Span, msg: String) -> TokenStream {
     quote_spanned!(span=> { compile_error!(#msg); panic!() })
 }
 
+/// Test if the group begins with a specific marker character, and if so, return the remaining tokens.
+fn group_check_prefix(group: &Group, prefix: char) -> Option<TokenStream> {
+    let mut iter = group.stream().into_iter();
+    match iter.next() {
+        Some(TokenTree::Punct(p)) if p.as_char() == prefix => {
+            Some(iter.collect())
+        }
+        _ => None
+    }
+}
+
 fn extra_args_def(grammar: &Grammar) -> TokenStream {
     let args: Vec<TokenStream> = grammar
         .args
@@ -613,24 +624,19 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 
         ActionExpr(ref exprs, ref code) => labeled_seq(context, &exprs, {
             if let Some(code) = code {
-                // Peek and see if the first token in the code is '?'. If so, it's a conditional block
-                let mut ts = code.stream().into_iter();
-                match ts.next() {
-                    Some(TokenTree::Punct(p)) if p.as_char() == '?' => {
-                        let body: TokenStream = ts.collect();
-                        quote_spanned!{code.span()=>
-                            match (||{ #body })() {
-                                Ok(res) => ::peg::RuleResult::Matched(__pos, res),
-                                Err(expected) => {
-                                    __err_state.mark_failure(__pos, expected);
-                                    ::peg::RuleResult::Failed
-                                },
-                            }
+                // Peek and see if the first token in the block is '?'. If so, it's a conditional block
+                if let Some(body) = group_check_prefix(&code, '?') {
+                    quote_spanned!{code.span() =>
+                        match (||{ #body })() {
+                            Ok(res) => ::peg::RuleResult::Matched(__pos, res),
+                            Err(expected) => {
+                                __err_state.mark_failure(__pos, expected);
+                                ::peg::RuleResult::Failed
+                            },
                         }
-                    },
-                    _ => {
-                        quote_spanned!{code.span() => ::peg::RuleResult::Matched(__pos, (||#code)()) }
                     }
+                } else {
+                    quote_spanned!{code.span() => ::peg::RuleResult::Matched(__pos, (||#code)()) }
                 }
             } else {
                 quote!(::peg::RuleResult::Matched(__pos, ()))
