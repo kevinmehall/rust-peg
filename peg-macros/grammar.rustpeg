@@ -3,7 +3,7 @@ pub grammar peg() for FlatTokenStream {
 use crate::ast::*;
 use crate::ast::Expr::*;
 use crate::tokens::FlatTokenStream;
-use proc_macro2::{ TokenStream, Ident, Literal, Delimiter };
+use proc_macro2::{ TokenStream, Ident, Group, Literal, Delimiter };
 
 pub rule peg_grammar() -> Grammar
     = doc:rust_doc_comment() visibility:rust_visibility() "grammar" name:IDENT() args:grammar_args() "for" input_type:$(rust_type()) "{" items:item()* "}"
@@ -67,18 +67,15 @@ rule choice() -> Expr = s:sequence() ++ "/" {
 }
 
 rule sequence() -> Expr
-     = elements:labeled()* code:code_block()? {
+     = elements:labeled()* code:BRACE_GROUP()? {
          if let Some(code) = code {
-            ActionExpr(elements, Some(code.1), code.0)
+            ActionExpr(elements, Some(code))
          } else if elements.len() != 1 {
-             ActionExpr(elements, None, false)
+             ActionExpr(elements, None)
          } else {
              elements.into_iter().next().unwrap().expr
          }
     }
-
-    rule code_block() -> (bool, TokenStream)
-        = "{" is_cond:"?"? code:##group_body() "}" { (is_cond.is_some(), code) }
 
 rule labeled() -> TaggedExpr
     = label:(l:IDENT() ":" {l})? expression:suffixed()
@@ -117,7 +114,7 @@ rule primary() -> Expr
   / p:BRACKET_GROUP() { PatternExpr(p) }
   / "(" "@" ")" { MarkerExpr(true) }
   / "@" { MarkerExpr(false) }
-  / "##" method:IDENT() args:PAREN_GROUP() { MethodExpr(method, args) }
+  / "##" method:IDENT() args:PAREN_GROUP() { MethodExpr(method, args.stream()) }
   / "(" expression:expression() ")" { expression }
 
     rule rule_arg() -> RuleArg
@@ -135,9 +132,9 @@ rule precedence_op() -> PrecedenceOperator
 rule KEYWORD() = "pub" / "crate" / "rule" / "use" / "type"
 rule IDENT() -> Ident = !KEYWORD() i:##ident() {i}
 rule LITERAL() -> Literal = ##literal()
-rule PAREN_GROUP()   -> TokenStream = ##group(Delimiter::Parenthesis)
-rule BRACE_GROUP()   -> TokenStream = ##group(Delimiter::Brace)
-rule BRACKET_GROUP() -> TokenStream = ##group(Delimiter::Bracket)
+rule PAREN_GROUP()   -> Group = ##group(Delimiter::Parenthesis)
+rule BRACE_GROUP()   -> Group = ##group(Delimiter::Brace)
+rule BRACKET_GROUP() -> Group = ##group(Delimiter::Bracket)
 rule LIFETIME() = "'" IDENT()
 rule INTEGER() = LITERAL()
 

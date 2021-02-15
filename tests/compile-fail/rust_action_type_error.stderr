@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
- --> $DIR/rust_action_type_error.rs:7:29
+ --> $DIR/rust_action_type_error.rs:7:27
   |
 7 |     rule foo() -> X = "a" { Y } //~ ERROR
-  |                             ^ expected struct `X`, found struct `Y`
+  |                           ^^^^^ expected struct `X`, found struct `Y`
