@@ -343,15 +343,6 @@ fn labeled_seq(context: &Context, exprs: &[TaggedExpr], inner: TokenStream) -> T
     })
 }
 
-fn cond_swap<T>(swap: bool, tup: (T, T)) -> (T, T) {
-    let (a, b) = tup;
-    if swap {
-        (b, a)
-    } else {
-        (a, b)
-    }
-}
-
 fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
     match e {
         LiteralExpr(ref s) => {
@@ -363,17 +354,16 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
         }
 
         PatternExpr(ref pattern_group) => {
-            let invert = false;
-            let pattern = pattern_group.stream();
-            let pat_str = pattern.to_string();
+            let pat_str = pattern_group.to_string();
 
-            let (in_set, not_in_set) = cond_swap(
-                invert,
-                (
-                    quote! { ::peg::RuleResult::Matched(__next, ()) },
-                    quote! { __err_state.mark_failure(__pos, #pat_str) },
-                ),
-            );
+            let success_res = quote! { ::peg::RuleResult::Matched(__next, ()) };
+            let failure_res = quote! { __err_state.mark_failure(__pos, #pat_str) };
+
+            let (pattern, in_set, not_in_set) = if let Some(pattern) = group_check_prefix(pattern_group, '^') {
+                (pattern, failure_res, success_res)
+            } else {
+                (pattern_group.stream(), success_res, failure_res)
+            };
 
             let in_set_arm = quote!( #pattern => #in_set, );
 

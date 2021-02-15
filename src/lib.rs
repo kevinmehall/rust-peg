@@ -63,7 +63,9 @@
 //!
 //!   * `"keyword"` - _Literal:_ match a literal string.
 //!   * `['0'..='9']`  - _Pattern:_ match a single element that matches a Rust `match`-style
-//!     pattern. [(details)](#match-expressions)
+//!     pattern. [(details)](#pattern-expressions)
+//!   * `[^ '0'..='9']`  - _Inverted pattern:_ match a single element that does not match a Rust `match`-style
+//!     pattern. [(details)](#pattern-expressions)
 //!   * `some_rule()` - _Rule:_ match a rule defined elsewhere in the grammar and return its
 //!     result. Arguments in the parentheses are Rust expressions.
 //!   * `_` or `__` or `___` - _Rule (underscore):_ As a special case, rule names
@@ -130,7 +132,8 @@
 //!
 //! The `[pat]` syntax expands into a [Rust `match`
 //! pattern](https://doc.rust-lang.org/book/ch18-03-pattern-syntax.html) against the next character
-//! (or element) of the input.
+//! (or element) of the input. When the pattern begins with `^`, the matching behavior is inverted:
+//! the expression succeeds only if the pattern does *not* match.
 //!
 //! To match sets of characters, use Rust's `..=` inclusive range pattern
 //! syntax and `|` to match multiple patterns. For example `['a'..='z' | 'A'..='Z']` matches an
