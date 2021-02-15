@@ -28,6 +28,13 @@ peg::parser!( grammar parse() for str {
             }
         }
 
+    pub rule return_early() -> i32 = vs:$([_]+) {?
+        let v = vs.parse::<i32>().map_err(|_| "number")?;
+        if v > 100 {
+            return Err("smaller number");
+        }
+        Ok(v)
+    }
 });
 
 fn main() {
@@ -41,4 +48,8 @@ fn main() {
     assert!(parse::xml("<a><b></b><c></c></a>").is_ok());
     assert!(parse::xml("<a><b><c></b></c></a>").is_err());
     assert!(parse::xml("<a><b></c><c></b></a>").is_err());
+
+    assert!(parse::return_early("a").unwrap_err().expected.tokens().any(|e| e == "number"));
+    assert!(parse::return_early("123").unwrap_err().expected.tokens().any(|e| e == "smaller number"));
+    assert_eq!(parse::return_early("99").unwrap(), 99);
 }
