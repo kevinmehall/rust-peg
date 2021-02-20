@@ -28,6 +28,10 @@ impl Parse for str {
         0
     }
 
+    fn is_eof(&self, pos: usize) -> bool {
+        pos >= self.len()
+    }
+
     fn position_repr(&self, pos: usize) -> LineCol {
         let before = &self[..pos];
         let line = before.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;

@@ -6,6 +6,10 @@ impl<T> Parse for [T] {
         0
     }
 
+    fn is_eof(&self, pos: usize) -> bool {
+        pos >= self.len()
+    }
+
     fn position_repr(&self, pos: usize) -> usize {
         pos
     }
