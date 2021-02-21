@@ -15,6 +15,18 @@ pub enum Token {
     End(Delimiter, Span),
 }
 
+impl Token {
+    fn span(&self) -> Span {
+        match self {
+            Token::Ident(i) => i.span(),
+            Token::Literal(l) => l.span(),
+            Token::Punct(p) => p.span(),
+            Token::Begin(g, _) => g.span(),
+            Token::End(_, span) => span.clone(),
+        }
+    }
+}
+
 impl FlatTokenStream {
     pub fn new(stream: TokenStream) -> FlatTokenStream {
         let mut tokens = vec![];
@@ -44,6 +56,13 @@ impl FlatTokenStream {
         }
 
         FlatTokenStream { tokens }
+    }
+
+    pub fn next_span(&self, pos: usize) -> RuleResult<Span> {
+        match self.tokens.get(pos) {
+            Some(t) => RuleResult::Matched(pos, t.span()),
+            _ => RuleResult::Failed,
+        }
     }
 
     pub fn ident(&self, pos: usize) -> RuleResult<Ident> {
@@ -90,16 +109,7 @@ impl Parse for FlatTokenStream {
     }
 
     fn position_repr(&self, pos: usize) -> Sp {
-        Sp(
-            match &self.tokens[pos] {
-                Token::Ident(i) => i.span(),
-                Token::Literal(l) => l.span(),
-                Token::Punct(p) => p.span(),
-                Token::Begin(g, _) => g.span(),
-                Token::End(_, span) => span.clone(),
-            },
-            pos,
-        )
+        Sp(self.tokens[pos].span(), pos)
     }
 }
 

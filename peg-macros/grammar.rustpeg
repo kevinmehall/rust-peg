@@ -3,7 +3,7 @@ pub grammar peg() for FlatTokenStream {
 use crate::ast::*;
 use crate::ast::Expr::*;
 use crate::tokens::FlatTokenStream;
-use proc_macro2::{ TokenStream, Ident, Group, Literal, Delimiter };
+use proc_macro2::{ TokenStream, Ident, Group, Literal, Delimiter, Span };
 
 pub rule peg_grammar() -> Grammar
     = doc:rust_doc_comment() visibility:rust_visibility() "grammar" name:IDENT() args:grammar_args() "for" input_type:$(rust_type()) "{" items:item()* "}"
@@ -14,8 +14,8 @@ rule grammar_args() -> Vec<(Ident, TokenStream)>
 
 rule peg_rule() -> Rule
     = doc:rust_doc_comment() cached:cacheflag() visibility:rust_visibility()
-      "rule" name:IDENT() ty_params:rust_ty_params()? "(" params:rule_param()**"," ")" ret_type:("->" t:$(rust_type()) {t})? "=" expr:expression() ";"?
-        { Rule { doc, name, ty_params, params, expr, ret_type, visibility, cached } }
+      span:sp() "rule" name:IDENT() ty_params:rust_ty_params()? "(" params:rule_param()**"," ")" ret_type:("->" t:$(rust_type()) {t})? "=" expr:expression() ";"?
+        { Rule { span, doc, name, ty_params, params, expr, ret_type, visibility, cached } }
 
     rule cacheflag() -> bool = "#" "[" "cache" "]" {true} / {false}
 
@@ -56,37 +56,37 @@ rule rust_type()
     / "(" rust_type() ** "," ")"
     / IDENT()
 
-rule expression() -> Expr = choice()
+rule expression() -> SpannedExpr = choice()
 
-rule choice() -> Expr = s:sequence() ++ "/" {
+rule choice() -> SpannedExpr = sp:sp() s:sequence() ++ "/" {
     if s.len() == 1 {
         s.into_iter().next().unwrap()
     } else {
-        ChoiceExpr(s)
+        ChoiceExpr(s).at(sp)
     }
 }
 
-rule sequence() -> Expr
-     = elements:labeled()* code:BRACE_GROUP()? {
-         if let Some(code) = code {
-            ActionExpr(elements, Some(code))
-         } else if elements.len() != 1 {
-             ActionExpr(elements, None)
-         } else {
-             elements.into_iter().next().unwrap().expr
-         }
+rule sequence() -> SpannedExpr
+    = sp:sp() elements:labeled()* code:BRACE_GROUP()? {
+        if let Some(code) = code {
+            ActionExpr(elements, Some(code)).at(sp)
+        } else if elements.len() != 1 {
+            ActionExpr(elements, None).at(sp)
+        } else {
+            elements.into_iter().next().unwrap().expr
+        }
     }
 
 rule labeled() -> TaggedExpr
     = label:(l:IDENT() ":" {l})? expression:suffixed()
         { TaggedExpr{ name: label, expr: expression } }
 
-rule suffixed() -> Expr
-    = e:prefixed() "?" { OptionalExpr(Box::new(e)) }
-    / e:prefixed() "**" count:repeatcount() sep:primary() { Repeat { inner: Box::new(e), bound: count, sep: Some(Box::new(sep)) }}
-    / e:prefixed() "++" sep:primary() { Repeat { inner: Box::new(e), bound: BoundedRepeat::Plus, sep: Some(Box::new(sep)) }}
-    / e:prefixed() "*" count:repeatcount() { Repeat { inner: Box::new(e), bound: count, sep: None } }
-    / e:prefixed() "+" { Repeat { inner: Box::new(e), bound: BoundedRepeat::Plus, sep: None } }
+rule suffixed() -> SpannedExpr
+    = e:prefixed() sp:sp() "?" { OptionalExpr(Box::new(e)).at(sp) }
+    / e:prefixed() sp:sp() "**" count:repeatcount() sep:primary() { Repeat { inner: Box::new(e), bound: count, sep: Some(Box::new(sep)) }.at(sp) }
+    / e:prefixed() sp:sp() "++" sep:primary() { Repeat { inner: Box::new(e), bound: BoundedRepeat::Plus, sep: Some(Box::new(sep)) }.at(sp )}
+    / e:prefixed() sp:sp() "*" count:repeatcount() { Repeat { inner: Box::new(e), bound: count, sep: None }.at(sp) }
+    / e:prefixed() sp:sp() "+" { Repeat { inner: Box::new(e), bound: BoundedRepeat::Plus, sep: None }.at(sp) }
     / prefixed()
 
 rule repeatcount() -> BoundedRepeat
@@ -96,25 +96,25 @@ rule repeatcount() -> BoundedRepeat
 
 rule repeatnum() -> TokenStream = $(INTEGER() / BRACE_GROUP())
 
-rule prefixed() -> Expr
-    = "$" expression:primary() { MatchStrExpr(Box::new(expression)) }
-    / "&" expression:primary() { PosAssertExpr(Box::new(expression)) }
-    / "!" expression:primary() { NegAssertExpr(Box::new(expression)) }
+rule prefixed() -> SpannedExpr
+    = sp:sp() "$" expression:primary() { MatchStrExpr(Box::new(expression)).at(sp) }
+    / sp:sp() "&" expression:primary() { PosAssertExpr(Box::new(expression)).at(sp) }
+    / sp:sp() "!" expression:primary() { NegAssertExpr(Box::new(expression)).at(sp) }
     / primary()
 
 #[cache]
-rule primary() -> Expr
-  = "precedence" "!" "{" levels:precedence_level()**"--" "}" { PrecedenceExpr{ levels:levels }}
-  / "position" "!" "(" ")" { PositionExpr }
-  / "quiet" "!" "{" e:expression() "}" { QuietExpr(Box::new(e)) }
-  / "expected" "!" "(" s:LITERAL() ")" { FailExpr(s) }
-  / &("_" / "__" / "___") name:IDENT() { RuleExpr(name, Vec::new()) }
-  / name:IDENT() "(" args:(rule_arg() ** ",") ")" { RuleExpr(name, args) }
-  / l:LITERAL() { LiteralExpr(l) }
-  / p:BRACKET_GROUP() { PatternExpr(p) }
-  / "(" "@" ")" { MarkerExpr(true) }
-  / "@" { MarkerExpr(false) }
-  / "##" method:IDENT() args:PAREN_GROUP() { MethodExpr(method, args.stream()) }
+rule primary() -> SpannedExpr
+  = sp:sp() "precedence" "!" "{" levels:precedence_level()**"--" "}" { PrecedenceExpr{ levels:levels }.at(sp) }
+  / sp:sp() "position" "!" "(" ")" { PositionExpr.at(sp) }
+  / sp:sp() "quiet" "!" "{" e:expression() "}" { QuietExpr(Box::new(e)).at(sp) }
+  / sp:sp() "expected" "!" "(" s:LITERAL() ")" { FailExpr(s).at(sp) }
+  / &("_" / "__" / "___") sp:sp() name:IDENT() { RuleExpr(name, Vec::new()).at(sp) }
+  / sp:sp() name:IDENT() "(" args:(rule_arg() ** ",") ")" { RuleExpr(name, args).at(sp) }
+  / sp:sp() l:LITERAL() { LiteralExpr(l).at(sp) }
+  / sp:sp() p:BRACKET_GROUP() { PatternExpr(p).at(sp) }
+  / "(" sp:sp() "@" ")" { MarkerExpr(true).at(sp) }
+  / sp:sp() "@" { MarkerExpr(false).at(sp) }
+  / sp:sp() "##" method:IDENT() args:PAREN_GROUP() { MethodExpr(method, args.stream()).at(sp) }
   / "(" expression:expression() ")" { expression }
 
     rule rule_arg() -> RuleArg
@@ -126,9 +126,10 @@ rule precedence_level() -> PrecedenceLevel
   { PrecedenceLevel{ operators: operators } }
 
 rule precedence_op() -> PrecedenceOperator
-  = elements:labeled()* action:BRACE_GROUP()
-  { PrecedenceOperator{ elements, action } }
+  = span:sp() elements:labeled()* action:BRACE_GROUP()
+  { PrecedenceOperator{ span, elements, action } }
 
+rule sp() -> Span = ##next_span()
 rule KEYWORD() = "pub" / "crate" / "rule" / "use" / "type"
 rule IDENT() -> Ident = !KEYWORD() i:##ident() {i}
 rule LITERAL() -> Literal = ##literal()

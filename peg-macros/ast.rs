@@ -1,4 +1,4 @@
-use proc_macro2::{Ident, Literal, Group, TokenStream};
+use proc_macro2::{Group, Ident, Literal, Span, TokenStream};
 
 #[derive(Debug)]
 pub struct Grammar {
@@ -27,10 +27,11 @@ pub enum Item {
 
 #[derive(Debug)]
 pub struct Rule {
+    pub span: Span,
     pub name: Ident,
     pub ty_params: Option<Vec<TokenStream>>,
     pub params: Vec<RuleParam>,
-    pub expr: Expr,
+    pub expr: SpannedExpr,
     pub ret_type: Option<TokenStream>,
     pub doc: Option<TokenStream>,
     pub visibility: Option<TokenStream>,
@@ -52,6 +53,11 @@ pub enum RuleParamTy {
 #[derive(Debug, Clone)]
 pub struct TaggedExpr {
     pub name: Option<Ident>,
+    pub expr: SpannedExpr,
+}
+#[derive(Debug, Clone)]
+pub struct SpannedExpr {
+    pub span: Span,
     pub expr: Expr,
 }
 
@@ -61,15 +67,15 @@ pub enum Expr {
     PatternExpr(Group),
     RuleExpr(Ident, Vec<RuleArg>),
     MethodExpr(Ident, TokenStream),
-    ChoiceExpr(Vec<Expr>),
-    OptionalExpr(Box<Expr>),
-    Repeat { inner: Box<Expr>, bound: BoundedRepeat, sep: Option<Box<Expr>> },
-    PosAssertExpr(Box<Expr>),
-    NegAssertExpr(Box<Expr>),
+    ChoiceExpr(Vec<SpannedExpr>),
+    OptionalExpr(Box<SpannedExpr>),
+    Repeat { inner: Box<SpannedExpr>, bound: BoundedRepeat, sep: Option<Box<SpannedExpr>> },
+    PosAssertExpr(Box<SpannedExpr>),
+    NegAssertExpr(Box<SpannedExpr>),
     ActionExpr(Vec<TaggedExpr>, Option<Group>),
-    MatchStrExpr(Box<Expr>),
+    MatchStrExpr(Box<SpannedExpr>),
     PositionExpr,
-    QuietExpr(Box<Expr>),
+    QuietExpr(Box<SpannedExpr>),
     FailExpr(Literal),
     PrecedenceExpr {
         levels: Vec<PrecedenceLevel>,
@@ -77,10 +83,16 @@ pub enum Expr {
     MarkerExpr(bool),
 }
 
+impl Expr {
+    pub fn at(self, sp: Span) -> SpannedExpr {
+        SpannedExpr { expr: self, span:sp }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum RuleArg {
     Rust(TokenStream),
-    Peg(Expr),
+    Peg(SpannedExpr),
 }
 
 #[derive(Debug, Clone)]
@@ -90,6 +102,7 @@ pub struct PrecedenceLevel {
 
 #[derive(Debug, Clone)]
 pub struct PrecedenceOperator {
+    pub span: Span,
     pub elements: Vec<TaggedExpr>,
     pub action: Group,
 }

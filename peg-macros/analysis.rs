@@ -79,9 +79,9 @@ impl<'a> LeftRecursionVisitor<'a> {
     /// Returns true if the rule is known to match completely without consuming any input.
     /// This is a conservative heuristic, if unknown, we return false to avoid reporting false-positives
     /// for left recursion.
-    fn walk_expr(&mut self, this_expr: &Expr) -> bool {
+    fn walk_expr(&mut self, this_expr: &SpannedExpr) -> bool {
         use self::Expr::*;
-        match *this_expr {
+        match this_expr.expr {
             RuleExpr(ref rule_ident, _) => {
                 let name = rule_ident.to_string();
 

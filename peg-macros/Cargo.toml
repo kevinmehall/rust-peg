@@ -9,7 +9,7 @@ edition = "2018"
 
 [dependencies]
 quote = "1.0"
-proc-macro2 = "1.0"
+proc-macro2 = "1.0.24"
 peg-runtime = { version = "= 0.6.3", path = "../peg-runtime" }
 
 [features]
