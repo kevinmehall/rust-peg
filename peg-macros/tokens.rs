@@ -46,10 +46,6 @@ impl FlatTokenStream {
         FlatTokenStream { tokens }
     }
 
-    pub fn len(&self) -> usize {
-        self.tokens.len()
-    } //TODO
-
     pub fn ident(&self, pos: usize) -> RuleResult<Ident> {
         match self.tokens.get(pos) {
             Some(Token::Ident(i)) => RuleResult::Matched(pos + 1, i.clone()),
@@ -90,7 +86,7 @@ impl Parse for FlatTokenStream {
     }
 
     fn is_eof(&self, pos: usize) -> bool {
-        pos >= self.len()
+        pos >= self.tokens.len()
     }
 
     fn position_repr(&self, pos: usize) -> Sp {
