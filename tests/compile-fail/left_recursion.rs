@@ -10,6 +10,10 @@ peg::parser!(grammar foo() for str {
     rule bar()
         = "bar" bar()
         / foo() //~ ERROR left recursive rules create an infinite loop: foo -> bar -> foo
+
+    rule prec() = precedence! {
+        prec() { () } //~ ERROR
+    }
 });
 
 fn main() {}

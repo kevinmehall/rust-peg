@@ -139,7 +139,25 @@ impl<'a> RecursionVisitor<'a> {
 
             MatchStrExpr(ref expr) | QuietExpr(ref expr) => self.walk_expr(expr),
 
-            PrecedenceExpr { .. } => RuleInfo { nullable: false },
+            PrecedenceExpr { ref levels } => {
+                let mut nullable = false;
+
+                for level in levels {
+                    for operator in &level.operators {
+                        let mut operator_nullable = true;
+                        for element in &operator.elements {
+                            let res = self.walk_expr(&element.expr);
+                            if !res.nullable {
+                                operator_nullable = false;
+                                break;
+                            }
+                        }
+                        nullable |= operator_nullable;
+                    }
+                }
+
+                RuleInfo { nullable }
+            },
 
             LiteralExpr(_) | PatternExpr(_) | MethodExpr(_, _) | FailExpr(_) | MarkerExpr(_) => {
                 RuleInfo { nullable: false }

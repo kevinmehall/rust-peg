@@ -15,3 +15,9 @@ error: left recursive rules create an infinite loop: bar -> foo -> bar
   |
 8 |         / bar() //~ ERROR left recursive rules create an infinite loop: bar -> foo -> bar
   |           ^^^
+
+error: left recursive rules create an infinite loop: prec -> prec
+  --> $DIR/left_recursion.rs:15:9
+   |
+15 |         prec() { () } //~ ERROR
+   |         ^^^^
