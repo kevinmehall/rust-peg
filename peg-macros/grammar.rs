@@ -33,7 +33,7 @@ pub mod peg {
             ::peg::Parse::start(__input),
         ) {
             ::peg::RuleResult::Matched(__pos, __value) => {
-                if __pos == __input.len() {
+                if ::peg::Parse::is_eof(__input, __pos) {
                     return Ok(__value);
                 } else {
                     __err_state.mark_failure(__pos, "EOF");
@@ -50,7 +50,7 @@ pub mod peg {
             ::peg::Parse::start(__input),
         ) {
             ::peg::RuleResult::Matched(__pos, __value) => {
-                if __pos == __input.len() {
+                if ::peg::Parse::is_eof(__input, __pos) {
                     panic!(
                         "Parser is nondeterministic: succeeded when reparsing for error position"
                     );

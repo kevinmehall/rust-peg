@@ -279,7 +279,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
             let mut __state = ParseState::new();
             match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call #(, #rule_params_call)*) {
                 ::peg::RuleResult::Matched(__pos, __value) => {
-                    if __pos == __input.len() {
+                    if ::peg::Parse::is_eof(__input, __pos) {
                         return Ok(__value)
                     } else {
                         __err_state.mark_failure(__pos, "EOF");
@@ -293,7 +293,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
             match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call #(, #rule_params_call)*) {
                 ::peg::RuleResult::Matched(__pos, __value) => {
-                    if __pos == __input.len() {
+                    if ::peg::Parse::is_eof(__input, __pos) {
                         panic!("Parser is nondeterministic: succeeded when reparsing for error position");
                     } else {
                         __err_state.mark_failure(__pos, "EOF");

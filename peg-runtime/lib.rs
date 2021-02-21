@@ -18,6 +18,7 @@ pub enum RuleResult<T> {
 pub trait Parse {
     type PositionRepr: Display;
     fn start<'input>(&'input self) -> usize;
+    fn is_eof<'input>(&'input self, p: usize) -> bool;
     fn position_repr<'input>(&'input self, p: usize) -> Self::PositionRepr;
 }
 

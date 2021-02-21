@@ -89,6 +89,10 @@ impl Parse for FlatTokenStream {
         0
     }
 
+    fn is_eof(&self, pos: usize) -> bool {
+        pos >= self.len()
+    }
+
     fn position_repr(&self, pos: usize) -> Sp {
         Sp(
             match &self.tokens[pos] {
