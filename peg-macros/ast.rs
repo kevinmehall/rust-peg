@@ -101,3 +101,12 @@ pub enum BoundedRepeat {
     Exact(TokenStream),
     Both(Option<TokenStream>, Option<TokenStream>),
 }
+
+impl BoundedRepeat {
+    pub fn has_lower_bound(&self) -> bool {
+        match self {
+            BoundedRepeat::None | BoundedRepeat::Both(None, _) => false,
+            BoundedRepeat::Plus | BoundedRepeat::Exact(_) | BoundedRepeat::Both(Some(_), _) => true
+        }
+    }
+}

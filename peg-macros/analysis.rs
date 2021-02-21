@@ -5,17 +5,18 @@ use crate::ast::*;
 
 pub struct GrammarAnalysis<'a> {
     pub rules: HashMap<String, &'a Rule>,
-    pub left_recursion: Vec<RecursionError>,
+    pub left_recursion: Vec<LeftRecursionError>,
 }
 
 pub fn check<'a>(grammar: &'a Grammar) -> GrammarAnalysis<'a> {
     let mut rules = HashMap::new();
 
+    // Pick only the first for duplicate rules (the duplicate is reported when translating the rule)
     for rule in grammar.iter_rules() {
         rules.entry(rule.name.to_string()).or_insert(rule);
     }
 
-    let left_recursion = RecursionVisitor::check(grammar, &rules);
+    let (_, left_recursion) = LeftRecursionVisitor::check(grammar, &rules);
 
     GrammarAnalysis {
         rules,
@@ -23,18 +24,22 @@ pub fn check<'a>(grammar: &'a Grammar) -> GrammarAnalysis<'a> {
     }
 }
 
-struct RecursionVisitor<'a> {
+/// Check for infinite loops in the form of left recursion.
+///
+/// If a PEG expression recurses without first consuming input, it will
+/// recurse until the stack overflows.
+struct LeftRecursionVisitor<'a> {
     stack: Vec<String>,
     rules: &'a HashMap<String, &'a Rule>,
-    errors: Vec<RecursionError>,
+    errors: Vec<LeftRecursionError>,
 }
 
-pub struct RecursionError {
+pub struct LeftRecursionError {
     pub span: Span,
     pub path: Vec<String>,
 }
 
-impl RecursionError {
+impl LeftRecursionError {
     pub fn msg(&self) -> String {
         format!(
             "left recursive rules create an infinite loop: {}",
@@ -43,38 +48,38 @@ impl RecursionError {
     }
 }
 
-#[derive(Clone)]
-struct RuleInfo {
-    /// True if the rule is known to match without consuming any input.
-    /// This is a conservative heuristic, if unknown, we return false to avoid reporting false-positives
-    /// for left recursion.
-    nullable: bool,
-}
-
-impl<'a> RecursionVisitor<'a> {
-    fn check(grammar: &'a Grammar, rules: &HashMap<String, &'a Rule>) -> Vec<RecursionError> {
-        let mut visitor = RecursionVisitor {
+impl<'a> LeftRecursionVisitor<'a> {
+    fn check(grammar: &'a Grammar, rules: &HashMap<String, &'a Rule>) -> (HashMap<String, bool>, Vec<LeftRecursionError>) {
+        let mut visitor = LeftRecursionVisitor {
             rules,
             errors: Vec::new(),
             stack: Vec::new(),
         };
 
+        let mut rule_nullability: HashMap<String, bool> = HashMap::new();
+
         for rule in grammar.iter_rules() {
-            visitor.walk_rule(rule);
+            let nullable = visitor.walk_rule(rule);
             debug_assert!(visitor.stack.is_empty());
+            rule_nullability.entry(rule.name.to_string()).or_insert(nullable);
         }
 
-        visitor.errors
+        (rule_nullability, visitor.errors)
     }
 
-    fn walk_rule(&mut self, rule: &'a Rule) -> RuleInfo {
+    fn walk_rule(&mut self, rule: &'a Rule) -> bool {
         self.stack.push(rule.name.to_string());
         let res = self.walk_expr(&rule.expr);
         self.stack.pop().unwrap();
         res
     }
 
-    fn walk_expr(&mut self, this_expr: &Expr) -> RuleInfo {
+    /// Walk the prefix of an expression that can be reached without consuming input.
+    /// 
+    /// Returns true if the rule is known to match completely without consuming any input.
+    /// This is a conservative heuristic, if unknown, we return false to avoid reporting false-positives
+    /// for left recursion.
+    fn walk_expr(&mut self, this_expr: &Expr) -> bool {
         use self::Expr::*;
         match *this_expr {
             RuleExpr(ref rule_ident, _) => {
@@ -87,54 +92,47 @@ impl<'a> RecursionVisitor<'a> {
                 {
                     let mut recursive_loop = self.stack[loop_start..].to_vec();
                     recursive_loop.push(name);
-                    self.errors.push(RecursionError {
+                    self.errors.push(LeftRecursionError {
                         path: recursive_loop,
                         span: rule_ident.span(),
                     });
-                    return RuleInfo { nullable: false };
+                    return false;
                 }
 
                 if let Some(rule) = self.rules.get(&name) {
                     self.walk_rule(rule)
                 } else {
                     // Missing rule would have already been reported
-                    RuleInfo { nullable: false }
+                   false
                 }
             }
+
             ActionExpr(ref elems, ..) => {
                 for elem in elems {
-                    if !self.walk_expr(&elem.expr).nullable {
-                        return RuleInfo { nullable: false };
+                    if !self.walk_expr(&elem.expr) {
+                        return false;
                     }
                 }
 
-                RuleInfo { nullable: true }
+                true
             }
+
             ChoiceExpr(ref choices) => {
                 let mut nullable = false;
-
                 for expr in choices {
-                    nullable |= self.walk_expr(expr).nullable;
+                    nullable |= self.walk_expr(expr);
                 }
-
-                RuleInfo { nullable }
+                nullable
             }
 
             OptionalExpr(ref expr) | PosAssertExpr(ref expr) | NegAssertExpr(ref expr) => {
                 self.walk_expr(expr);
-                RuleInfo { nullable: true }
+                true
             }
 
             Repeat(ref expr, ref bounds, _) => {
-                let nullable = match bounds {
-                    BoundedRepeat::None => true,
-                    _ => false,
-                };
-
-                let res = self.walk_expr(expr);
-                RuleInfo {
-                    nullable: res.nullable | nullable,
-                }
+                let inner_nullable = self.walk_expr(expr);
+                inner_nullable | !bounds.has_lower_bound()
             }
 
             MatchStrExpr(ref expr) | QuietExpr(ref expr) => self.walk_expr(expr),
@@ -146,8 +144,7 @@ impl<'a> RecursionVisitor<'a> {
                     for operator in &level.operators {
                         let mut operator_nullable = true;
                         for element in &operator.elements {
-                            let res = self.walk_expr(&element.expr);
-                            if !res.nullable {
+                            if !self.walk_expr(&element.expr) {
                                 operator_nullable = false;
                                 break;
                             }
@@ -156,13 +153,12 @@ impl<'a> RecursionVisitor<'a> {
                     }
                 }
 
-                RuleInfo { nullable }
-            },
-
-            LiteralExpr(_) | PatternExpr(_) | MethodExpr(_, _) | FailExpr(_) | MarkerExpr(_) => {
-                RuleInfo { nullable: false }
+               nullable
             }
-            PositionExpr => RuleInfo { nullable: true },
+
+            LiteralExpr(_) | PatternExpr(_) | MethodExpr(_, _) | FailExpr(_) | MarkerExpr(_) => false,
+
+            PositionExpr => true,
         }
     }
 }
