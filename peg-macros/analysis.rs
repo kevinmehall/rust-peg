@@ -130,9 +130,9 @@ impl<'a> LeftRecursionVisitor<'a> {
                 true
             }
 
-            Repeat(ref expr, ref bounds, _) => {
-                let inner_nullable = self.walk_expr(expr);
-                inner_nullable | !bounds.has_lower_bound()
+            Repeat { ref inner, ref bound, .. } => {
+                let inner_nullable = self.walk_expr(inner);
+                inner_nullable | !bound.has_lower_bound()
             }
 
             MatchStrExpr(ref expr) | QuietExpr(ref expr) => self.walk_expr(expr),

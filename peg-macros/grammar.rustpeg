@@ -83,10 +83,10 @@ rule labeled() -> TaggedExpr
 
 rule suffixed() -> Expr
     = e:prefixed() "?" { OptionalExpr(Box::new(e)) }
-    / e:prefixed() "**" count:repeatcount() sep:primary() { Repeat(Box::new(e), count, Some(Box::new(sep))) }
-    / e:prefixed() "++" sep:primary() { Repeat(Box::new(e), BoundedRepeat::Plus, Some(Box::new(sep))) }
-    / e:prefixed() "*" count:repeatcount() { Repeat(Box::new(e), count, None) }
-    / e:prefixed() "+" { Repeat(Box::new(e), BoundedRepeat::Plus, None) }
+    / e:prefixed() "**" count:repeatcount() sep:primary() { Repeat { inner: Box::new(e), bound: count, sep: Some(Box::new(sep)) }}
+    / e:prefixed() "++" sep:primary() { Repeat { inner: Box::new(e), bound: BoundedRepeat::Plus, sep: Some(Box::new(sep)) }}
+    / e:prefixed() "*" count:repeatcount() { Repeat { inner: Box::new(e), bound: count, sep: None } }
+    / e:prefixed() "+" { Repeat { inner: Box::new(e), bound: BoundedRepeat::Plus, sep: None } }
     / prefixed()
 
 rule repeatcount() -> BoundedRepeat

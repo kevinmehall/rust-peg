@@ -1465,12 +1465,10 @@ pub mod peg {
                                                     ::peg::RuleResult::Matched(__pos, sep) => {
                                                         ::peg::RuleResult::Matched(
                                                             __pos,
-                                                            (|| {
-                                                                Repeat(
-                                                                    Box::new(e),
-                                                                    count,
-                                                                    Some(Box::new(sep)),
-                                                                )
+                                                            (|| Repeat {
+                                                                inner: Box::new(e),
+                                                                bound: count,
+                                                                sep: Some(Box::new(sep)),
                                                             })(
                                                             ),
                                                         )
@@ -1516,12 +1514,10 @@ pub mod peg {
                                                     ::peg::RuleResult::Matched(__pos, sep) => {
                                                         ::peg::RuleResult::Matched(
                                                             __pos,
-                                                            (|| {
-                                                                Repeat(
-                                                                    Box::new(e),
-                                                                    BoundedRepeat::Plus,
-                                                                    Some(Box::new(sep)),
-                                                                )
+                                                            (|| Repeat {
+                                                                inner: Box::new(e),
+                                                                bound: BoundedRepeat::Plus,
+                                                                sep: Some(Box::new(sep)),
                                                             })(
                                                             ),
                                                         )
@@ -1566,8 +1562,10 @@ pub mod peg {
                                                                 count,
                                                             ) => ::peg::RuleResult::Matched(
                                                                 __pos,
-                                                                (|| {
-                                                                    Repeat(Box::new(e), count, None)
+                                                                (|| Repeat {
+                                                                    inner: Box::new(e),
+                                                                    bound: count,
+                                                                    sep: None,
                                                                 })(
                                                                 ),
                                                             ),
@@ -1597,7 +1595,7 @@ pub mod peg {
                                                     __err_state,
                                                     __pos,
                                                 );
-                                                match __seq_res { :: peg :: RuleResult :: Matched (__pos , e) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , "+") { :: peg :: RuleResult :: Matched (__pos , __val) => { :: peg :: RuleResult :: Matched (__pos , (|| { Repeat (Box :: new (e) , BoundedRepeat :: Plus , None) }) ()) } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\"+\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , }
+                                                match __seq_res { :: peg :: RuleResult :: Matched (__pos , e) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , "+") { :: peg :: RuleResult :: Matched (__pos , __val) => { :: peg :: RuleResult :: Matched (__pos , (|| { Repeat { inner : Box :: new (e) , bound : BoundedRepeat :: Plus , sep : None } }) ()) } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\"+\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , }
                                             };
                                             match __choice_res {
                                                 ::peg::RuleResult::Matched(__pos, __value) => {

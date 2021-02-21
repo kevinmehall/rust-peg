@@ -528,10 +528,10 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
             }
         }
 
-        Repeat(ref e, ref bounds, ref sep) => {
-            let inner = compile_expr(context, e, result_used);
+        Repeat{ ref inner, ref bound, ref sep} => {
+            let inner = compile_expr(context, inner, result_used);
 
-            let (min, max) = match *bounds {
+            let (min, max) = match bound {
                 BoundedRepeat::None => (None, None),
                 BoundedRepeat::Plus => (Some(quote!(1)), None),
                 BoundedRepeat::Exact(ref code) => (Some(code.clone()), Some(code.clone())),

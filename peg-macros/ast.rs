@@ -63,7 +63,7 @@ pub enum Expr {
     MethodExpr(Ident, TokenStream),
     ChoiceExpr(Vec<Expr>),
     OptionalExpr(Box<Expr>),
-    Repeat(Box<Expr>, BoundedRepeat, /*sep*/ Option<Box<Expr>>),
+    Repeat { inner: Box<Expr>, bound: BoundedRepeat, sep: Option<Box<Expr>> },
     PosAssertExpr(Box<Expr>),
     NegAssertExpr(Box<Expr>),
     ActionExpr(Vec<TaggedExpr>, Option<Group>),
