@@ -143,8 +143,59 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
         }
     }
 
+    let (trace_def, trace_set, trace_push_pop) = if cfg!(feature = "trace") {
+        (
+            quote! { __trace_depth: usize, __trace_want_prefix: bool, __trace_follows_start: bool, },
+            quote! { __trace_depth: 0, __trace_want_prefix: true, __trace_follows_start: false, },
+            quote! {
+                fn __trace_print_impl(&mut self) {
+                    if self.__trace_want_prefix {
+                        if self.__trace_follows_start {
+                            print!(" {{\n");
+                        }
+                        print!("[PEG_TRACE] ");
+                        for _ in 0..self.__trace_depth {
+                            print!("  ");
+                        }
+                    }
+                }
+                fn __trace_print(&mut self) {
+                    self.__trace_want_prefix = true;
+                    self.__trace_print_impl();
+                    self.__trace_follows_start = false;
+                    self.__trace_want_prefix = true;
+                }
+                fn __trace_print_start(&mut self) {
+                    self.__trace_want_prefix = true;
+                    self.__trace_print_impl();
+                    self.__trace_follows_start = true;
+                    self.__trace_want_prefix = false;
+                    self.__trace_depth += 1;
+                }
+                fn __trace_print_end(&mut self) {
+                    self.__trace_depth -= 1;
+                    self.__trace_print_impl();
+                    if self.__trace_want_prefix {
+                        print!("}} ");
+                    } else {
+                        print!(", ");
+                    }
+                    self.__trace_follows_start = false;
+                    self.__trace_want_prefix = true;
+                }
+            },
+        )
+    } else {
+        (
+            quote! { },
+            quote! { },
+            quote! { },
+        )
+    };
+
     quote! {
         struct ParseState<'input> {
+            #trace_def
             _phantom: ::std::marker::PhantomData<&'input ()>,
             #(#cache_fields_def),*
         }
@@ -152,10 +203,12 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
         impl<'input> ParseState<'input> {
             fn new() -> ParseState<'input> {
                 ParseState {
+                    #trace_set
                     _phantom: ::std::marker::PhantomData,
                     #(#cache_fields: ::std::collections::HashMap::new()),*
                 }
             }
+            #trace_push_pop
         }
     }
 }
@@ -190,16 +243,19 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         let str_rule_name = rule_name.to_string();
         quote! {{
             let loc = ::peg::Parse::position_repr(__input, __pos);
-            println!("[PEG_TRACE] Attempting to match rule `{}` at {}", #str_rule_name, loc);
+            __state.__trace_print_start();
+            print!("Attempting rule `{}` at {}", #str_rule_name, loc);
             let __peg_result: ::peg::RuleResult<#ret_ty> = {#body};
             match __peg_result {
                 ::peg::RuleResult::Matched(epos, v) => {
                     let eloc = ::peg::Parse::position_repr(__input, epos);
-                    println!("[PEG_TRACE] Matched rule `{}` at {} to {}", #str_rule_name, loc, eloc);
+                    __state.__trace_print_end();
+                    println!("matched `{}` from {} to {}", #str_rule_name, loc, eloc);
                     ::peg::RuleResult::Matched(epos, v)
                 }
                 ::peg::RuleResult::Failed => {
-                    println!("[PEG_TRACE] Failed to match rule `{}` at {}", #str_rule_name, loc);
+                    __state.__trace_print_end();
+                    println!("failed `{}` at {}", #str_rule_name, loc);
                     ::peg::RuleResult::Failed
                 }
             }
@@ -220,8 +276,14 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
             quote! {
                 let loc = ::peg::Parse::position_repr(__input, __pos);
                 match &entry {
-                    &::peg::RuleResult::Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}", #str_rule_name, loc),
-                    &Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}", #str_rule_name, loc),
+                    &::peg::RuleResult::Matched(..) => {
+                        __state.__trace_print();
+                        println!("Cached match of rule {} at {}", #str_rule_name, loc)
+                    },
+                    &Failed => {
+                        __state.__trace_print();
+                        println!("Cached fail of rule {} at {}", #str_rule_name, loc)
+                    },
                 };
             }
         } else {
@@ -486,11 +548,14 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
                 })
                 .collect();
 
+            let call_func = quote! { 
+                #func(__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*)
+            };
             if result_used {
-                quote! { #func(__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*) }
+                call_func
             } else {
                 quote! {
-                    match #func(__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*){
+                    match #call_func {
                         ::peg::RuleResult::Matched(pos, _) => ::peg::RuleResult::Matched(pos, ()),
                         ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
                     }
@@ -808,8 +873,8 @@ fn compile_expr(context: &Context, e: &Expr, result_used: bool) -> TokenStream {
 
             let (enter, leave) = if cfg!(feature = "trace") {
                 (
-                    quote! {println!("[PEG_TRACE] Entering level {}", min_prec);},
-                    quote! {println!("[PEG_TRACE] Leaving level {}", min_prec);},
+                    quote! {{ __state.__trace_print(); println!("Entering level {}", min_prec); }},
+                    quote! {{ __state.__trace_print(); println!("Leaving level {}", min_prec); }},
                 )
             } else {
                 (quote!(), quote!())
