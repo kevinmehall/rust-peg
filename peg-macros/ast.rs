@@ -122,4 +122,11 @@ impl BoundedRepeat {
             BoundedRepeat::Plus | BoundedRepeat::Exact(_) | BoundedRepeat::Both(Some(_), _) => true
         }
     }
+
+    pub fn has_upper_bound(&self) -> bool {
+        match self {
+            BoundedRepeat::None |  BoundedRepeat::Plus | BoundedRepeat::Both(_, None) => false,
+            BoundedRepeat::Exact(_) | BoundedRepeat::Both(_, Some(_)) => true
+        }
+    }
 }

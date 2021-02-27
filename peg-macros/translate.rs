@@ -115,6 +115,10 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
         errors.push(report_error(rec.span, rec.msg()));
     }
 
+    for rec in &analysis.loop_nullability {
+        errors.push(report_error(rec.span, rec.msg()));
+    }
+
     quote_spanned! { Span::mixed_site() =>
         #doc
         #visibility mod #name {
