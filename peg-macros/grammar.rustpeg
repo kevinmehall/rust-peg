@@ -6,8 +6,8 @@ use crate::tokens::FlatTokenStream;
 use proc_macro2::{ TokenStream, Ident, Group, Literal, Delimiter, Span };
 
 pub rule peg_grammar() -> Grammar
-    = doc:rust_doc_comment() visibility:rust_visibility() "grammar" name:IDENT() args:grammar_args() "for" input_type:$(rust_type()) "{" items:item()* "}"
-        { Grammar { doc, visibility, name, args, input_type, items } }
+    = doc:rust_doc_comment() visibility:rust_visibility() "grammar" name:IDENT() ty_params:rust_ty_params()? args:grammar_args() "for" input_type:$(rust_type()) "{" items:item()* "}"
+        { Grammar { doc, visibility, name, ty_params, args, input_type, items } }
 
 rule grammar_args() -> Vec<(Ident, TokenStream)>
     = "(" args:((i:IDENT() ":" t:$(rust_type()) { (i, t) })**",") ","? ")" { args }
