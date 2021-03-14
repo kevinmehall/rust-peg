@@ -471,31 +471,6 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 );
             }
 
-            for (param, arg) in rule_def.params.iter().zip(rule_args.iter()) {
-                match (&param.ty, &arg) {
-                    (RuleParamTy::Rust(..), RuleArg::Peg(..)) => {
-                        return report_error_expr(
-                            rule_name.span(),
-                            format!(
-                                "parameter `{}` expects a value, but a PEG expression was passed",
-                                param.name
-                            ),
-                        );
-                    }
-                    (RuleParamTy::Rule(..), RuleArg::Rust(..)) => {
-                        return report_error_expr(
-                            rule_name.span(),
-                            format!(
-                                "parameter `{}` expects a PEG expression, but a value was passed",
-                                param.name
-                            ),
-                        );
-                    }
-                    (RuleParamTy::Rule(..), RuleArg::Peg(..)) => (),
-                    (RuleParamTy::Rust(..), RuleArg::Rust(..)) => (),
-                }
-            }
-
             let func = format_ident!("__parse_{}", rule_name, span = rule_name.span());
             let extra_args_call = &context.extra_args_call;
 

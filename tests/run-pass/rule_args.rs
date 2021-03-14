@@ -22,6 +22,8 @@ peg::parser!( grammar ra() for str {
     rule i(literal: &'static str) = input:$([_]*<{literal.len()}>) {? if input.eq_ignore_ascii_case(literal) { Ok(()) } else { Err(literal) } }
     
     pub rule test_i() = i("foo") i("bar")
+
+    rule recursive(r: rule<()>) = " " recursive(r) // Issue #226
 });
 
 use ra::*;

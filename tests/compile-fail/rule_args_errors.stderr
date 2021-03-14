@@ -10,20 +10,8 @@ error: this rule takes 2 parameters but 3 parameters were supplied
 8 |     rule too_many() = foo(1, <[_]>, 2)  //~ ERROR
   |                       ^^^
 
-error: parameter `x` expects a value, but a PEG expression was passed
-  --> $DIR/rule_args_errors.rs:10:26
-   |
-10 |     rule wrong_type1() = foo(<[_]>, 1) //~ ERROR
-   |                          ^^^
-
-error: parameter `y` expects a PEG expression, but a value was passed
-  --> $DIR/rule_args_errors.rs:11:26
-   |
-11 |     rule wrong_type2() = foo(1, 1) //~ ERROR
-   |                          ^^^
-
 error: parameters on `pub rule` must be Rust types
-  --> $DIR/rule_args_errors.rs:13:27
+  --> $DIR/rule_args_errors.rs:10:27
    |
-13 |     pub rule pub_rule_arg(x: rule<()>) = "foo" //~ ERROR
+10 |     pub rule pub_rule_arg(x: rule<()>) = "foo" //~ ERROR
    |                           ^
