@@ -5,6 +5,7 @@ pub struct Grammar {
     pub doc: Option<TokenStream>,
     pub visibility: Option<TokenStream>,
     pub name: Ident,
+    pub ty_params: Option<Vec<TokenStream>>,
     pub args: Vec<(Ident, TokenStream)>,
     pub items: Vec<Item>,
     pub input_type: TokenStream,

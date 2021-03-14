@@ -49,6 +49,7 @@ fn extra_args_call(grammar: &Grammar) -> TokenStream {
 struct Context<'a> {
     rules: &'a HashMap<String, &'a Rule>,
     rules_from_args: HashSet<String>,
+    extra_ty_params: &'a Option<Vec<TokenStream>>,
     extra_args_call: TokenStream,
     extra_args_def: TokenStream,
 }
@@ -62,6 +63,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     let context = &Context {
         rules: &analysis.rules,
         rules_from_args: HashSet::new(),
+        extra_ty_params: &grammar.ty_params,
         extra_args_call: extra_args_call(grammar),
         extra_args_def: extra_args_def(grammar),
     };
@@ -107,6 +109,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
     let doc = &grammar.doc;
     let input_type = &grammar.input_type;
+    let input_ty_params = ty_params_slice(&grammar.ty_params);
     let visibility = &grammar.visibility;
 
     let mut errors = Vec::new();
@@ -124,8 +127,8 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
         #visibility mod #name {
             #[allow(unused_imports)]
             use super::*;
-            type Input = #input_type;
-            type PositionRepr = <Input as ::peg::Parse>::PositionRepr;
+            type Input<#(#input_ty_params),*> = #input_type;
+            type PositionRepr<#(#input_ty_params),*> = <Input<#(#input_ty_params),*> as ::peg::Parse>::PositionRepr;
 
             #(#errors)*
             #(#items)*
@@ -165,14 +168,19 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
     }
 }
 
-fn rule_params_list(rule: &Rule) -> Vec<TokenStream> {
+fn ty_params_slice(ty_params: &Option<Vec<TokenStream>>) -> &[TokenStream] {
+    ty_params.as_ref().map(|x| &x[..]).unwrap_or(&[])
+}
+
+fn rule_params_list(context: &Context, rule: &Rule) -> Vec<TokenStream> {
+    let extra_ty_params = ty_params_slice(context.extra_ty_params);
     let span = rule.span.resolved_at(Span::mixed_site());
     rule.params.iter().map(|param| {
         let name = &param.name;
         match &param.ty {
             RuleParamTy::Rust(ty) => quote_spanned!{ span => #name: #ty },
             RuleParamTy::Rule(ty) => quote_spanned!{ span =>
-                #name: impl Fn(&'input Input, &mut ParseState<'input>, &mut ::peg::error::ErrorState, usize) -> ::peg::RuleResult<#ty>
+                #name: impl Fn(&'input Input<#(#extra_ty_params),*>, &mut ParseState<'input>, &mut ::peg::error::ErrorState, usize) -> ::peg::RuleResult<#ty>
             },
         }
     }).collect()
@@ -184,7 +192,8 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let name = format_ident!("__parse_{}", rule.name, span=span);
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let result_used = rule.ret_type.is_some();
-    let ty_params = rule.ty_params.as_ref().map(|x| &x[..]).unwrap_or(&[]);
+    let ty_params = ty_params_slice(&rule.ty_params);
+    let extra_ty_params = ty_params_slice(context.extra_ty_params);
 
     let mut context = context.clone();
     context
@@ -217,7 +226,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
     let extra_args_def = &context.extra_args_def;
 
-    let rule_params = rule_params_list(rule);
+    let rule_params = rule_params_list(&context, rule);
 
     if rule.cached {
         let cache_field = format_ident!("{}_cache", rule.name);
@@ -236,7 +245,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         };
 
         quote_spanned! { span =>
-            fn #name<'input #(, #ty_params)*>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
+            fn #name<'input #(, #extra_ty_params)* #(, #ty_params)*>(__input: &'input Input<#(#extra_ty_params),*>, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
                 #![allow(non_snake_case, unused)]
                 if let Some(entry) = __state.#cache_field.get(&__pos) {
                     #cache_trace
@@ -249,7 +258,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         }
     } else {
         quote_spanned! { span =>
-            fn #name<'input #(, #ty_params)*>(__input: &'input Input, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
+            fn #name<'input #(, #extra_ty_params)* #(, #ty_params)*>(__input: &'input Input<#(#extra_ty_params),*>, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
                 #![allow(non_snake_case, unused)]
                 #wrapped_body
             }
@@ -264,8 +273,9 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let visibility = &rule.visibility;
     let parse_fn = format_ident!("__parse_{}", rule.name.to_string(), span = name.span());
-    let ty_params = rule.ty_params.as_ref().map(|x| &x[..]).unwrap_or(&[]);
-    let rule_params = rule_params_list(rule);
+    let ty_params = ty_params_slice(&rule.ty_params);
+    let extra_ty_params = ty_params_slice(context.extra_ty_params);
+    let rule_params = rule_params_list(context, rule);
     let rule_params_call: Vec<TokenStream> = rule
         .params
         .iter()
@@ -280,7 +290,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     quote_spanned! { span =>
         #doc
-        #visibility fn #name<'input #(, #ty_params)*>(__input: &'input Input #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr>> {
+        #visibility fn #name<'input #(, #extra_ty_params)* #(, #ty_params)*>(__input: &'input Input<#(#extra_ty_params),*> #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#extra_ty_params),*>>> {
             #![allow(non_snake_case, unused)]
 
             let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
