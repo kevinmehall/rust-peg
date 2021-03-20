@@ -49,3 +49,14 @@ pub fn main() {
 [pest]: https://github.com/pest-parser/pest
 [nom]: https://github.com/geal/nom
 [lalrpop]: https://github.com/lalrpop/lalrpop
+
+## See also
+
+* [pegviz] is a UI for visualizing rust-peg's trace output to debug parsers.
+* There exist several crates to format diagnostic messages on source code snippets in the terminal, including [chic], [annotate-snippets], [codespan-reporting], and [codemap-diagnostic].
+
+[pegviz]: https://github.com/fasterthanlime/pegviz
+[chic]: https://crates.io/crates/chic
+[annotate-snippets]: https://crates.io/crates/annotate-snippets
+[codespan-reporting]: https://crates.io/crates/codespan-reporting
+[codemap-diagnostic]: https://crates.io/crates/codemap-diagnostic
