@@ -14,7 +14,7 @@ peg::parser!( grammar ra() for str {
 
     rule keyword(id: &'static str) = ##parse_string_literal(id) !['0'..='9' | 'a'..='z' | 'A'..='Z' | '_']
     rule ident() = ['a'..='z']+
-    rule _() = [' ']*
+    rule _ = [' ']*
     pub rule ifelse() = keyword("if") _ ident() _ keyword("then") _ ident() _ keyword("else") _ ident()
     
     pub rule repeated_a(i: usize) = ['a']*<{i}>

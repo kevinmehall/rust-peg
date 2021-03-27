@@ -16,7 +16,7 @@ grammar arithmetic() for str {
     pub rule expression() -> Expression
         = sum()
 
-    rule _() = [' ' | '\n']*
+    rule _ = [' ' | '\n']*
 
     rule sum() -> Expression
         = l:product() _ "+" _ r:product() { Expression::Sum(Box::new(l), Box::new(r)) }

@@ -14,19 +14,26 @@ rule grammar_args() -> Vec<(Ident, TokenStream)>
 
 rule peg_rule() -> Rule
     = doc:rust_doc_comment() cached:cacheflag() visibility:rust_visibility()
-      span:sp() "rule" name:IDENT() ty_params:rust_ty_params()? "(" params:rule_param()**"," ")" ret_type:("->" t:$(rust_type()) {t})? "=" expr:expression() ";"?
-        { Rule { span, doc, name, ty_params, params, expr, ret_type, visibility, cached } }
+      span:sp() "rule"
+      header:(
+          &("_" / "__" / "___") name:IDENT() ("(" ")")? { (name, None, Vec::new()) }
+        / name:IDENT() ty_params:rust_ty_params()? params:rule_params() { (name, ty_params, params) }
+      )
+      ret_type:("->" t:$(rust_type()) {t})?
+      "=" expr:expression() ";"?
+        { Rule { span, doc, name:header.0, ty_params:header.1, params:header.2, expr, ret_type, visibility, cached } }
 
     rule cacheflag() -> bool = "#" "[" "cache" "]" {true} / {false}
 
     rule rust_ty_params() -> Vec<TokenStream>
         = "<" p:(($(IDENT() / LIFETIME())) ++ ",") ">" { p }
 
-    rule rule_param() -> RuleParam
-        = name:IDENT() ":" ty:(
-            "rule" "<" r:$(rust_type()) ">" { RuleParamTy::Rule(r) }
-            / t:$(rust_type()) { RuleParamTy::Rust(t) }
-        ) { RuleParam { name, ty} }
+    rule rule_param_ty() -> RuleParamTy
+        = "rule" "<" r:$(rust_type()) ">" { RuleParamTy::Rule(r) }
+        / t:$(rust_type()) { RuleParamTy::Rust(t) }
+
+    rule rule_params() -> Vec<RuleParam>
+        = "(" params:(name:IDENT() ":" ty:rule_param_ty() { RuleParam { name, ty} }) ** "," ")" { params }
 
 rule item() -> Item
     = u:rust_use()     { Item::Use(u) }
