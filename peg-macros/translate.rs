@@ -287,6 +287,11 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     let extra_args_def = &context.extra_args_def;
     let extra_args_call = &context.extra_args_call;
+    let eof_check = if rule.nonexhaustive {
+        quote_spanned!{ span => true }
+    } else {
+        quote_spanned!{ span => ::peg::Parse::is_eof(__input, __pos) }
+    };
 
     quote_spanned! { span =>
         #doc
@@ -297,7 +302,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
             let mut __state = ParseState::new();
             match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call #(, #rule_params_call)*) {
                 ::peg::RuleResult::Matched(__pos, __value) => {
-                    if ::peg::Parse::is_eof(__input, __pos) {
+                    if #eof_check {
                         return Ok(__value)
                     } else {
                         __err_state.mark_failure(__pos, "EOF");
@@ -311,7 +316,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
             match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call #(, #rule_params_call)*) {
                 ::peg::RuleResult::Matched(__pos, __value) => {
-                    if ::peg::Parse::is_eof(__input, __pos) {
+                    if #eof_check {
                         panic!("Parser is nondeterministic: succeeded when reparsing for error position");
                     } else {
                         __err_state.mark_failure(__pos, "EOF");

@@ -13,6 +13,7 @@
 * Helpful `rustc` error messages for errors in the grammar definition or the Rust
   code embedded within it
 * Rule-level tracing to debug grammars
+* Opt-in nonexhaustive parsing
 
 ## Example
 

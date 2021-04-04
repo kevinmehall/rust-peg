@@ -188,6 +188,13 @@
 //! rule beginning and ending with `@` is an infix expression. Prefix and postfix rules have one
 //! `@` at the beginning or end, and atoms do not include `@`.
 //!
+//! ### Exhaustiveness
+//!
+//! Normally, parsers fail if not all of the input is consumed. To opt in to non exhaustive
+//! parsing, add the `nonexhaustive` modifier before the `rule` keyword. Note that you should take
+//! care to not miss a malformed `thing` at the last position if you have a `thing()*` repeat
+//! parser.
+//!
 //! ## Input types
 //!
 //!  The first line of the grammar declares an input type. This is normally
