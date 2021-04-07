@@ -94,6 +94,11 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
                         }
 
                         items.push(compile_rule_export(context, rule));
+                    } else if rule.no_eof {
+                        items.push(report_error(
+                            rule.name.span(),
+                            format!("#[no_eof] is only meaningful for `pub rule`"),
+                        ));
                     }
 
                     items.push(compile_rule(context, rule));
@@ -287,7 +292,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     let extra_args_def = &context.extra_args_def;
     let extra_args_call = &context.extra_args_call;
-    let eof_check = if rule.nonexhaustive {
+    let eof_check = if rule.no_eof {
         quote_spanned!{ span => true }
     } else {
         quote_spanned!{ span => ::peg::Parse::is_eof(__input, __pos) }

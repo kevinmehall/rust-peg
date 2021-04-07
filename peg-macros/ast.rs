@@ -37,7 +37,7 @@ pub struct Rule {
     pub doc: Option<TokenStream>,
     pub visibility: Option<TokenStream>,
     pub cached: bool,
-    pub nonexhaustive: bool,
+    pub no_eof: bool,
 }
 
 #[derive(Debug)]
