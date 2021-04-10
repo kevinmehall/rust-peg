@@ -45,7 +45,7 @@
 //! peg::parser!{
 //!   grammar list_parser() for str {
 //!     rule number() -> u32
-//!       = n:$(['0'..='9']+) { n.parse().unwrap() }
+//!       = n:$(['0'..='9']+) {? n.parse().or(Err("u32")) }
 //!
 //!     pub rule list() -> Vec<u32>
 //!       = "[" l:number() ** "," "]" { l }
@@ -69,7 +69,7 @@
 //!   * `some_rule()` - _Rule:_ match a rule defined elsewhere in the grammar and return its
 //!     result. Arguments in the parentheses are Rust expressions.
 //!   * `_` or `__` or `___` - _Rule (underscore):_ As a special case, rule names
-//!     consisting of underscores are invoked without parentheses. These are
+//!     consisting of underscores can be defined and invoked without parentheses. These are
 //!     conventionally used to match whitespace between tokens.
 //!   * `(e)` - _Parentheses:_ wrap an expression into a group to override
 //!     normal precedence. Returns the same value as the inner expression. (Use
@@ -190,9 +190,9 @@
 //!
 //! ### End-of-file handling
 //!
-//! Normally, parsers fail if not all of the input is consumed. If you would like the parser
-//! to allow matching a prefix of the input, add the `#[no_eof]` attribute before `pub rule`.
-//! Take care to not miss a malformed `thing` at the last position if the rule ends with a `thing()*
+//! Normally, parsers report an error if the top-level rule matches without consuming all the input.
+//! To allow matching a prefix of the input, add the `#[no_eof]` attribute before `pub rule`.
+//! Take care to not miss a malformed `x` at the last position if the rule ends with a `x()*`
 //! repeat expression.
 //!
 //! ## Input types
@@ -202,12 +202,12 @@
 //!  library comes with implementations for `str`, `[u8]`, and `[T]`. Define the
 //!  traits below to use your own types as input to `peg` grammars:
 //!
-//!   * `Parse` is the base trait required for all inputs. The others are only required to use the
+//!   * [`Parse`] is the base trait required for all inputs. The others are only required to use the
 //!     corresponding expressions.
-//!   * `ParseElem` implements the `[_]` pattern operator, with a method returning the next item of
+//!   * [`ParseElem`] implements the `[_]` pattern operator, with a method returning the next item of
 //!     the input to match.
-//!   * `ParseLiteral` implements matching against a `"string"` literal.
-//!   * `ParseSlice` implements the `$()` operator, returning a slice from a span of indexes.
+//!   * [`ParseLiteral`] implements matching against a `"string"` literal.
+//!   * [`ParseSlice`] implements the `$()` operator, returning a slice from a span of indexes.
 //!
 //! As a more complex example, the body of the `peg::parser!{}` macro itself is
 //! parsed with `peg`, using a [definition of these traits][gh-flat-token-tree]

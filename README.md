@@ -13,7 +13,6 @@
 * Helpful `rustc` error messages for errors in the grammar definition or the Rust
   code embedded within it
 * Rule-level tracing to debug grammars
-* Opt-in nonexhaustive parsing
 
 ## Example
 
@@ -23,8 +22,8 @@ Parse a comma-separated list of numbers surrounded by brackets into a `Vec<u32>`
 peg::parser!{
   grammar list_parser() for str {
     rule number() -> u32
-      = n:$(['0'..='9']+) { n.parse().unwrap() }
-    
+      = n:$(['0'..='9']+) {? n.parse().or(Err("u32")) }
+
     pub rule list() -> Vec<u32>
       = "[" l:number() ** "," "]" { l }
   }
