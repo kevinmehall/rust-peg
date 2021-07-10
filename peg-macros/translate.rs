@@ -49,7 +49,9 @@ fn extra_args_call(grammar: &Grammar) -> TokenStream {
 struct Context<'a> {
     rules: &'a HashMap<String, &'a Rule>,
     rules_from_args: HashSet<String>,
-    extra_ty_params: &'a Option<Vec<TokenStream>>,
+    grammar_ty_params: &'a [TokenStream],
+    input_ty: TokenStream,
+    parse_state_ty: TokenStream,
     extra_args_call: TokenStream,
     extra_args_def: TokenStream,
 }
@@ -60,10 +62,14 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
     let analysis = analysis::check(&grammar);
 
+    let grammar_ty_params = ty_params_slice(&grammar.ty_params);
+
     let context = &Context {
         rules: &analysis.rules,
         rules_from_args: HashSet::new(),
-        extra_ty_params: &grammar.ty_params,
+        grammar_ty_params: grammar_ty_params,
+        input_ty: quote!(&'input Input<#(#grammar_ty_params),*>),
+        parse_state_ty: quote!(&mut ParseState<'input #(, #grammar_ty_params)*>),
         extra_args_call: extra_args_call(grammar),
         extra_args_def: extra_args_def(grammar),
     };
@@ -165,7 +171,7 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
             #(#cache_fields_def),*
         }
 
-        impl<'input#(, #grammar_ty_params)*> ParseState<'input #(, #grammar_ty_params)*> {
+        impl<'input #(, #grammar_ty_params)*> ParseState<'input #(, #grammar_ty_params)*> {
             fn new() -> ParseState<'input #(, #grammar_ty_params)*> {
                 ParseState {
                     _phantom: ::std::marker::PhantomData,
@@ -181,14 +187,15 @@ fn ty_params_slice(ty_params: &Option<Vec<TokenStream>>) -> &[TokenStream] {
 }
 
 fn rule_params_list(context: &Context, rule: &Rule) -> Vec<TokenStream> {
-    let extra_ty_params = ty_params_slice(context.extra_ty_params);
+    let input_ty = &context.input_ty;
+    let parse_state_ty = &context.parse_state_ty;
     let span = rule.span.resolved_at(Span::mixed_site());
     rule.params.iter().map(|param| {
         let name = &param.name;
         match &param.ty {
             RuleParamTy::Rust(ty) => quote_spanned!{ span => #name: #ty },
             RuleParamTy::Rule(ty) => quote_spanned!{ span =>
-                #name: impl Fn(&'input Input<#(#extra_ty_params),*>, &mut ParseState<'input #(, #extra_ty_params)*>, &mut ::peg::error::ErrorState, usize) -> ::peg::RuleResult<#ty>
+                #name: impl Fn(#input_ty, #parse_state_ty, &mut ::peg::error::ErrorState, usize) -> ::peg::RuleResult<#ty>
             },
         }
     }).collect()
@@ -201,7 +208,9 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let result_used = rule.ret_type.is_some();
     let ty_params = ty_params_slice(&rule.ty_params);
-    let extra_ty_params = ty_params_slice(context.extra_ty_params);
+    let input_ty = &context.input_ty;
+    let parse_state_ty = &context.parse_state_ty;
+    let grammar_ty_params = context.grammar_ty_params;
 
     let mut context = context.clone();
     context
@@ -266,7 +275,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     };
 
     quote_spanned! { span =>
-        fn #name<'input #(, #extra_ty_params)* #(, #ty_params)*>(__input: &'input Input<#(#extra_ty_params),*>, __state: &mut ParseState<'input #(, #extra_ty_params)*>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
+        fn #name<'input #(, #grammar_ty_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
             #![allow(non_snake_case, unused)]
             #fn_body
         }
@@ -281,7 +290,8 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let visibility = &rule.visibility;
     let parse_fn = format_ident!("__parse_{}", rule.name.to_string(), span = name.span());
     let ty_params = ty_params_slice(&rule.ty_params);
-    let extra_ty_params = ty_params_slice(context.extra_ty_params);
+    let grammar_ty_params = context.grammar_ty_params;
+    let input_ty = &context.input_ty;
     let rule_params = rule_params_list(context, rule);
     let rule_params_call: Vec<TokenStream> = rule
         .params
@@ -302,7 +312,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     quote_spanned! { span =>
         #doc
-        #visibility fn #name<'input #(, #extra_ty_params)* #(, #ty_params)*>(__input: &'input Input<#(#extra_ty_params),*> #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#extra_ty_params),*>>> {
+        #visibility fn #name<'input #(, #grammar_ty_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_ty_params),*>>> {
             #![allow(non_snake_case, unused)]
 
             let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
