@@ -4,8 +4,9 @@ pub mod peg {
     use super::*;
     type Input = FlatTokenStream;
     type PositionRepr = <Input as ::peg::Parse>::PositionRepr;
+    #[allow(unused_parens)]
     struct ParseState<'input> {
-        _phantom: ::std::marker::PhantomData<&'input ()>,
+        _phantom: ::std::marker::PhantomData<(&'input ())>,
         primary_cache: ::std::collections::HashMap<usize, ::peg::RuleResult<SpannedExpr>>,
     }
     impl<'input> ParseState<'input> {

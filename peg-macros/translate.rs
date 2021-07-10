@@ -143,6 +143,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
 fn make_parse_state(grammar: &Grammar) -> TokenStream {
     let span = Span::mixed_site();
+    let grammar_ty_params = ty_params_slice(&grammar.ty_params);
     let mut cache_fields_def: Vec<TokenStream> = Vec::new();
     let mut cache_fields: Vec<Ident> = Vec::new();
     for rule in grammar.iter_rules() {
@@ -157,13 +158,14 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
     }
 
     quote_spanned! { span =>
-        struct ParseState<'input> {
-            _phantom: ::std::marker::PhantomData<&'input ()>,
+        #[allow(unused_parens)]
+        struct ParseState<'input #(, #grammar_ty_params)*> {
+            _phantom: ::std::marker::PhantomData<(&'input () #(, &#grammar_ty_params ())*)>,
             #(#cache_fields_def),*
         }
 
-        impl<'input> ParseState<'input> {
-            fn new() -> ParseState<'input> {
+        impl<'input#(, #grammar_ty_params)*> ParseState<'input #(, #grammar_ty_params)*> {
+            fn new() -> ParseState<'input #(, #grammar_ty_params)*> {
                 ParseState {
                     _phantom: ::std::marker::PhantomData,
                     #(#cache_fields: ::std::collections::HashMap::new()),*
@@ -185,7 +187,7 @@ fn rule_params_list(context: &Context, rule: &Rule) -> Vec<TokenStream> {
         match &param.ty {
             RuleParamTy::Rust(ty) => quote_spanned!{ span => #name: #ty },
             RuleParamTy::Rule(ty) => quote_spanned!{ span =>
-                #name: impl Fn(&'input Input<#(#extra_ty_params),*>, &mut ParseState<'input>, &mut ::peg::error::ErrorState, usize) -> ::peg::RuleResult<#ty>
+                #name: impl Fn(&'input Input<#(#extra_ty_params),*>, &mut ParseState<'input #(, #extra_ty_params)*>, &mut ::peg::error::ErrorState, usize) -> ::peg::RuleResult<#ty>
             },
         }
     }).collect()
@@ -233,7 +235,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
     let rule_params = rule_params_list(&context, rule);
 
-    if rule.cached {
+    let fn_body = if rule.cached {
         let cache_field = format_ident!("{}_cache", rule.name);
 
         let cache_trace = if cfg!(feature = "trace") {
@@ -250,23 +252,22 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         };
 
         quote_spanned! { span =>
-            fn #name<'input #(, #extra_ty_params)* #(, #ty_params)*>(__input: &'input Input<#(#extra_ty_params),*>, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
-                #![allow(non_snake_case, unused)]
-                if let Some(entry) = __state.#cache_field.get(&__pos) {
-                    #cache_trace
-                    return entry.clone();
-                }
-                let __rule_result = #wrapped_body;
-                __state.#cache_field.insert(__pos, __rule_result.clone());
-                __rule_result
+            if let Some(entry) = __state.#cache_field.get(&__pos) {
+                #cache_trace
+                return entry.clone();
             }
+            let __rule_result = #wrapped_body;
+            __state.#cache_field.insert(__pos, __rule_result.clone());
+            __rule_result
         }
     } else {
-        quote_spanned! { span =>
-            fn #name<'input #(, #extra_ty_params)* #(, #ty_params)*>(__input: &'input Input<#(#extra_ty_params),*>, __state: &mut ParseState<'input>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
-                #![allow(non_snake_case, unused)]
-                #wrapped_body
-            }
+        wrapped_body
+    };
+
+    quote_spanned! { span =>
+        fn #name<'input #(, #extra_ty_params)* #(, #ty_params)*>(__input: &'input Input<#(#extra_ty_params),*>, __state: &mut ParseState<'input #(, #extra_ty_params)*>, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
+            #![allow(non_snake_case, unused)]
+            #fn_body
         }
     }
 }

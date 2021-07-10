@@ -10,7 +10,14 @@ peg::parser!{
 
         rule list() -> Vec<&'t str> = [Token("(")] l:commasep(<string()>) [Token(")")] { l }
         rule string() -> &'t str = [Token(inner)] { inner }
+
+        #[cache]
+        rule cached() -> Token<'t> = [a] { a }
     }
+}
+
+peg::parser!{
+    grammar unused_args<'a>() for () { }
 }
 
 fn main() {
