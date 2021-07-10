@@ -7,7 +7,6 @@ version = "0.7.0"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
-documentation = "https://github.com/kevinmehall/rust-peg/blob/master/README.md#readme"
 description = "A simple Parsing Expression Grammar (PEG) parser generator."
 keywords = ["peg", "parser", "parsing", "grammar"]
 categories = ["parsing"]
