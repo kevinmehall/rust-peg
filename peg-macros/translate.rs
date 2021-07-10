@@ -49,7 +49,7 @@ fn extra_args_call(grammar: &Grammar) -> TokenStream {
 struct Context<'a> {
     rules: &'a HashMap<String, &'a Rule>,
     rules_from_args: HashSet<String>,
-    grammar_ty_params: &'a [TokenStream],
+    grammar_lifetime_params: &'a [TokenStream],
     input_ty: TokenStream,
     parse_state_ty: TokenStream,
     extra_args_call: TokenStream,
@@ -62,14 +62,14 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
     let analysis = analysis::check(&grammar);
 
-    let grammar_ty_params = ty_params_slice(&grammar.ty_params);
+    let grammar_lifetime_params = ty_params_slice(&grammar.lifetime_params);
 
     let context = &Context {
         rules: &analysis.rules,
         rules_from_args: HashSet::new(),
-        grammar_ty_params: grammar_ty_params,
-        input_ty: quote!(&'input Input<#(#grammar_ty_params),*>),
-        parse_state_ty: quote!(&mut ParseState<'input #(, #grammar_ty_params)*>),
+        grammar_lifetime_params: grammar_lifetime_params,
+        input_ty: quote!(&'input Input<#(#grammar_lifetime_params),*>),
+        parse_state_ty: quote!(&mut ParseState<'input #(, #grammar_lifetime_params)*>),
         extra_args_call: extra_args_call(grammar),
         extra_args_def: extra_args_def(grammar),
     };
@@ -121,7 +121,6 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
     let doc = &grammar.doc;
     let input_type = &grammar.input_type;
-    let input_ty_params = ty_params_slice(&grammar.ty_params);
     let visibility = &grammar.visibility;
 
     let mut errors = Vec::new();
@@ -139,8 +138,8 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
         #visibility mod #name {
             #[allow(unused_imports)]
             use super::*;
-            type Input<#(#input_ty_params),*> = #input_type;
-            type PositionRepr<#(#input_ty_params),*> = <Input<#(#input_ty_params),*> as ::peg::Parse>::PositionRepr;
+            type Input<#(#grammar_lifetime_params),*> = #input_type;
+            type PositionRepr<#(#grammar_lifetime_params),*> = <Input<#(#grammar_lifetime_params),*> as ::peg::Parse>::PositionRepr;
 
             #(#errors)*
             #(#items)*
@@ -150,7 +149,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
 fn make_parse_state(grammar: &Grammar) -> TokenStream {
     let span = Span::mixed_site();
-    let grammar_ty_params = ty_params_slice(&grammar.ty_params);
+    let grammar_lifetime_params = ty_params_slice(&grammar.lifetime_params);
     let mut cache_fields_def: Vec<TokenStream> = Vec::new();
     let mut cache_fields: Vec<Ident> = Vec::new();
     for rule in grammar.iter_rules() {
@@ -166,13 +165,13 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
 
     quote_spanned! { span =>
         #[allow(unused_parens)]
-        struct ParseState<'input #(, #grammar_ty_params)*> {
-            _phantom: ::std::marker::PhantomData<(&'input () #(, &#grammar_ty_params ())*)>,
+        struct ParseState<'input #(, #grammar_lifetime_params)*> {
+            _phantom: ::std::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
             #(#cache_fields_def),*
         }
 
-        impl<'input #(, #grammar_ty_params)*> ParseState<'input #(, #grammar_ty_params)*> {
-            fn new() -> ParseState<'input #(, #grammar_ty_params)*> {
+        impl<'input #(, #grammar_lifetime_params)*> ParseState<'input #(, #grammar_lifetime_params)*> {
+            fn new() -> ParseState<'input #(, #grammar_lifetime_params)*> {
                 ParseState {
                     _phantom: ::std::marker::PhantomData,
                     #(#cache_fields: ::std::collections::HashMap::new()),*
@@ -210,7 +209,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let ty_params = ty_params_slice(&rule.ty_params);
     let input_ty = &context.input_ty;
     let parse_state_ty = &context.parse_state_ty;
-    let grammar_ty_params = context.grammar_ty_params;
+    let grammar_lifetime_params = context.grammar_lifetime_params;
 
     let mut context = context.clone();
     context
@@ -275,7 +274,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     };
 
     quote_spanned! { span =>
-        fn #name<'input #(, #grammar_ty_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
+        fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
             #![allow(non_snake_case, unused)]
             #fn_body
         }
@@ -290,7 +289,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let visibility = &rule.visibility;
     let parse_fn = format_ident!("__parse_{}", rule.name.to_string(), span = name.span());
     let ty_params = ty_params_slice(&rule.ty_params);
-    let grammar_ty_params = context.grammar_ty_params;
+    let grammar_lifetime_params = context.grammar_lifetime_params;
     let input_ty = &context.input_ty;
     let rule_params = rule_params_list(context, rule);
     let rule_params_call: Vec<TokenStream> = rule
@@ -312,7 +311,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     quote_spanned! { span =>
         #doc
-        #visibility fn #name<'input #(, #grammar_ty_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_ty_params),*>>> {
+        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_lifetime_params),*>>> {
             #![allow(non_snake_case, unused)]
 
             let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
