@@ -78,8 +78,9 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
                     if rule.cached && !(rule.params.is_empty() && rule.ty_params.is_none()) {
                         items.push(report_error(
                             rule.name.span(),
-                            format!("rules with arguments cannot use #[cache]"),
+                            format!("rules with generics or parameters cannot use #[cache]"),
                         ));
+                        continue;
                     }
 
                     if rule.visibility.is_some() {
@@ -147,7 +148,7 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
     let mut cache_fields_def: Vec<TokenStream> = Vec::new();
     let mut cache_fields: Vec<Ident> = Vec::new();
     for rule in grammar.iter_rules() {
-        if rule.cached {
+        if rule.cached && rule.params.is_empty() && rule.ty_params.is_none() {
             let name = format_ident!("{}_cache", rule.name);
             let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
             cache_fields_def.push(
