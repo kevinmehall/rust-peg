@@ -24,6 +24,9 @@ peg::parser!( grammar ra() for str {
     pub rule test_i() = i("foo") i("bar")
 
     rule recursive(r: rule<()>) = " " recursive(r) // Issue #226
+    rule complex_args(val1: u32, val2: Option<u32>) = { assert_eq!(val1, 10); assert_eq!(val2, Some(8)) }
+    pub rule use_complex_args() = complex_args(u32::max(5, 10), [1,1,3,5,8,13].iter().cloned().find(|x| { x % 2 == 0 }))
+
 });
 
 use ra::*;
@@ -42,4 +45,6 @@ fn main() {
     assert!(test_i("fOoBaR").is_ok());
     assert!(test_i("fOoBaZ").is_err());
     assert!(test_i("fOoX").is_err());
+
+    use_complex_args("").ok();
 }

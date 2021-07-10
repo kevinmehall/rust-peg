@@ -87,6 +87,19 @@ impl FlatTokenStream {
             _ => RuleResult::Failed,
         }
     }
+
+    pub fn eat_until(&self, initial_pos: usize, end: char) -> RuleResult<()> {
+        let mut pos = initial_pos;
+        loop {
+            match self.tokens.get(pos) {
+                Some(Token::Begin(_, n)) => pos = *n,
+                Some(Token::Ident(_)) | Some(Token::Literal(_)) => pos += 1,
+                Some(Token::Punct(p)) if p.as_char() != end => pos += 1,
+                _ if pos != initial_pos => return RuleResult::Matched(pos, ()),
+                _ => return RuleResult::Failed,
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

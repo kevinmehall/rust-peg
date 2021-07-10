@@ -128,7 +128,7 @@ rule primary() -> SpannedExpr
 
     rule rule_arg() -> RuleArg
         = "<" e:expression() ">" { RuleArg::Peg(e) }
-        / tt:$(LITERAL() / PAREN_GROUP() / IDENT()) { RuleArg::Rust(tt) }
+        / tt:$( ##eat_until(',')+ ) { RuleArg::Rust(tt) }
 
 rule precedence_level() -> PrecedenceLevel
   = operators:precedence_op()+
