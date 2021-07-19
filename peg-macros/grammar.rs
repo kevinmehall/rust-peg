@@ -69,7 +69,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Grammar> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __seq_res = __parse_rust_doc_comment(__input, __state, __err_state, __pos);
             match __seq_res {
@@ -141,7 +141,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Vec<TokenStream>> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "<") {
             ::peg::RuleResult::Matched(__pos, __val) => {
                 let __seq_res = {
@@ -230,7 +230,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Vec<(Ident, TokenStream)>> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "(") {
             ::peg::RuleResult::Matched(__pos, __val) => {
                 let __seq_res = {
@@ -372,7 +372,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Rule> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __seq_res = __parse_rust_doc_comment(__input, __state, __err_state, __pos);
             match __seq_res {
@@ -483,7 +483,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<bool> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __choice_res = match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "#")
             {
@@ -536,7 +536,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<bool> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __choice_res = match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "#")
             {
@@ -590,7 +590,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Vec<TokenStream>> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "<") {
             ::peg::RuleResult::Matched(__pos, __val) => {
                 let __seq_res = {
@@ -696,7 +696,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<RuleParamTy> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __choice_res =
                 match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "rule") {
@@ -794,7 +794,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Vec<RuleParam>> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "(") {
             ::peg::RuleResult::Matched(__pos, __val) => {
                 let __seq_res = {
@@ -895,7 +895,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Item> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __choice_res = {
                 let __seq_res = __parse_rust_use(__input, __state, __err_state, __pos);
@@ -928,7 +928,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Option<TokenStream>> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         match {
             let str_start = __pos;
             match {
@@ -1017,7 +1017,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Option<TokenStream>> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         match {
             let str_start = __pos;
             match {
@@ -1088,7 +1088,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<TokenStream> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __seq_res = {
                 let str_start = __pos;
@@ -1182,7 +1182,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __seq_res =
                 match match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "crate") {
@@ -1273,7 +1273,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __choice_res = match __parse_BRACKET_GROUP(__input, __state, __err_state, __pos) {
                 ::peg::RuleResult::Matched(pos, _) => ::peg::RuleResult::Matched(pos, ()),
@@ -1502,7 +1502,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __parse_choice(__input, __state, __err_state, __pos)
     }
     fn __parse_choice<'input>(
@@ -1511,7 +1511,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __seq_res = __parse_sp(__input, __state, __err_state, __pos);
             match __seq_res {
@@ -1581,7 +1581,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __seq_res = __parse_sp(__input, __state, __err_state, __pos);
             match __seq_res {
@@ -1646,7 +1646,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<TaggedExpr> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __seq_res = match {
                 let __seq_res = __parse_IDENT(__input, __state, __err_state, __pos);
@@ -1696,7 +1696,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __choice_res = {
                 let __seq_res = __parse_prefixed(__input, __state, __err_state, __pos);
@@ -1925,7 +1925,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<BoundedRepeat> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __choice_res = match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "<")
             {
@@ -2050,7 +2050,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<TokenStream> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let str_start = __pos;
             match {
@@ -2086,7 +2086,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __choice_res = {
                 let __seq_res = __parse_sp(__input, __state, __err_state, __pos);
@@ -2214,7 +2214,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         if let Some(entry) = __state.primary_cache.get(&__pos) {
             return entry.clone();
         }
@@ -2520,7 +2520,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<RuleArg> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __choice_res = match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "<")
             {
@@ -2598,7 +2598,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<PrecedenceLevel> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __seq_res = {
                 let mut __repeat_pos = __pos;
@@ -2639,7 +2639,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<PrecedenceOperator> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __seq_res = __parse_sp(__input, __state, __err_state, __pos);
             match __seq_res {
@@ -2693,7 +2693,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Span> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __input.next_span(__pos)
     }
     fn __parse_KEYWORD<'input>(
@@ -2702,7 +2702,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __choice_res =
                 match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "pub") {
@@ -2794,7 +2794,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Ident> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         {
             let __seq_res = {
                 __err_state.suppress_fail += 1;
@@ -2828,7 +2828,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Literal> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __input.literal(__pos)
     }
     fn __parse_PAREN_GROUP<'input>(
@@ -2837,7 +2837,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Group> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __input.group(__pos, Delimiter::Parenthesis)
     }
     fn __parse_BRACE_GROUP<'input>(
@@ -2846,7 +2846,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Group> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __input.group(__pos, Delimiter::Brace)
     }
     fn __parse_BRACKET_GROUP<'input>(
@@ -2855,7 +2855,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Group> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __input.group(__pos, Delimiter::Bracket)
     }
     fn __parse_LIFETIME<'input>(
@@ -2864,7 +2864,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "'") {
             ::peg::RuleResult::Matched(__pos, __val) => {
                 let __seq_res = match __parse_IDENT(__input, __state, __err_state, __pos) {
@@ -2888,7 +2888,7 @@ pub mod peg {
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {
-        #![allow(non_snake_case, unused)]
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         match __parse_LITERAL(__input, __state, __err_state, __pos) {
             ::peg::RuleResult::Matched(pos, _) => ::peg::RuleResult::Matched(pos, ()),
             ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,

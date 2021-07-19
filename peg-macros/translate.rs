@@ -275,7 +275,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
     quote_spanned! { span =>
         fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
-            #![allow(non_snake_case, unused)]
+            #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
             #fn_body
         }
     }
