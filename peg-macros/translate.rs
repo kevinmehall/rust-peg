@@ -81,10 +81,10 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
             Item::Use(tt) => items.push(tt.clone()),
             Item::Rule(rule) => {
                 if seen_rule_names.insert(rule.name.to_string()) {
-                    if rule.cached && !(rule.params.is_empty() && rule.ty_params.is_none()) {
+                    if rule.cache.is_some() && !(rule.params.is_empty() && rule.ty_params.is_none()) {
                         items.push(report_error(
                             rule.name.span(),
-                            format!("rules with generics or parameters cannot use #[cache]"),
+                            format!("rules with generics or parameters cannot use #[cache] or #[cache_left_rec]"),
                         ));
                         continue;
                     }
@@ -153,7 +153,7 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
     let mut cache_fields_def: Vec<TokenStream> = Vec::new();
     let mut cache_fields: Vec<Ident> = Vec::new();
     for rule in grammar.iter_rules() {
-        if rule.cached && rule.params.is_empty() && rule.ty_params.is_none() {
+        if rule.cache.is_some() && rule.params.is_empty() && rule.ty_params.is_none() {
             let name = format_ident!("{}_cache", rule.name);
             let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
             cache_fields_def.push(
@@ -244,39 +244,75 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
     let rule_params = rule_params_list(&context, rule);
 
-    let fn_body = if rule.cached {
-        let cache_field = format_ident!("{}_cache", rule.name);
-
-        let cache_trace = if cfg!(feature = "trace") {
-            let str_rule_name = rule.name.to_string();
+    match &rule.cache {
+        None =>
             quote_spanned! { span =>
-                let loc = ::peg::Parse::position_repr(__input, __pos);
-                match &entry {
-                    &::peg::RuleResult::Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}", #str_rule_name, loc),
-                    &Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}", #str_rule_name, loc),
-                };
-            }
-        } else {
-            quote!()
-        };
+                fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
+                    #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
+                    #wrapped_body
+                }
+            },
+        Some(cache_type) => {
+            let cache_field = format_ident!("{}_cache", rule.name);
 
-        quote_spanned! { span =>
-            if let Some(entry) = __state.#cache_field.get(&__pos) {
-                #cache_trace
-                return entry.clone();
-            }
-            let __rule_result = #wrapped_body;
-            __state.#cache_field.insert(__pos, __rule_result.clone());
-            __rule_result
-        }
-    } else {
-        wrapped_body
-    };
+            let cache_trace = if cfg!(feature = "trace") {
+                let str_rule_name = rule.name.to_string();
+                quote_spanned! { span =>
+                    let loc = ::peg::Parse::position_repr(__input, __pos);
+                    match &entry {
+                        &::peg::RuleResult::Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}", #str_rule_name, loc),
+                        &Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}", #str_rule_name, loc),
+                    };
+                }
+            } else {
+                quote!()
+            };
 
-    quote_spanned! { span =>
-        fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
-            #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
-            #fn_body
+            match cache_type {
+                Cache::Simple =>
+                    quote_spanned! { span =>
+                        fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
+                            #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
+                            if let Some(entry) = __state.#cache_field.get(&__pos) {
+                                #cache_trace
+                                return entry.clone();
+                            }
+
+                            let __rule_result = #wrapped_body;
+                            __state.#cache_field.insert(__pos, __rule_result.clone());
+                            __rule_result
+                        }
+                    },
+                Cache::Recursive =>
+                    quote_spanned! { span =>
+                        fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
+                            #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
+                            if let Some(entry) = __state.#cache_field.get(&__pos) {
+                                #cache_trace
+                                return entry.clone();
+                            }
+
+                            __state.#cache_field.insert(__pos, ::peg::RuleResult::Failed);
+                            let mut __last_result = ::peg::RuleResult::Failed;
+                            loop {
+                                let __current_result = { #wrapped_body };
+                                match __current_result {
+                                    ::peg::RuleResult::Failed => break,
+                                    ::peg::RuleResult::Matched(__current_endpos, _) =>
+                                        match __last_result {
+                                            ::peg::RuleResult::Matched(__last_endpos, _) if __current_endpos <= __last_endpos => break,
+                                            _ => {
+                                                __state.#cache_field.insert(__pos, __current_result.clone());
+                                                __last_result = __current_result;
+                                            },
+                                        }
+                                }
+                            }
+
+                            return __last_result;
+                        }
+                    }
+            }
         }
     }
 }
