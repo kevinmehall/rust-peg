@@ -89,21 +89,25 @@ impl<'a> LeftRecursionVisitor<'a> {
             RuleExpr(ref rule_ident, _) => {
                 let name = rule_ident.to_string();
 
-                if let Some(loop_start) = self
-                    .stack
-                    .iter()
-                    .position(|caller_name| caller_name == &name)
-                {
-                    let mut recursive_loop = self.stack[loop_start..].to_vec();
-                    recursive_loop.push(name);
-                    self.errors.push(LeftRecursionError {
-                        path: recursive_loop,
-                        span: rule_ident.span(),
-                    });
-                    return false;
-                }
-
                 if let Some(rule) = self.rules.get(&name) {
+                    if let Some(loop_start) = self
+                        .stack
+                        .iter()
+                        .position(|caller_name| caller_name == &name)
+                    {
+                        let mut recursive_loop = self.stack[loop_start..].to_vec();
+                        recursive_loop.push(name.clone());
+                        match rule.cache {
+                            None | Some(Cache::Simple) =>
+                                self.errors.push(LeftRecursionError {
+                                    path: recursive_loop,
+                                    span: rule_ident.span(),
+                                }),
+                            _ => ()
+
+                        }
+                        return false;
+                    }
                     self.walk_rule(rule)
                 } else {
                     // Missing rule would have already been reported

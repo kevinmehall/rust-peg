@@ -27,6 +27,12 @@ pub enum Item {
 }
 
 #[derive(Debug)]
+pub enum Cache {
+    Simple,
+    Recursive
+}
+
+#[derive(Debug)]
 pub struct Rule {
     pub span: Span,
     pub name: Ident,
@@ -36,7 +42,7 @@ pub struct Rule {
     pub ret_type: Option<TokenStream>,
     pub doc: Option<TokenStream>,
     pub visibility: Option<TokenStream>,
-    pub cached: bool,
+    pub cache: Option<Cache>,
     pub no_eof: bool,
 }
 

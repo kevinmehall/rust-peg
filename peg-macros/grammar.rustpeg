@@ -16,7 +16,7 @@ rule grammar_args() -> Vec<(Ident, TokenStream)>
     = "(" args:((i:IDENT() ":" t:$(rust_type()) { (i, t) })**",") ","? ")" { args }
 
 rule peg_rule() -> Rule
-    = doc:rust_doc_comment() cached:cacheflag() no_eof:no_eof_flag() visibility:rust_visibility()
+    = doc:rust_doc_comment() cache:cacheflag() no_eof:no_eof_flag() visibility:rust_visibility()
       span:sp() "rule"
       header:(
           &("_" / "__" / "___") name:IDENT() ("(" ")")? { (name, None, Vec::new()) }
@@ -24,9 +24,9 @@ rule peg_rule() -> Rule
       )
       ret_type:("->" t:$(rust_type()) {t})?
       "=" expr:expression() ";"?
-        { Rule { span, doc, name:header.0, ty_params:header.1, params:header.2, expr, ret_type, visibility, no_eof, cached } }
+        { Rule { span, doc, name:header.0, ty_params:header.1, params:header.2, expr, ret_type, visibility, no_eof, cache } }
 
-    rule cacheflag() -> bool = "#" "[" "cache" "]" {true} / {false}
+    rule cacheflag() -> Option<Cache> = "#" "[" "cache" "]" {Some(Cache::Simple)} / "#" "[" "cache_left_rec" "]" {Some(Cache::Recursive)} / {None}
 
     rule no_eof_flag() -> bool = "#" "[" "no_eof" "]" {true} / {false}
 
