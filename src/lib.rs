@@ -273,7 +273,7 @@
 //! As with all procedural macros, non-doc comments are ignored by the lexer and can be used like
 //! in any other Rust code.
 //!
-//! ## Caching
+//! ## Caching and left recursion
 //!
 //! A `rule` without parameters can be prefixed with `#[cache]` if it is likely
 //! to be checked repeatedly in the same position. This memoizes the rule result
@@ -288,11 +288,14 @@
 //! table lookup and insert.
 //!
 //! For example, a complex rule called `expr` might benefit from caching if used
-//! like `expr "x" / expr "y" / expr "z"`, but this could be rewritten to
-//! `expr ("x" / "y" / "z")` which would be even faster.
+//! like `expr() "x" / expr() "y" / expr() "z"`, but this could be rewritten to
+//! `expr() ("x" / "y" / "z")` which would be even faster.
 //!
-//! The `precedence!{}` syntax is another way to avoid repeatedly matching
-//! an expression rule.
+//! `#[cache_left_rec]` extends the `#[cache]` mechanism with the ability to resolve 
+//! left-recursive rules, which are otherwise an error. 
+//!
+//! The `precedence!{}` syntax is another way to handle nested operators and avoid
+//! repeatedly matching an expression rule.
 //!
 //! ## Tracing
 //!
