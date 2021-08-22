@@ -244,14 +244,8 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
     let rule_params = rule_params_list(&context, rule);
 
-    match &rule.cache {
-        None =>
-            quote_spanned! { span =>
-                fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
-                    #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
-                    #wrapped_body
-                }
-            },
+    let fn_body = match &rule.cache {
+        None => wrapped_body,
         Some(cache_type) => {
             let cache_field = format_ident!("{}_cache", rule.name);
 
@@ -271,48 +265,51 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
             match cache_type {
                 Cache::Simple =>
                     quote_spanned! { span =>
-                        fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
-                            #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
-                            if let Some(entry) = __state.#cache_field.get(&__pos) {
-                                #cache_trace
-                                return entry.clone();
-                            }
-
-                            let __rule_result = #wrapped_body;
-                            __state.#cache_field.insert(__pos, __rule_result.clone());
-                            __rule_result
+                        if let Some(entry) = __state.#cache_field.get(&__pos) {
+                            #cache_trace
+                            return entry.clone();
                         }
+
+                        let __rule_result = #wrapped_body;
+                        __state.#cache_field.insert(__pos, __rule_result.clone());
+                        __rule_result
                     },
                 Cache::Recursive =>
+                    // `#[cache_left_rec] support for recursive rules using the technique described here:
+                    // <https://medium.com/@gvanrossum_83706/left-recursive-peg-grammars-65dab3c580e1>
                     quote_spanned! { span =>
-                        fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
-                            #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
-                            if let Some(entry) = __state.#cache_field.get(&__pos) {
-                                #cache_trace
-                                return entry.clone();
-                            }
-
-                            __state.#cache_field.insert(__pos, ::peg::RuleResult::Failed);
-                            let mut __last_result = ::peg::RuleResult::Failed;
-                            loop {
-                                let __current_result = { #wrapped_body };
-                                match __current_result {
-                                    ::peg::RuleResult::Failed => break,
-                                    ::peg::RuleResult::Matched(__current_endpos, _) =>
-                                        match __last_result {
-                                            ::peg::RuleResult::Matched(__last_endpos, _) if __current_endpos <= __last_endpos => break,
-                                            _ => {
-                                                __state.#cache_field.insert(__pos, __current_result.clone());
-                                                __last_result = __current_result;
-                                            },
-                                        }
-                                }
-                            }
-
-                            return __last_result;
+                        if let Some(entry) = __state.#cache_field.get(&__pos) {
+                            #cache_trace
+                            return entry.clone();
                         }
+
+                        __state.#cache_field.insert(__pos, ::peg::RuleResult::Failed);
+                        let mut __last_result = ::peg::RuleResult::Failed;
+                        loop {
+                            let __current_result = { #wrapped_body };
+                            match __current_result {
+                                ::peg::RuleResult::Failed => break,
+                                ::peg::RuleResult::Matched(__current_endpos, _) =>
+                                    match __last_result {
+                                        ::peg::RuleResult::Matched(__last_endpos, _) if __current_endpos <= __last_endpos => break,
+                                        _ => {
+                                            __state.#cache_field.insert(__pos, __current_result.clone());
+                                            __last_result = __current_result;
+                                        },
+                                    }
+                            }
+                        }
+
+                        return __last_result;
                     }
             }
+        }
+    };
+
+    quote_spanned! { span =>
+        fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
+            #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
+            #fn_body
         }
     }
 }
