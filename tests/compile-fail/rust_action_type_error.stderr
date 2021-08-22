@@ -4,4 +4,4 @@ error[E0308]: mismatched types
 7 |     rule foo() -> X = "a" { Y } //~ ERROR
   |                           ^^^^^ expected struct `X`, found struct `Y`
   |
-  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the macro `peg::parser` (in Nightly builds, run with -Z macro-backtrace for more info)
