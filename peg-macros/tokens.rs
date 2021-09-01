@@ -126,10 +126,10 @@ impl Parse for FlatTokenStream {
     }
 }
 
-impl ParseElem for FlatTokenStream {
+impl<'input> ParseElem<'input> for FlatTokenStream {
     type Element = Token;
 
-    fn parse_elem(&self, pos: usize) -> RuleResult<Token> {
+    fn parse_elem(&'input self, pos: usize) -> RuleResult<Token> {
         match self.tokens.get(pos) {
             Some(c) => RuleResult::Matched(pos + 1, c.clone()),
             None => RuleResult::Failed,

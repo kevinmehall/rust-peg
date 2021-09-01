@@ -44,10 +44,10 @@ impl Parse for str {
     }
 }
 
-impl ParseElem for str {
+impl<'input> ParseElem<'input> for str {
     type Element = char;
 
-    fn parse_elem(&self, pos: usize) -> RuleResult<char> {
+    fn parse_elem(&'input self, pos: usize) -> RuleResult<char> {
         match self[pos..].chars().next() {
             Some(c) => RuleResult::Matched(pos + c.len_utf8(), c),
             None => RuleResult::Failed,
