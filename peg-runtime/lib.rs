@@ -15,6 +15,7 @@ pub enum RuleResult<T> {
 }
 
 /// A type that can be used as input to a parser.
+#[allow(clippy::needless_lifetimes)]
 pub trait Parse {
     type PositionRepr: Display;
     fn start<'input>(&'input self) -> usize;
@@ -23,12 +24,12 @@ pub trait Parse {
 }
 
 /// A parser input type supporting the `[...]` syntax.
-pub trait ParseElem: Parse {
+pub trait ParseElem<'input>: Parse {
     /// Type of a single atomic element of the input, for example a character or token
     type Element;
 
     /// Get the element at `pos`, or `Failed` if past end of input.
-    fn parse_elem(&self, pos: usize) -> RuleResult<Self::Element>;
+    fn parse_elem(&'input self, pos: usize) -> RuleResult<Self::Element>;
 }
 
 /// A parser input type supporting the `"literal"` syntax.

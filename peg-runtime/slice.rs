@@ -15,10 +15,10 @@ impl<T> Parse for [T] {
     }
 }
 
-impl<T: Clone> ParseElem for [T] {
+impl<'input, T: 'input + Clone> ParseElem<'input> for [T] {
     type Element = T;
 
-    fn parse_elem(&self, pos: usize) -> RuleResult<T> {
+    fn parse_elem(&'input self, pos: usize) -> RuleResult<T> {
         match self[pos..].first() {
             Some(c) => RuleResult::Matched(pos + 1, c.clone()),
             None => RuleResult::Failed,
