@@ -12,7 +12,7 @@ peg::parser!{
         rule string() -> &'t str = [Token(inner)] { inner }
 
         #[cache]
-        rule cached() -> Token<'t> = [a] { a }
+        rule cached() -> Token<'t> = [a] { a.clone() }
     }
 }
 

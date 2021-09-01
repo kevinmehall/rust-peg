@@ -8,7 +8,7 @@ pub enum Token {
 
 peg::parser!{
     grammar tokenparser() for [Token] {
-        pub rule list() -> (i32, i32) = [Token::Open] [Token::Number(a)] [Token::Comma] [Token::Number(b)] [Token::Close] { (a, b) }
+        pub rule list() -> (i32, i32) = [Token::Open] [Token::Number(a)] [Token::Comma] [Token::Number(b)] [Token::Close] { (a.clone(), b.clone()) }
     }
 }
 
