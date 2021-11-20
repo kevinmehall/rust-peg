@@ -57,8 +57,6 @@ struct Context<'a> {
 }
 
 pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
-    let name = &grammar.name;
-    let mut items = vec![make_parse_state(&grammar)];
 
     let analysis = analysis::check(&grammar);
 
@@ -67,7 +65,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     let context = &Context {
         rules: &analysis.rules,
         rules_from_args: HashSet::new(),
-        grammar_lifetime_params: grammar_lifetime_params,
+        grammar_lifetime_params,
         input_ty: quote!(&'input Input<#(#grammar_lifetime_params),*>),
         parse_state_ty: quote!(&mut ParseState<'input #(, #grammar_lifetime_params)*>),
         extra_args_call: extra_args_call(grammar),
@@ -76,62 +74,60 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
     let mut seen_rule_names = HashSet::new();
 
+    let mut items = vec![];
     for item in &grammar.items {
         match item {
             Item::Use(tt) => items.push(tt.clone()),
             Item::Rule(rule) => {
-                if seen_rule_names.insert(rule.name.to_string()) {
-                    if rule.cache.is_some() && !(rule.params.is_empty() && rule.ty_params.is_none()) {
-                        items.push(report_error(
-                            rule.name.span(),
-                            format!("rules with generics or parameters cannot use #[cache] or #[cache_left_rec]"),
-                        ));
-                        continue;
-                    }
-
-                    if rule.visibility.is_some() {
-                        for param in &rule.params {
-                            match &param.ty {
-                                RuleParamTy::Rule(..) => items.push(report_error(
-                                    param.name.span(),
-                                    format!("parameters on `pub rule` must be Rust types"),
-                                )),
-                                _ => {}
-                            }
-                        }
-
-                        items.push(compile_rule_export(context, rule));
-                    } else if rule.no_eof {
-                        items.push(report_error(
-                            rule.name.span(),
-                            format!("#[no_eof] is only meaningful for `pub rule`"),
-                        ));
-                    }
-
-                    items.push(compile_rule(context, rule));
-                } else {
+                if !seen_rule_names.insert(rule.name.to_string()) {
                     items.push(report_error(
                         rule.name.span(),
                         format!("duplicate rule `{}`", rule.name),
                     ));
+                    continue;
                 }
+
+                if rule.cache.is_some() && !(rule.params.is_empty() && rule.ty_params.is_none()) {
+                    items.push(report_error(
+                            rule.name.span(),
+                            "rules with generics or parameters cannot use #[cache] or #[cache_left_rec]".to_string(),
+                    ));
+                    continue;
+                }
+
+                if rule.visibility.is_some() {
+                    for param in &rule.params {
+                        match &param.ty {
+                            RuleParamTy::Rule(..) => items.push(report_error(
+                                    param.name.span(),
+                                    format!("parameters on `pub rule` must be Rust types"),
+                            )),
+                            _ => {}
+                        }
+                    }
+
+                    items.push(compile_rule_export(context, rule));
+                } else if rule.no_eof {
+                    items.push(report_error(
+                            rule.name.span(),
+                            format!("#[no_eof] is only meaningful for `pub rule`"),
+                    ));
+                }
+
+                items.push(compile_rule(context, rule));
             }
         }
     }
 
-    let doc = &grammar.doc;
-    let input_type = &grammar.input_type;
-    let visibility = &grammar.visibility;
+    let parse_state = make_parse_state(&grammar);
+    let Grammar { name, doc, input_type, visibility, .. } = grammar;
 
-    let mut errors = Vec::new();
+    let mut errors: Vec<TokenStream> = analysis.left_recursion.iter()
+        .map(|rec| report_error(rec.span, rec.msg()))
+        .collect();
 
-    for rec in &analysis.left_recursion {
-        errors.push(report_error(rec.span, rec.msg()));
-    }
-
-    for rec in &analysis.loop_nullability {
-        errors.push(report_error(rec.span, rec.msg()));
-    }
+    errors.extend(analysis.loop_nullability.iter()
+        .map(|nl| report_error(nl.span, nl.msg())));
 
     quote_spanned! { Span::mixed_site() =>
         #doc
@@ -142,6 +138,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
             type PositionRepr<#(#grammar_lifetime_params),*> = <Input<#(#grammar_lifetime_params),*> as ::peg::Parse>::PositionRepr;
 
             #(#errors)*
+            #parse_state
             #(#items)*
         }
     }
@@ -186,8 +183,7 @@ fn ty_params_slice(ty_params: &Option<Vec<TokenStream>>) -> &[TokenStream] {
 }
 
 fn rule_params_list(context: &Context, rule: &Rule) -> Vec<TokenStream> {
-    let input_ty = &context.input_ty;
-    let parse_state_ty = &context.parse_state_ty;
+    let Context { input_ty, parse_state_ty, .. } = context;
     let span = rule.span.resolved_at(Span::mixed_site());
     rule.params.iter().map(|param| {
         let name = &param.name;
@@ -202,24 +198,21 @@ fn rule_params_list(context: &Context, rule: &Rule) -> Vec<TokenStream> {
 
 fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let span = rule.span.resolved_at(Span::mixed_site());
-    let ref rule_name = rule.name;
     let name = format_ident!("__parse_{}", rule.name, span=span);
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
-    let result_used = rule.ret_type.is_some();
     let ty_params = ty_params_slice(&rule.ty_params);
-    let input_ty = &context.input_ty;
-    let parse_state_ty = &context.parse_state_ty;
-    let grammar_lifetime_params = context.grammar_lifetime_params;
+
+    let Context { input_ty, parse_state_ty, grammar_lifetime_params, extra_args_def, .. } = context;
 
     let mut context = context.clone();
     context
         .rules_from_args
         .extend(rule.params.iter().map(|param| param.name.to_string()));
 
-    let body = compile_expr(&context, &rule.expr, result_used);
+    let body = compile_expr(&context, &rule.expr, rule.ret_type.is_some());
 
     let wrapped_body = if cfg!(feature = "trace") {
-        let str_rule_name = rule_name.to_string();
+        let str_rule_name = rule.name.to_string();
         quote_spanned! { span => {
             let loc = ::peg::Parse::position_repr(__input, __pos);
             println!("[PEG_TRACE] Attempting to match rule `{}` at {}", #str_rule_name, loc);
@@ -228,19 +221,17 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
                 ::peg::RuleResult::Matched(epos, v) => {
                     let eloc = ::peg::Parse::position_repr(__input, epos);
                     println!("[PEG_TRACE] Matched rule `{}` at {} to {}", #str_rule_name, loc, eloc);
-                    ::peg::RuleResult::Matched(epos, v)
                 }
                 ::peg::RuleResult::Failed => {
                     println!("[PEG_TRACE] Failed to match rule `{}` at {}", #str_rule_name, loc);
-                    ::peg::RuleResult::Failed
                 }
             }
+
+            __peg_result
         }}
     } else {
         body
     };
-
-    let extra_args_def = &context.extra_args_def;
 
     let rule_params = rule_params_list(&context, rule);
 
@@ -316,14 +307,11 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
 fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let span = rule.span.resolved_at(Span::mixed_site());
-    let doc = &rule.doc;
-    let name = &rule.name;
+
+    let Rule { doc, name, visibility, .. } = rule;
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
-    let visibility = &rule.visibility;
     let parse_fn = format_ident!("__parse_{}", rule.name.to_string(), span = name.span());
     let ty_params = ty_params_slice(&rule.ty_params);
-    let grammar_lifetime_params = context.grammar_lifetime_params;
-    let input_ty = &context.input_ty;
     let rule_params = rule_params_list(context, rule);
     let rule_params_call: Vec<TokenStream> = rule
         .params
@@ -334,8 +322,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
         })
         .collect();
 
-    let extra_args_def = &context.extra_args_def;
-    let extra_args_call = &context.extra_args_call;
+    let Context { input_ty, extra_args_call, extra_args_def, grammar_lifetime_params, .. } = context;
     let eof_check = if rule.no_eof {
         quote_spanned!{ span => true }
     } else {
