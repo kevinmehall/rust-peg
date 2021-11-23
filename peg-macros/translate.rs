@@ -218,7 +218,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
             println!("[PEG_TRACE] Attempting to match rule `{}` at {}", #str_rule_name, loc);
             let __peg_result: ::peg::RuleResult<#ret_ty> = {#body};
             match __peg_result {
-                ::peg::RuleResult::Matched(epos, v) => {
+                ::peg::RuleResult::Matched(epos, _) => {
                     let eloc = ::peg::Parse::position_repr(__input, epos);
                     println!("[PEG_TRACE] Matched rule `{}` at {} to {}", #str_rule_name, loc, eloc);
                 }
