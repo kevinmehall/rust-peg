@@ -30,9 +30,6 @@ rule peg_rule() -> Rule
 
     rule no_eof_flag() -> bool = "#" "[" "no_eof" "]" {true} / {false}
 
-    rule rust_ty_params() -> Vec<TokenStream>
-        = "<" p:(($(IDENT() / LIFETIME())) ++ ",") ">" { p }
-
     rule rule_param_ty() -> RuleParamTy
         = "rule" "<" r:$(rust_type()) ">" { RuleParamTy::Rule(r) }
         / t:$(rust_type()) { RuleParamTy::Rust(t) }
@@ -63,10 +60,18 @@ rule rust_type()
     / "&" "mut"? LIFETIME()? rust_type()
     / "dyn" rust_type()
     / "impl" rust_type()
-    / IDENT() "<" (LIFETIME() / rust_type()) ++ "," ">"
-    / IDENT() "::" rust_type()
     / "(" rust_type() ** "," ")"
-    / IDENT()
+    / rust_ty_path()
+
+rule rust_ty_path()
+    = "::"? (IDENT() ("::"? "<" (LIFETIME() / rust_type() / BRACE_GROUP() / LITERAL()) ++ "," ">")?) ++ "::"
+
+rule rust_ty_params() -> Vec<TokenStream>
+    = "<" p:($(rust_generic_param()) ++ ",") ">" { p }
+
+rule rust_generic_param()
+    = LIFETIME() (":" LIFETIME() ++ "+")?
+    / IDENT() (":"(LIFETIME() / "?"? rust_ty_path()) ++ "+")?
 
 rule expression() -> SpannedExpr = choice()
 

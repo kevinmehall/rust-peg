@@ -27,6 +27,10 @@ peg::parser!( grammar ra() for str {
     rule complex_args(val1: u32, val2: Option<u32>) = { assert_eq!(val1, 10); assert_eq!(val2, Some(8)) }
     pub rule use_complex_args() = complex_args(u32::max(5, 10), [1,1,3,5,8,13].iter().cloned().find(|x| { x % 2 == 0 }))
 
+    pub rule lt_arg<'a>() = ""
+    pub rule ty_arg<T>(x: &T) = ""
+    pub rule ty_arg_bound<T: Copy>(x: T) = ""
+    pub rule ty_arg_bound2<'a, T: std::marker::Copy + ?Sized + 'a>(x: T) = ""
 });
 
 use ra::*;
