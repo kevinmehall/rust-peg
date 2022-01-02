@@ -1,7 +1,7 @@
 extern crate peg;
 
 peg::parser!{ grammar parser() for str {
-    pub rule one_letter() -> () = ['a'..='z']
+    pub rule one_letter() = ['a'..='z']
 
     pub rule parse() -> usize
         = v:( "a" / "\n" )* { v.len() }

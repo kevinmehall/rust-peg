@@ -401,8 +401,9 @@ fn compile_expr_continuation(context: &Context, e: &SpannedExpr, result_name: Op
         }
 
         PatternExpr(ref pattern) => {
-            compile_pattern_expr(pattern, quote_spanned!{ span =>
-                { let __pos = __next; let #result_pat = (); { #continuation } }
+            let result_name = result_name.cloned().unwrap_or_else(|| Ident::new("__ch", span));
+            compile_pattern_expr(pattern, result_name, quote_spanned!{ span =>
+                { let __pos = __next; { #continuation } }
             })
         }
 
@@ -430,7 +431,7 @@ fn compile_literal_expr(s: &Literal, continuation: TokenStream) -> TokenStream {
     }
 }
 
-fn compile_pattern_expr(pattern_group: &Group, success_res: TokenStream) -> TokenStream {
+fn compile_pattern_expr(pattern_group: &Group, result_name: Ident, success_res: TokenStream) -> TokenStream {
     let span = pattern_group.span().resolved_at(Span::mixed_site());
     let pat_str = pattern_group.to_string();
     let failure_res = quote_spanned! { span => { __err_state.mark_failure(__pos, #pat_str); ::peg::RuleResult::Failed } };
@@ -443,7 +444,7 @@ fn compile_pattern_expr(pattern_group: &Group, success_res: TokenStream) -> Toke
 
     quote_spanned! { span =>
         match ::peg::ParseElem::parse_elem(__input, __pos) {
-            ::peg::RuleResult::Matched(__next, __ch) => match __ch {
+            ::peg::RuleResult::Matched(__next, #result_name) => match #result_name {
                 #pattern => #in_set,
                 _ => #not_in_set,
             }
@@ -463,8 +464,10 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
         }
 
         PatternExpr(ref pattern_group) => {
-            compile_pattern_expr(pattern_group, quote_spanned! { span =>
-                ::peg::RuleResult::Matched(__next, ())
+            let res_name = Ident::new("__ch", span);
+            let res = if result_used { quote!(#res_name) } else { quote_spanned!{ span => () }};
+            compile_pattern_expr(pattern_group, res_name, quote_spanned! { span =>
+                ::peg::RuleResult::Matched(__next, #res)
             })
         }
 
