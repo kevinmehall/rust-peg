@@ -127,11 +127,11 @@ impl Parse for FlatTokenStream {
 }
 
 impl<'input> ParseElem<'input> for FlatTokenStream {
-    type Element = Token;
+    type Element = &'input Token;
 
-    fn parse_elem(&'input self, pos: usize) -> RuleResult<Token> {
+    fn parse_elem(&'input self, pos: usize) -> RuleResult<&'input Token> {
         match self.tokens.get(pos) {
-            Some(c) => RuleResult::Matched(pos + 1, c.clone()),
+            Some(c) => RuleResult::Matched(pos + 1, c),
             None => RuleResult::Failed,
         }
     }

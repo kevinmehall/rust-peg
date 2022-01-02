@@ -26,7 +26,7 @@ pub trait Parse {
 /// A parser input type supporting the `[...]` syntax.
 pub trait ParseElem<'input>: Parse {
     /// Type of a single atomic element of the input, for example a character or token
-    type Element;
+    type Element: Copy;
 
     /// Get the element at `pos`, or `Failed` if past end of input.
     fn parse_elem(&'input self, pos: usize) -> RuleResult<Self::Element>;

@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Token<'text>(&'text str);
 
 peg::parser!{
