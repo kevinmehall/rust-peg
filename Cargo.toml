@@ -3,7 +3,7 @@ members = ["./peg-macros", "./peg-runtime"]
 
 [package]
 name = "peg"
-version = "0.7.0"
+version = "0.8.0"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
@@ -14,8 +14,8 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-peg-macros = { path = "./peg-macros", version = "= 0.7.0" }
-peg-runtime = { path = "./peg-runtime", version = "= 0.7.0" }
+peg-macros = { path = "./peg-macros", version = "= 0.8.0" }
+peg-runtime = { path = "./peg-runtime", version = "= 0.8.0" }
 
 [dev-dependencies]
 trybuild = "1.0"
