@@ -196,6 +196,8 @@ fn rule_params_list(context: &Context, rule: &Rule) -> Vec<TokenStream> {
     }).collect()
 }
 
+/// Compile a rule to a function for use internal to the grammar.
+/// Returns `RuleResult<T>`.
 fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let span = rule.span.resolved_at(Span::mixed_site());
     let name = format_ident!("__parse_{}", rule.name, span=span);
@@ -305,6 +307,8 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     }
 }
 
+/// Compile a rule into the parsing function which will be exported.
+/// Returns `Result<T, ParseError>`.
 fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let span = rule.span.resolved_at(Span::mixed_site());
 
@@ -328,6 +332,10 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     } else {
         quote_spanned!{ span => ::peg::Parse::is_eof(__input, __pos) }
     };
+
+    // Parse once. If it succeeds or throws an error, return that.
+    // If it fails, parse again to determine the set of all tokens
+    // that were expected at the failure position.
 
     quote_spanned! { span =>
         #doc
