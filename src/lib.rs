@@ -15,7 +15,8 @@
 //! * Helpful `rustc` error messages for errors in the grammar definition or the
 //!   Rust code embedded within it
 //! * Rule-level tracing to debug grammars
-//!
+//! * Error recovery
+
 //! ## Overview
 //!
 //! The `peg::parser!{}` macro encloses a `grammar NAME() for INPUT_TYPE { ...
@@ -34,11 +35,16 @@
 //! The macro expands to a Rust `mod` containing a function for each rule marked
 //! `pub` in the grammar. To parse an input sequence, call one of these
 //! functions. The call returns a `ParseResults<T,L>`, which carries either the
-//! successfully parsed value or the furthest failure.
+//! successfully parsed value, the furthest failure, or an error, along with the
+//! set of errors which have been recovered from (if any).
 //!
 //! * Use `unwrap()` to obtain the successful `T` or panic.
 //! * Use `into_result()` to obtain a `Result<T, _>`.
-//! * For full details, match on the `result` field.
+//!   Failures and errors are combined, and recovery is treated as failure.
+//! * Use `recover_result()` to obtain a `Result<T, _>`.
+//!   Failures and errors are combined, and recovery can result in success.
+//! * For full details, match on the `result` field and examine the set of
+//!   recovered errors in the `errors` field.
 //!
 //! ## Example
 //!
@@ -126,6 +132,13 @@
 //!     error messages.
 //!   * `expected!("something")` - fail to match, and report the specified string as expected
 //!     at the current location.
+//!   * `error!{ "message" e2 }` - report error at this location, then attempt to recover
+//!     by matching the expression or sequence `e2` and returning its value.
+//!     If recovery is not required, use `!()` as the recovery expression.
+//!   * `error_if!{ e1 | "message" e2 }` - attempt to match the expression or sequence `e1`.
+//!     If it matches, report error at the start of `e1`, then attempt to recover as for `error!{}`.
+//!   * `error_unless!{ e1 | "message" e2 }` - attempt to match the expression or sequence `e1`.
+//!     If it does not match, report error, then attempt to recover as for `error!{}`.
 //!   * `precedence!{ ... }` - Parse infix, prefix, or postfix expressions by precedence climbing.
 //!     [(details)](#precedence-climbing)
 //!
@@ -156,6 +169,50 @@
 //! The repeat operators `*` and `**` can be followed by an optional range specification of the
 //! form `<n>` (exact), `<n,>` (min), `<,m>` (max) or `<n,m>` (range), where `n` and `m` are either
 //! integers, or a Rust `usize` expression enclosed in `{}`.
+//!
+//! ### Errors
+//!
+//! Errors support recovery: they allow the parser to report an error but continue to parse the rest of the
+//! input anyway. This means the parser can report more than one error at once, and can provide
+//! a sensible parse of most of the input even when there are errors.
+//! These are useful in applications like IDEs.
+//!
+//! There are three expressions for raising an error:
+//!
+//!   * `error!{ "message" e2 }` is the simplest form. It reports an error with the given
+//!     message at the current location, then attempts to recover by parsing `e2` instead.
+//!   * `error_if!{ e1 | "message" e2 }` allows the error to be reported at an earlier
+//!     location. It attempts to parse `e1`; if it succeeds it reports an error with
+//!     the given message at the start of `e1`, then attempts to recover by parsing `e2` instead.
+//!   * `error_unless!{ e1 | "message" e2 }` is shorthand for a choice expression.
+//!     It is useful in order to report an error when an expression fails to match.
+//!     It attempts to parse `e1`; if it fails it reports an error with the given message
+//!     at the current location, then attempts to recover by parsing `e2` instead.
+//!
+//! Error handling works as follows:
+//!
+//! * When an error is reported, no further alternatives are tried: parsing immediately stops
+//!   at this point (unlike ordinary failure which causes the parser to try other choices).
+//! * The reported error is added to the list of errors.
+//! * Then the parser attempts to continue by matching the recovery expression.
+//!   The resulting value is returned as the result of the `error!` expression;
+//!   typically this is just a placeholder value of the right type.
+//!   If the recovery expression fails or encounters an error, recovery is abandoned
+//!   and the `error!` expression returns the indicated error (`"message"`).
+//!
+//! There is a worked example in `tests/run-pass/arithmetic_recovery.rs`.
+//!
+//! This mechanism is based on Sérgio Medeiros and Fabio Mascarenhas,
+//! [_Syntax Error Recovery in Parsing Expression Grammars_](https://arxiv.org/abs/1806.11150)
+//! and Sérgio Queiroz de Medeiros, Gilney de Azevedo Alvez Junior, and Fabio Mascarenhas,
+//! [_Automatic Syntax Error Reporting and Recovery in Parsing Expression Grammars_](https://arxiv.org/abs/1905.02145).
+//! The `error_unless!{}` form corresponds to the labelled-expression sugar in the paper.
+//! `rust-peg` simplifies tracking the furthest failure position by observing that an error
+//! is always reported over a failure even if a previous failure was further through the input;
+//! thus there is no need to track the error location separately.
+//! `rust-peg` treats failure or error of a recovery expression differently than Medeiros and
+//! Mascarenhas - we report the original error (as if there was no recovery expression),
+//! whereas Medeiros and Mascarenhas report the failure or error of the recovery expression.
 //!
 //! ### Precedence climbing
 //!

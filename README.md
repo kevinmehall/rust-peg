@@ -13,6 +13,7 @@
 * Helpful `rustc` error messages for errors in the grammar definition or the Rust
   code embedded within it
 * Rule-level tracing to debug grammars
+* Error recovery
 
 ## Example
 
@@ -39,12 +40,12 @@ pub fn main() {
 
 ## Comparison with similar parser generators
 
-| crate     	| parser type 	| action code 	| integration        	| input type             	| precedence climbing 	| parameterized rules 	| streaming input 	|
-|-----------	|-------------	|-------------	|--------------------	|------------------------	|---------------------	|--------------------	|-----------------	|
-| peg       	| PEG         	| in grammar  	| proc macro (block) 	| `&str`, `&[T]`, custom 	| Yes                 	| Yes                	| No              	|
-| [pest]    	| PEG         	| external    	| proc macro (file)  	| `&str`                 	| Yes                 	| No                 	| No              	|
-| [nom]     	| combinators 	| in source   	| library            	| `&[u8]`, custom        	| No                  	| Yes                	| Yes             	|
-| [lalrpop] 	| LR(1)       	| in grammar  	| build script       	| `&str`                 	| No                  	| Yes                	| No              	|
+| crate     	| parser type 	| action code 	| integration        	| input type             	| precedence climbing 	| parameterized rules | streaming input 	| recovery |
+|-----------	|-------------	|-------------	|--------------------	|------------------------	|---------------------	|--------------------	|-----------------	|--------- |
+| peg       	| PEG         	| in grammar  	| proc macro (block) 	| `&str`, `&[T]`, custom 	| Yes                 	| Yes                	| No              	| Yes      |
+| [pest]    	| PEG         	| external    	| proc macro (file)  	| `&str`                 	| Yes                 	| No                 	| No              	| No       |
+| [nom]     	| combinators 	| in source   	| library            	| `&[u8]`, custom        	| No                  	| Yes                	| Yes             	| No       |
+| [lalrpop] 	| LR(1)       	| in grammar  	| build script       	| `&str`                 	| No                  	| Yes                	| No              	| Yes      |
 
 [pest]: https://github.com/pest-parser/pest
 [nom]: https://github.com/geal/nom
@@ -63,7 +64,8 @@ pub fn main() {
 
 ## Upgrade guide
 
-The rule return type has changed between 0.8 to 0.9.
+The rule return type has changed between 0.8 to 0.9,
+and now supports recovery and reporting multiple errors.
 To upgrade, add a call to `.into_result()` to convert the new rule return type
 to a simple `Result`.
 ## Development
