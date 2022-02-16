@@ -23,7 +23,7 @@ pub mod peg {
     use proc_macro2::{Delimiter, Group, Ident, Literal, Span, TokenStream};
     pub fn peg_grammar<'input>(
         __input: &'input Input,
-    ) -> ::std::result::Result<Grammar, ::peg::error::ParseError<PositionRepr>> {
+    ) -> ::peg::ParseResults<Grammar, PositionRepr> {
         #![allow(non_snake_case, unused)]
         let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
         let mut __state = ParseState::new();
@@ -35,7 +35,7 @@ pub mod peg {
         ) {
             ::peg::RuleResult::Matched(__pos, __value) => {
                 if ::peg::Parse::is_eof(__input, __pos) {
-                    return Ok(__value);
+                    return __err_state.into_matched(__value, __input);
                 } else {
                     __err_state.mark_failure(__pos, "EOF");
                 }
@@ -61,7 +61,7 @@ pub mod peg {
             }
             _ => (),
         }
-        Err(__err_state.into_parse_error(__input))
+        __err_state.into_failure(__input)
     }
     fn __parse_peg_grammar<'input>(
         __input: &'input Input,
@@ -3256,7 +3256,7 @@ pub mod peg {
                 __err_state.suppress_fail -= 1;
                 match __assert_res {
                     ::peg::RuleResult::Failed => ::peg::RuleResult::Matched(__pos, ()),
-                    ::peg::RuleResult::Matched(..) => ::peg::RuleResult::Failed,
+                    ::peg::RuleResult::Matched(..) => __err_state.mark_failure(__pos, "mismatch"),
                 }
             };
             match __seq_res {
