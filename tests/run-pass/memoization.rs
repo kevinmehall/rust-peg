@@ -11,5 +11,5 @@ peg::parser!{ grammar memo() for str {
 }}
 
 fn main() {
-    assert_eq!(memo::parse("abc zzz"), Ok(()));
+    assert_eq!(memo::parse("abc zzz").into_result(), Ok(()));
 }

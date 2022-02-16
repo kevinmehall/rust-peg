@@ -9,5 +9,5 @@ parser!{
 }
 
 fn main() {
-    assert_eq!(g::foo(b"foobar"), Ok(()));
+    assert_eq!(g::foo(b"foobar").into_result(), Ok(()));
 }

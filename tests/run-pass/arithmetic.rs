@@ -22,12 +22,12 @@ peg::parser!( grammar arithmetic() for str {
 });
 
 fn main() {
-    assert_eq!(expression("1+1"), Ok(2));
-    assert_eq!(expression("5*5"), Ok(25));
-    assert_eq!(expression("222+3333"), Ok(3555));
-    assert_eq!(expression("2+3*4"), Ok(14));
-    assert_eq!(expression("(2+2)*3"), Ok(12));
-    assert!(expression("(22+)+1").is_err());
-    assert!(expression("1++1").is_err());
-    assert!(expression("3)+1").is_err());
+    assert_eq!(expression("1+1").into_result(), Ok(2));
+    assert_eq!(expression("5*5").into_result(), Ok(25));
+    assert_eq!(expression("222+3333").into_result(), Ok(3555));
+    assert_eq!(expression("2+3*4").into_result(), Ok(14));
+    assert_eq!(expression("(2+2)*3").into_result(), Ok(12));
+    assert!(expression("(22+)+1").into_result().is_err());
+    assert!(expression("1++1").into_result().is_err());
+    assert!(expression("3)+1").into_result().is_err());
 }

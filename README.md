@@ -30,11 +30,11 @@ peg::parser!{
 }
 
 pub fn main() {
-    assert_eq!(list_parser::list("[1,1,2,3,5,8]"), Ok(vec![1, 1, 2, 3, 5, 8]));
+    assert_eq!(list_parser::list("[1,1,2,3,5,8]").into_result(), Ok(vec![1, 1, 2, 3, 5, 8]));
 }
 ```
 
-[See the tests for more examples](./tests/run-pass/)  
+[See the tests for more examples](./tests/run-pass/)
 [Grammar rule syntax reference in rustdoc](https://docs.rs/peg)
 
 ## Comparison with similar parser generators
@@ -60,6 +60,12 @@ pub fn main() {
 [annotate-snippets]: https://crates.io/crates/annotate-snippets
 [codespan-reporting]: https://crates.io/crates/codespan-reporting
 [codemap-diagnostic]: https://crates.io/crates/codemap-diagnostic
+
+## Upgrade guide
+
+The rule return type has changed between 0.8 to 0.9.
+To upgrade, add a call to `.into_result()` to convert the new rule return type
+to a simple `Result`.
 ## Development
 
 The `rust-peg` grammar is written in `rust-peg`: `peg-macros/grammar.rustpeg`. To avoid the circular dependency, a precompiled grammar is checked in as `peg-macros/grammar.rs`. To regenerate this, run the `./bootstrap.sh` script.

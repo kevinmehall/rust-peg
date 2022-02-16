@@ -32,32 +32,32 @@ peg::parser!( grammar repeats() for str {
 use repeats::*;
 
 fn main() {
-    assert_eq!(list("5"), Ok(vec![5]));
-    assert_eq!(list("1,2,3,4"), Ok(vec![1,2,3,4]));
+    assert_eq!(list("5").into_result(), Ok(vec![5]));
+    assert_eq!(list("1,2,3,4").into_result(), Ok(vec![1,2,3,4]));
 
-    assert!(repeat_n("123").is_err());
-    assert_eq!(repeat_n("1234"), Ok(vec![1,2,3,4]));
-    assert!(repeat_n("12345").is_err());
+    assert!(repeat_n("123").into_result().is_err());
+    assert_eq!(repeat_n("1234").into_result(), Ok(vec![1,2,3,4]));
+    assert!(repeat_n("12345").into_result().is_err());
 
-    assert!(repeat_min("").is_err());
-    assert!(repeat_min("1").is_err());
-    assert_eq!(repeat_min("12"), Ok(vec![1,2]));
-    assert_eq!(repeat_min("123"), Ok(vec![1,2,3]));
+    assert!(repeat_min("").into_result().is_err());
+    assert!(repeat_min("1").into_result().is_err());
+    assert_eq!(repeat_min("12").into_result(), Ok(vec![1,2]));
+    assert_eq!(repeat_min("123").into_result(), Ok(vec![1,2,3]));
 
-    assert_eq!(repeat_max(""), Ok(vec![]));
-    assert_eq!(repeat_max("1"), Ok(vec![1]));
-    assert_eq!(repeat_max("12"), Ok(vec![1,2]));
-    assert!(repeat_max("123").is_err());
+    assert_eq!(repeat_max("").into_result(), Ok(vec![]));
+    assert_eq!(repeat_max("1").into_result(), Ok(vec![1]));
+    assert_eq!(repeat_max("12").into_result(), Ok(vec![1,2]));
+    assert!(repeat_max("123").into_result().is_err());
 
-    assert!(repeat_min_max("").is_err());
-    assert!(repeat_min_max("1").is_err());
-    assert_eq!(repeat_min_max("12"), Ok(vec![1,2]));
-    assert_eq!(repeat_min_max("123"), Ok(vec![1,2,3]));
-    assert!(repeat_min_max("1234").is_err());
+    assert!(repeat_min_max("").into_result().is_err());
+    assert!(repeat_min_max("1").into_result().is_err());
+    assert_eq!(repeat_min_max("12").into_result(), Ok(vec![1,2]));
+    assert_eq!(repeat_min_max("123").into_result(), Ok(vec![1,2,3]));
+    assert!(repeat_min_max("1234").into_result().is_err());
 
-    assert!(repeat_sep_3("1,2").is_err());
-    assert!(repeat_sep_3("1,2,3,4").is_err());
-    assert_eq!(repeat_sep_3("1,2,3"), Ok(vec![1,2,3]));
+    assert!(repeat_sep_3("1,2").into_result().is_err());
+    assert!(repeat_sep_3("1,2,3,4").into_result().is_err());
+    assert_eq!(repeat_sep_3("1,2,3").into_result(), Ok(vec![1,2,3]));
 
-    assert_eq!(repeat_variable("1a3abc222"), Ok(vec!["a", "abc", "22"]));
+    assert_eq!(repeat_variable("1a3abc222").into_result(), Ok(vec!["a", "abc", "22"]));
 }

@@ -1,6 +1,6 @@
 //! Parse error reporting
 
-use crate::{Parse, RuleResult};
+use crate::{Parse, RuleResult, ParseResults, ParseResult};
 use std::collections::HashSet;
 use std::fmt::{self, Debug, Display};
 
@@ -65,6 +65,7 @@ impl<L: Display + Debug> ::std::error::Error for ParseError<L> {
 }
 
 #[doc(hidden)]
+#[derive(Debug)]
 pub struct ErrorState {
     /// Furthest failure we've hit so far.
     pub max_err_pos: usize,
@@ -75,9 +76,9 @@ pub struct ErrorState {
 
     /// Are we reparsing after a failure? If so, compute and store expected set of all alternative expectations
     /// when we are at offset `max_err_pos`.
-    pub reparsing_on_error: bool,
+    pub reparsing_on_failure: bool,
 
-    /// The set of tokens we expected to find when we hit the failure. Updated when `reparsing_on_error`.
+    /// The set of tokens we expected to find when we hit the failure. Updated when `reparsing_on_failure`.
     pub expected: ExpectedSet,
 }
 
@@ -86,7 +87,7 @@ impl ErrorState {
         ErrorState {
             max_err_pos: initial_pos,
             suppress_fail: 0,
-            reparsing_on_error: false,
+            reparsing_on_failure: false,
             expected: ExpectedSet {
                 expected: HashSet::new(),
             },
@@ -94,13 +95,13 @@ impl ErrorState {
     }
 
     /// Set up for reparsing to record the details of the furthest failure.
-    pub fn reparse_for_error(&mut self) {
+    pub fn reparse_for_failure(&mut self) {
         self.suppress_fail = 0;
-        self.reparsing_on_error = true;
+        self.reparsing_on_failure = true;
     }
 
     #[inline(never)]
-    pub fn mark_failure_slow_path(&mut self, pos: usize, expected: &'static str) {
+    fn mark_failure_slow_path(&mut self, pos: usize, expected: &'static str) {
         if pos == self.max_err_pos {
             self.expected.expected.insert(expected);
         }
@@ -110,7 +111,7 @@ impl ErrorState {
     #[inline(always)]
     pub fn mark_failure(&mut self, pos: usize, expected: &'static str) -> RuleResult<()> {
         if self.suppress_fail == 0 {
-            if self.reparsing_on_error {
+            if self.reparsing_on_failure {
                 self.mark_failure_slow_path(pos, expected);
             } else if pos > self.max_err_pos {
                 self.max_err_pos = pos;
@@ -119,10 +120,28 @@ impl ErrorState {
         RuleResult::Failed
     }
 
+    /// Build `Matched` parse result.
+    pub fn into_matched<T, I: Parse + ?Sized>(self, v: T, _input: &I) -> ParseResults<T, I::PositionRepr> {
+        ParseResults {
+            result: ParseResult::Matched(v),
+        }
+    }
+
+    /// Build `Failed` parse result.
+    pub fn into_failure<T, I: Parse + ?Sized>(self, input: &I) -> ParseResults<T, I::PositionRepr> {
+        ParseResults {
+            result: ParseResult::Failed(ParseError {
+                expected: self.expected,
+                location: input.position_repr(self.max_err_pos)
+            }),
+        }
+    }
+
+    /// Build `ParseError`.
     pub fn into_parse_error<I: Parse + ?Sized>(self, input: &I) -> ParseError<I::PositionRepr> {
         ParseError {
-            location: Parse::position_repr(input, self.max_err_pos.into()),
-            expected: self.expected,
+                expected: self.expected,
+                location: input.position_repr(self.max_err_pos)
         }
     }
 }

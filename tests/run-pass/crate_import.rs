@@ -16,5 +16,5 @@ mod types {
 
 
 fn main() {
-    assert_eq!(foo_parser::foo("foo"), Ok(crate::types::Foo));
+    assert_eq!(foo_parser::foo("foo").into_result(), Ok(crate::types::Foo));
 }

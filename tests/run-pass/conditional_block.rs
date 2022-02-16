@@ -38,18 +38,18 @@ peg::parser!( grammar parse() for str {
 });
 
 fn main() {
-    assert_eq!(parse::dec_byte("0"), Ok(0));
-    assert_eq!(parse::dec_byte("255"), Ok(255));
-    assert_eq!(parse::dec_byte("1"), Ok(1));
-    assert!(parse::dec_byte("256").is_err());
-    assert!(parse::dec_byte("1234").is_err());
+    assert_eq!(parse::dec_byte("0").into_result(), Ok(0));
+    assert_eq!(parse::dec_byte("255").into_result(), Ok(255));
+    assert_eq!(parse::dec_byte("1").into_result(), Ok(1));
+    assert!(parse::dec_byte("256").into_result().is_err());
+    assert!(parse::dec_byte("1234").into_result().is_err());
 
-    assert!(parse::xml("<a></a>").is_ok());
-    assert!(parse::xml("<a><b></b><c></c></a>").is_ok());
-    assert!(parse::xml("<a><b><c></b></c></a>").is_err());
-    assert!(parse::xml("<a><b></c><c></b></a>").is_err());
+    assert!(parse::xml("<a></a>").into_result().is_ok());
+    assert!(parse::xml("<a><b></b><c></c></a>").into_result().is_ok());
+    assert!(parse::xml("<a><b><c></b></c></a>").into_result().is_err());
+    assert!(parse::xml("<a><b></c><c></b></a>").into_result().is_err());
 
-    assert!(parse::return_early("a").unwrap_err().expected.tokens().any(|e| e == "number"));
-    assert!(parse::return_early("123").unwrap_err().expected.tokens().any(|e| e == "smaller number"));
-    assert_eq!(parse::return_early("99").unwrap(), 99);
+    assert!(parse::return_early("a").into_result().unwrap_err().expected.tokens().any(|e| e == "number"));
+    assert!(parse::return_early("123").into_result().unwrap_err().expected.tokens().any(|e| e == "smaller number"));
+    assert_eq!(parse::return_early("99").into_result().unwrap(), 99);
 }

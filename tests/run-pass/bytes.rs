@@ -9,5 +9,5 @@ parser!{
 }
 
 fn main() {
-    assert_eq!(byteparser::commands(b">asdf\0>xyz\0"), Ok(vec![&b"asdf"[..], &b"xyz"[..]]));
+    assert_eq!(byteparser::commands(b">asdf\0>xyz\0").into_result(), Ok(vec![&b"asdf"[..], &b"xyz"[..]]));
 }

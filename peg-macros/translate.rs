@@ -308,7 +308,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 }
 
 /// Compile a rule into the parsing function which will be exported.
-/// Returns `Result<T, ParseError>`.
+/// Returns `ParseResults<T, L>`.
 fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let span = rule.span.resolved_at(Span::mixed_site());
 
@@ -339,7 +339,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     quote_spanned! { span =>
         #doc
-        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_lifetime_params),*>>> {
+        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::peg::ParseResults<#ret_ty, PositionRepr<#(#grammar_lifetime_params),*>> {
             #![allow(non_snake_case, unused)]
 
             let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
@@ -347,7 +347,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
             match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call #(, #rule_params_call)*) {
                 ::peg::RuleResult::Matched(__pos, __value) => {
                     if #eof_check {
-                        return Ok(__value)
+                        return __err_state.into_matched(__value, __input)
                     } else {
                         __err_state.mark_failure(__pos, "EOF");
                     }
@@ -356,7 +356,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
             }
 
             __state = ParseState::new();
-            __err_state.reparse_for_error();
+            __err_state.reparse_for_failure();
 
             match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call #(, #rule_params_call)*) {
                 ::peg::RuleResult::Matched(__pos, __value) => {
@@ -369,7 +369,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
                 _ => ()
             }
 
-            Err(__err_state.into_parse_error(__input))
+            __err_state.into_failure(__input)
         }
     }
 }
@@ -431,7 +431,7 @@ fn compile_expr_continuation(context: &Context, e: &SpannedExpr, result_name: Op
 fn compile_literal_expr(s: &Literal, continuation: TokenStream) -> TokenStream {
     let span = s.span().resolved_at(Span::mixed_site());
     let escaped_str = s.to_string();
-    quote_spanned! { span => 
+    quote_spanned! { span =>
             match ::peg::ParseLiteral::parse_string_literal(__input, __pos, #s) {
             ::peg::RuleResult::Matched(__pos, __val) => { #continuation }
             ::peg::RuleResult::Failed => { __err_state.mark_failure(__pos, #escaped_str); ::peg::RuleResult::Failed }
@@ -456,7 +456,7 @@ fn compile_pattern_expr(pattern_group: &Group, result_name: Ident, success_res: 
                 #pattern => #in_set,
                 _ => #not_in_set,
             }
-            ::peg::RuleResult::Failed => { __err_state.mark_failure(__pos, #pat_str); ::peg::RuleResult::Failed }
+            ::peg::RuleResult::Failed => { __err_state.mark_failure(__pos, #pat_str); ::peg::RuleResult::Failed },
         }
     }
 }
@@ -683,7 +683,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 __err_state.suppress_fail -= 1;
                 match __assert_res {
                     ::peg::RuleResult::Failed => ::peg::RuleResult::Matched(__pos, ()),
-                    ::peg::RuleResult::Matched(..) => ::peg::RuleResult::Failed,
+                    ::peg::RuleResult::Matched(..) => __err_state.mark_failure(__pos, "mismatch"),
                 }
             }}
         }

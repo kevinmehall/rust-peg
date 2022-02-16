@@ -11,5 +11,5 @@ use self::test_grammar::*;
 // threw an ugly panic!() when we compared unequal character
 // boundaries.. this popped up while parsing unicode
 fn main() {
-    assert!(boundaries("f↙↙↙↙").is_err());
+    assert!(boundaries("f↙↙↙↙").into_result().is_err());
 }

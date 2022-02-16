@@ -7,12 +7,12 @@ peg::parser!( grammar test() for str {
 });
 
 fn main() {
-    assert!(test::alphanumeric("azAZ09").is_ok());
-    assert!(test::alphanumeric("@").is_err());
+    assert!(test::alphanumeric("azAZ09").into_result().is_ok());
+    assert!(test::alphanumeric("@").into_result().is_err());
 
-    assert_eq!(test::inverted_pat("(asdf)"), Ok("asdf"));
+    assert_eq!(test::inverted_pat("(asdf)").into_result(), Ok("asdf"));
 
-    assert_eq!(test::capture("x"), Ok('x'));
-    assert_eq!(test::capture2("a1"), Ok(('a', '1')));
+    assert_eq!(test::capture("x").into_result(), Ok('x'));
+    assert_eq!(test::capture2("a1").into_result(), Ok(('a', '1')));
 }
 

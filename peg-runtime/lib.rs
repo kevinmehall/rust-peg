@@ -4,10 +4,64 @@ pub mod error;
 mod slice;
 pub mod str;
 
+
+/// The public API of a parser: the result of the parse.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ParseResults<T, L> {
+    /// The result of the parse.
+    pub result: ParseResult<T, L>,
+}
+
+impl<T: Display, L: Display> Display for ParseResults<T, L> {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
+        write!(fmt, "{}", self.result)
+    }
+}
+
+impl<T, L> ParseResults<T, L> {
+    /// Convert into a simple `Result`.
+    pub fn into_result(self) -> Result<T, error::ParseError<L>> {
+        match self.result {
+            ParseResult::Matched(v) => Ok(v),
+            ParseResult::Failed(e) => Err(e),
+        }
+    }
+}
+
+impl<T, L: Display> ParseResults<T, L> {
+    /// Return the contained match, or panic on failure.
+    pub fn unwrap(self) -> T {
+        match self.result {
+            ParseResult::Matched(v) => v,
+            ParseResult::Failed(e) => panic!("parse failed: {}", e),
+        }
+    }
+}
+
+/// The public result of a parser.
+/// A parse may succeed or fail.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum ParseResult<T, L> {
+    /// Success
+    Matched(T),
+
+    /// Failure
+    Failed(error::ParseError<L>),
+}
+
+impl<T: Display, L: Display> Display for ParseResult<T, L> {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
+        match self {
+            ParseResult::Matched(v) => write!(fmt, "{}", v),
+            ParseResult::Failed(e) => write!(fmt, "{}", e),
+        }
+    }
+}
+
 /// The result type used internally in the parser.
 ///
 /// You'll only need this if implementing the `Parse*` traits for a custom input
-/// type. The public API of a parser adapts errors to `std::result::Result`.
+/// type.
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub enum RuleResult<T> {
     /// Success, with final location

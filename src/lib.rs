@@ -33,9 +33,12 @@
 //!
 //! The macro expands to a Rust `mod` containing a function for each rule marked
 //! `pub` in the grammar. To parse an input sequence, call one of these
-//! functions. The call returns a `Result<T, ParseError>` carrying either the
-//! successfully parsed value returned by the rule, or a `ParseError` containing
-//! the failure position and the set of tokens expected there.
+//! functions. The call returns a `ParseResults<T,L>`, which carries either the
+//! successfully parsed value or the furthest failure.
+//!
+//! * Use `unwrap()` to obtain the successful `T` or panic.
+//! * Use `into_result()` to obtain a `Result<T, _>`.
+//! * For full details, match on the `result` field.
 //!
 //! ## Example
 //!
@@ -53,7 +56,7 @@
 //! }
 //!
 //! pub fn main() {
-//!     assert_eq!(list_parser::list("[1,1,2,3,5,8]"), Ok(vec![1, 1, 2, 3, 5, 8]));
+//!     assert_eq!(list_parser::list("[1,1,2,3,5,8]").into_result(), Ok(vec![1, 1, 2, 3, 5, 8]));
 //! }
 //! ```
 //!

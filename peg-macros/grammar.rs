@@ -43,7 +43,7 @@ pub mod peg {
             _ => (),
         }
         __state = ParseState::new();
-        __err_state.reparse_for_error();
+        __err_state.reparse_for_failure();
         match __parse_peg_grammar(
             __input,
             &mut __state,

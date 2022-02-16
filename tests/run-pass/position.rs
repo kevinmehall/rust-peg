@@ -8,5 +8,5 @@ peg::parser!(grammar test_grammar() for str {
 use self::test_grammar::*;
 
 fn main() {
-    assert_eq!(position("aaaabbb").unwrap(), (0, 4, 7));
+    assert_eq!(position("aaaabbb").into_result().unwrap(), (0, 4, 7));
 }

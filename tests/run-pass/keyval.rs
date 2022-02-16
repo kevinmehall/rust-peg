@@ -18,5 +18,5 @@ fn main() {
     let mut expected = HashMap::new();
     expected.insert(1, 3);
     expected.insert(2, 4);
-    assert_eq!(keyval::keyvals("1:3\n2:4"), Ok(expected));
+    assert_eq!(keyval::keyvals("1:3\n2:4").into_result(), Ok(expected));
 }
