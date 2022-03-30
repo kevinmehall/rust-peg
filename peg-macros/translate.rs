@@ -581,10 +581,27 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 BoundedRepeat::Both(ref min, ref max) => (min.clone(), max.clone()),
             };
 
+            let (repeat_init, repeat_step, repeat_count) = if result_used {
+                (
+                    quote_spanned! { span => let mut __repeat_value = vec!(); },
+                    quote_spanned! { span => __repeat_value.push(__value); },
+                    quote_spanned! { span => __repeat_value.len() },
+                )
+            } else if min.is_some() || max.is_some() || sep.is_some() {
+                (
+                    quote_spanned! { span => let mut __repeat_count = 0usize; },
+                    quote_spanned! { span => __repeat_count += 1; },
+                    quote_spanned! { span => __repeat_count },
+                )
+            } else {
+                (quote!(), quote!(), quote!())
+            };
+
+
             let match_sep = if let Some(sep) = sep {
                 let sep_inner = compile_expr(context, sep, false);
                 quote_spanned!{ span=>
-                    let __pos = if __repeat_value.is_empty() { __pos } else {
+                    let __pos = if #repeat_count == 0 { __pos } else {
                         let __sep_res = #sep_inner;
                         match __sep_res {
                             ::peg::RuleResult::Matched(__newpos, _) => { __newpos },
@@ -602,23 +619,13 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 quote!(())
             };
 
-            let (repeat_vec, repeat_step) =
-                if result_used || min.is_some() || max.is_some() || sep.is_some() {
-                    (
-                        Some(quote_spanned! { span => let mut __repeat_value = vec!(); }),
-                        Some(quote_spanned! { span => __repeat_value.push(__value); }),
-                    )
-                } else {
-                    (None, None)
-                };
-
             let max_check = max.map(|max| {
-                quote_spanned!{ span=> if __repeat_value.len() >= #max { break } }
+                quote_spanned!{ span=> if #repeat_count >= #max { break } }
             });
 
             let result_check = if let Some(min) = min {
                 quote_spanned!{ span=>
-                    if __repeat_value.len() >= #min {
+                    if #repeat_count >= #min {
                         ::peg::RuleResult::Matched(__repeat_pos, #result)
                     } else {
                         ::peg::RuleResult::Failed
@@ -629,8 +636,10 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             };
 
             quote_spanned!{ span=> {
+                #![allow(clippy::len_zero)]
+
                 let mut __repeat_pos = __pos;
-                #repeat_vec
+                #repeat_init
 
                 loop {
                     let __pos = __repeat_pos;
