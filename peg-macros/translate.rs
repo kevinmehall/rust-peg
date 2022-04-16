@@ -7,6 +7,8 @@ pub use self::Expr::*;
 use crate::analysis;
 use crate::ast::*;
 
+use cfg_if::cfg_if;
+
 pub fn report_error(span: Span, msg: String) -> TokenStream {
     quote_spanned!(span=>compile_error!(#msg);)
 }
@@ -153,25 +155,78 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
         if rule.cache.is_some() && rule.params.is_empty() && rule.ty_params.is_none() {
             let name = format_ident!("{}_cache", rule.name);
             let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
-            cache_fields_def.push(
-                quote_spanned! { span =>  #name: ::std::collections::HashMap<usize, ::peg::RuleResult<#ret_ty>> },
-            );
+            
+            let span = {
+                cfg_if! {
+                    if #[cfg(feature = "no_std")] {
+                        cfg_if! {
+                            if #[cfg(feature = "hashbrown")] {
+                                quote_spanned! { span =>  #name: ::hashbrown::HashMap<usize, ::peg::RuleResult<#ret_ty>> }
+                            } else {
+                                quote_spanned! { span =>  #name: ::alloc::collections::btree_map::BTreeMap<usize, ::peg::RuleResult<#ret_ty>> }
+                            }
+                        }
+                    } else {
+                        quote_spanned! { span =>  #name: ::std::collections::HashMap<usize, ::peg::RuleResult<#ret_ty>> }
+                    }
+                }
+            };
+
+            cache_fields_def.push(span);
             cache_fields.push(name);
         }
     }
 
-    quote_spanned! { span =>
+    let parse_state_struct = quote_spanned! { span =>
         #[allow(unused_parens)]
         struct ParseState<'input #(, #grammar_lifetime_params)*> {
-            _phantom: ::std::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
+            _phantom: ::core::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
             #(#cache_fields_def),*
         }
+    };
 
-        impl<'input #(, #grammar_lifetime_params)*> ParseState<'input #(, #grammar_lifetime_params)*> {
-            fn new() -> ParseState<'input #(, #grammar_lifetime_params)*> {
-                ParseState {
-                    _phantom: ::std::marker::PhantomData,
-                    #(#cache_fields: ::std::collections::HashMap::new()),*
+    cfg_if! {
+        if #[cfg(feature = "no_std")] {
+            cfg_if! {
+                if #[cfg(feature = "hashbrown")] {
+                    quote_spanned! { span =>
+                        #parse_state_struct
+
+                        impl<'input #(, #grammar_lifetime_params)*> ParseState<'input #(, #grammar_lifetime_params)*> {
+                            fn new() -> ParseState<'input #(, #grammar_lifetime_params)*> {
+                                ParseState {
+                                    _phantom: ::core::marker::PhantomData,
+                                    #(#cache_fields: ::hashbrown::HashMap::new()),*
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    quote_spanned! { span =>
+                        #parse_state_struct
+                
+                        impl<'input #(, #grammar_lifetime_params)*> ParseState<'input #(, #grammar_lifetime_params)*> {
+                            fn new() -> ParseState<'input #(, #grammar_lifetime_params)*> {
+                                ParseState {
+                                    _phantom: ::core::marker::PhantomData,
+                                    #(#cache_fields: ::alloc::collections::btree_map::BTreeMap::new()),*
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            quote_spanned! { span =>
+                #parse_state_struct
+
+                impl<'input #(, #grammar_lifetime_params)*> ParseState<'input #(, #grammar_lifetime_params)*> {
+                    fn new() -> ParseState<'input #(, #grammar_lifetime_params)*> {
+                        ParseState {
+                            _phantom: ::core::marker::PhantomData,
+                            #(#cache_fields: ::std::collections::HashMap::new()),*
+                        }
+                    }
                 }
             }
         }
@@ -331,7 +386,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     quote_spanned! { span =>
         #doc
-        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_lifetime_params),*>>> {
+        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::core::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_lifetime_params),*>>> {
             #![allow(non_snake_case, unused)]
 
             let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));

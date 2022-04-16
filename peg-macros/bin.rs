@@ -15,6 +15,10 @@ use std::process;
 // requires `::peg` paths.
 extern crate peg_runtime as peg;
 
+#[cfg(feature = "no_std")] 
+#[macro_use] 
+extern crate alloc;
+
 mod analysis;
 mod ast;
 mod grammar;
