@@ -26,4 +26,6 @@ path = "tests/trybuild.rs"
 harness = false
 
 [features]
+default = ["std"]
+std = []
 trace = ["peg-macros/trace"]
