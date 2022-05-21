@@ -10,7 +10,10 @@ pub mod str;
 /// type. The public API of a parser adapts errors to `std::result::Result`.
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub enum RuleResult<T> {
+    /// Success, with final location
     Matched(usize, T),
+
+    /// Failure (furthest failure location is not yet known)
     Failed,
 }
 

@@ -38,13 +38,13 @@ impl Display for ExpectedSet {
     }
 }
 
-/// An error from a parse failure
+/// A parse failure.
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct ParseError<L> {
-    /// The furthest position the parser reached in the input
+    /// The furthest position the parser reached in the input before failing.
     pub location: L,
 
-    /// The set of literals that failed to match at that position
+    /// The set of literals that failed to match at that position.
     pub expected: ExpectedSet,
 }
 
@@ -66,14 +66,23 @@ impl<L: Display + Debug> ::std::error::Error for ParseError<L> {
 
 #[doc(hidden)]
 pub struct ErrorState {
+    /// Furthest failure we've hit so far.
     pub max_err_pos: usize,
+
+    /// Are we inside a lookahead/quiet block? If so, failure is disabled.
+    /// Non-zero => yes, to support nested blocks.
     pub suppress_fail: usize,
+
+    /// Are we reparsing after a failure? If so, compute and store expected set of all alternative expectations
+    /// when we are at offset `max_err_pos`.
     pub reparsing_on_error: bool,
+
+    /// The set of tokens we expected to find when we hit the failure. Updated when `reparsing_on_error`.
     pub expected: ExpectedSet,
 }
 
 impl ErrorState {
-    pub fn new(initial_pos: usize) -> ErrorState {
+    pub fn new(initial_pos: usize) -> Self {
         ErrorState {
             max_err_pos: initial_pos,
             suppress_fail: 0,
@@ -84,6 +93,7 @@ impl ErrorState {
         }
     }
 
+    /// Set up for reparsing to record the details of the furthest failure.
     pub fn reparse_for_error(&mut self) {
         self.suppress_fail = 0;
         self.reparsing_on_error = true;
@@ -96,6 +106,7 @@ impl ErrorState {
         }
     }
 
+    /// Flag a failure.
     #[inline(always)]
     pub fn mark_failure(&mut self, pos: usize, expected: &'static str) -> RuleResult<()> {
         if self.suppress_fail == 0 {
