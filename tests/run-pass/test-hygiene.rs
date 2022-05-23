@@ -1,3 +1,5 @@
+#[cfg(not(feature = "std"))] #[macro_use] extern crate alloc;
+
 use ::peg as realpeg;
 struct Result;
 struct ParseResult;

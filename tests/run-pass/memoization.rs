@@ -1,3 +1,4 @@
+#[cfg(not(feature = "std"))] #[macro_use] extern crate alloc;
 extern crate peg;
 
 peg::parser!{ grammar memo() for str {
