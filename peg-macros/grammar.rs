@@ -6,13 +6,13 @@ pub mod peg {
     type PositionRepr = <Input as ::peg::Parse>::PositionRepr;
     #[allow(unused_parens)]
     struct ParseState<'input> {
-        _phantom: ::std::marker::PhantomData<(&'input ())>,
+        _phantom: ::core::marker::PhantomData<(&'input ())>,
         primary_cache: ::std::collections::HashMap<usize, ::peg::RuleResult<SpannedExpr>>,
     }
     impl<'input> ParseState<'input> {
         fn new() -> ParseState<'input> {
             ParseState {
-                _phantom: ::std::marker::PhantomData,
+                _phantom: ::core::marker::PhantomData,
                 primary_cache: ::std::collections::HashMap::new(),
             }
         }
@@ -23,7 +23,7 @@ pub mod peg {
     use proc_macro2::{Delimiter, Group, Ident, Literal, Span, TokenStream};
     pub fn peg_grammar<'input>(
         __input: &'input Input,
-    ) -> ::std::result::Result<Grammar, ::peg::error::ParseError<PositionRepr>> {
+    ) -> ::core::result::Result<Grammar, ::peg::error::ParseError<PositionRepr>> {
         #![allow(non_snake_case, unused)]
         let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
         let mut __state = ParseState::new();

@@ -3,8 +3,8 @@
 use crate::{Parse, RuleResult};
 use core::fmt::{self, Debug, Display};
 
-#[cfg(feature = "no_std")] use alloc::{collections::btree_set::BTreeSet, vec::Vec};
-#[cfg(not(feature = "no_std"))] use std::collections::BTreeSet;
+#[cfg(not(feature = "std"))] use alloc::{collections::btree_set::BTreeSet, vec::Vec};
+#[cfg(feature = "std")] use std::collections::BTreeSet;
 
 /// A set of literals or names that failed to match
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -61,7 +61,7 @@ impl<L: Display> Display for ParseError<L> {
 }
 
 // Unfortuantely, std::error::Error never made it into core::error
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 impl<L: Display + Debug> ::std::error::Error for ParseError<L> {
     fn description(&self) -> &str {
         "parse error"

@@ -11,4 +11,4 @@ edition = "2018"
 path = "lib.rs"
 
 [features]
-no_std = []
+std = []

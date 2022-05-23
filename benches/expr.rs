@@ -3,7 +3,7 @@ extern crate peg;
 
 extern crate test;
 
-#[cfg(feature = "no_std")] #[macro_use] extern crate alloc;
+#[cfg(not(feature = "std"))] #[macro_use] extern crate alloc;
 
 use test::Bencher;
 

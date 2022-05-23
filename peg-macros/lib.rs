@@ -14,7 +14,7 @@ mod grammar;
 mod tokens;
 mod translate;
 
-#[cfg(feature = "no_std")] extern crate alloc;
+#[cfg(not(feature = "std"))] extern crate alloc;
 
 /// The main macro for creating a PEG parser.
 ///

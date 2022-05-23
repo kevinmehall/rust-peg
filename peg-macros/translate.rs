@@ -158,7 +158,7 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
             
             let span = {
                 cfg_if! {
-                    if #[cfg(feature = "no_std")] {
+                    if #[cfg(not(feature = "std"))] {
                         cfg_if! {
                             if #[cfg(feature = "hashbrown")] {
                                 quote_spanned! { span =>  #name: ::hashbrown::HashMap<usize, ::peg::RuleResult<#ret_ty>> }
@@ -186,7 +186,7 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
     };
 
     cfg_if! {
-        if #[cfg(feature = "no_std")] {
+        if #[cfg(not(feature = "std"))] {
             cfg_if! {
                 if #[cfg(feature = "hashbrown")] {
                     quote_spanned! { span =>
