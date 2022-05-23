@@ -14,7 +14,7 @@ peg-runtime = { version = "= 0.8.0", path = "../peg-runtime" }
 cfg-if = "1.0.0"
 
 [features]
-std = []
+std = ["peg-runtime/std"]
 trace = []
 hashbrown = []
 
