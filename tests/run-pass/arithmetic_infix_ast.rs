@@ -22,7 +22,7 @@ pub enum InfixAst {
 }
 
 fn main(){
-    assert_eq!(arithmetic::expression("a + b `x` c").unwrap(),
+    assert_eq!(arithmetic::expression("a + b `x` c").into_result().unwrap(),
         InfixAst::Add(
             Box::new(InfixAst::Ident("a".to_owned())),
             Box::new(InfixAst::Op("x".to_owned(),

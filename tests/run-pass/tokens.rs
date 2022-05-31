@@ -13,5 +13,5 @@ peg::parser!{
 }
 
 fn main() {
-    assert_eq!(tokenparser::list(&[Token::Open, Token::Number(5), Token::Comma, Token::Number(7), Token::Close]), Ok((5, 7)));
+    assert_eq!(tokenparser::list(&[Token::Open, Token::Number(5), Token::Comma, Token::Number(7), Token::Close]).into_result(), Ok((5, 7)));
 }

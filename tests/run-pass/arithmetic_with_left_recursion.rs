@@ -13,8 +13,8 @@ peg::parser!( grammar arithmetic() for str {
 });
 
 fn main() {
-    assert_eq!(sum("1"), Ok(1));
-    assert_eq!(sum("1+1"), Ok(2));
-    assert_eq!(sum("1+1+1"), Ok(3));
-    assert_eq!(sum("1+2+3"), Ok(6));
+    assert_eq!(sum("1").into_result(), Ok(1));
+    assert_eq!(sum("1+1").into_result(), Ok(2));
+    assert_eq!(sum("1+1+1").into_result(), Ok(3));
+    assert_eq!(sum("1+2+3").into_result(), Ok(6));
 }

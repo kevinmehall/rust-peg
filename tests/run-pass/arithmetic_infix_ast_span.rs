@@ -29,7 +29,7 @@ pub enum Op {
 }
 
 fn main(){
-    assert_eq!(arithmetic::expression("a+b*c").unwrap(),
+    assert_eq!(arithmetic::expression("a+b*c").into_result().unwrap(),
         Node {
             start: 0,
             end: 5,

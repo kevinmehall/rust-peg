@@ -11,5 +11,5 @@ peg::parser!(grammar test_grammar() for str {
 use self::test_grammar::*;
 
 fn main() {
-    assert_eq!(renamed_imports("").unwrap(), (42, 42));
+    assert_eq!(renamed_imports("").into_result().unwrap(), (42, 42));
 }

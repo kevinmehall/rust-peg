@@ -16,11 +16,11 @@ peg::parser!( grammar ra() for str {
     rule ident() = ['a'..='z']+
     rule _ = [' ']*
     pub rule ifelse() = keyword("if") _ ident() _ keyword("then") _ ident() _ keyword("else") _ ident()
-    
+
     pub rule repeated_a(i: usize) = ['a']*<{i}>
 
     rule i(literal: &'static str) = input:$([_]*<{literal.len()}>) {? if input.eq_ignore_ascii_case(literal) { Ok(()) } else { Err(literal) } }
-    
+
     pub rule test_i() = i("foo") i("bar")
 
     rule recursive(r: rule<()>) = " " recursive(r) // Issue #226
@@ -36,19 +36,19 @@ peg::parser!( grammar ra() for str {
 use ra::*;
 
 fn main() {
-    assert_eq!(list("1,2,3,4"), Ok(vec![1,2,3,4]));
-    assert_eq!(array("[1,1,2,3,5,]"), Ok(vec![1,1,2,3,5]));
+    assert_eq!(list("1,2,3,4").into_result(), Ok(vec![1,2,3,4]));
+    assert_eq!(array("[1,1,2,3,5,]").into_result(), Ok(vec![1,1,2,3,5]));
 
-    assert!(ifelse("if foo then x else y").is_ok());
-    assert!(ifelse("iffoothenxelsey").is_err());
+    assert!(ifelse("if foo then x else y").into_result().is_ok());
+    assert!(ifelse("iffoothenxelsey").into_result().is_err());
 
-    assert!(repeated_a("aa", 2).is_ok());
-    assert!(repeated_a("aaa", 2).is_err());
-    assert!(repeated_a("aaaaa", 5).is_ok());
+    assert!(repeated_a("aa", 2).into_result().is_ok());
+    assert!(repeated_a("aaa", 2).into_result().is_err());
+    assert!(repeated_a("aaaaa", 5).into_result().is_ok());
 
-    assert!(test_i("fOoBaR").is_ok());
-    assert!(test_i("fOoBaZ").is_err());
-    assert!(test_i("fOoX").is_err());
+    assert!(test_i("fOoBaR").into_result().is_ok());
+    assert!(test_i("fOoBaZ").into_result().is_err());
+    assert!(test_i("fOoX").into_result().is_err());
 
-    use_complex_args("").ok();
+    use_complex_args("").into_result().ok();
 }

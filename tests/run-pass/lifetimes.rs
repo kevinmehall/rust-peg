@@ -25,7 +25,7 @@ fn main() {
     assert_eq!(
         tokenparser::program(
             &[Token(&input[0..1]), Token(&input[1..4]), Token(&input[4..5]), Token(&input[5..8]), Token(&input[8..9])],
-        ),
+        ).into_result(),
         Ok(vec!["one", "two"])
     );
 }

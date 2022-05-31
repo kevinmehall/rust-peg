@@ -10,7 +10,7 @@ peg::parser!( grammar test_grammar() for str {
 use self::test_grammar::*;
 
 fn main() {
-    assert_eq!(options("abc"), Ok(None));
-    assert_eq!(options("abcdef"), Ok(Some(())));
-    assert!(options("def").is_err());
+    assert_eq!(options("abc").into_result(), Ok(None));
+    assert_eq!(options("abcdef").into_result(), Ok(Some(())));
+    assert!(options("def").into_result().is_err());
 }

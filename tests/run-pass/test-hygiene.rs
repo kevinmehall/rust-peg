@@ -23,6 +23,6 @@ realpeg::parser!{
 }
 
 fn main() {
-    assert_eq!(p::number("12345"), Ok(12345.0))
+    assert_eq!(p::number("12345").into_result(), Ok(12345.0))
 }
 

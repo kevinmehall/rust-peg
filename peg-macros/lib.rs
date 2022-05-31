@@ -20,7 +20,7 @@ mod translate;
 #[proc_macro]
 pub fn parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let tokens = tokens::FlatTokenStream::new(input.into());
-    let grammar = match grammar::peg::peg_grammar(&tokens) {
+    let grammar = match grammar::peg::peg_grammar(&tokens).into_result() {
         Ok(g) => g,
         Err(err) => {
             let msg = format!("expected {}", err.expected);
