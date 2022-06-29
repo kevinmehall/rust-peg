@@ -40,6 +40,10 @@ rule peg_rule() -> Rule
 rule item() -> Item
     = u:rust_use()     { Item::Use(u) }
     / r:peg_rule()     { Item::Rule(r) }
+    / l:stack_limit()  { Item::StackLimit(l) }
+
+rule stack_limit() -> TokenStream
+    = "stack_limit" i:$(INTEGER()) ";" { i }
 
 rule rust_doc_comment() -> Option<TokenStream> = $(("#" "[" "doc" "=" LITERAL() "]")*)?
 

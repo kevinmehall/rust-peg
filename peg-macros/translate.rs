@@ -43,6 +43,13 @@ fn extra_args_call(grammar: &Grammar) -> TokenStream {
     quote!(#(#args)*)
 }
 
+fn stack_limit(grammar: &Grammar) -> Option<TokenStream> {
+    grammar.items.iter().find_map(|it| match it {
+        Item::StackLimit(lim) => Some(quote!(#lim)),
+        _ => None,
+    })
+}
+
 #[derive(Clone)]
 struct Context<'a> {
     rules: &'a HashMap<String, &'a Rule>,
@@ -52,6 +59,7 @@ struct Context<'a> {
     parse_state_ty: TokenStream,
     extra_args_call: TokenStream,
     extra_args_def: TokenStream,
+    stack_limit: Option<TokenStream>,
 }
 
 pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
@@ -67,6 +75,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
         parse_state_ty: quote!(&mut ParseState<'input #(, #grammar_lifetime_params)*>),
         extra_args_call: extra_args_call(grammar),
         extra_args_def: extra_args_def(grammar),
+        stack_limit: stack_limit(grammar),
     };
 
     let mut seen_rule_names = HashSet::new();
@@ -112,10 +121,11 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
                 items.push(compile_rule(context, rule));
             }
+            _ => {}
         }
     }
 
-    let parse_state = make_parse_state(grammar);
+    let parse_state = make_parse_state(grammar, context);
     let Grammar {
         name,
         doc,
@@ -152,7 +162,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     }
 }
 
-fn make_parse_state(grammar: &Grammar) -> TokenStream {
+fn make_parse_state(grammar: &Grammar, context: &Context) -> TokenStream {
     let span = Span::mixed_site();
     let grammar_lifetime_params = ty_params_slice(&grammar.lifetime_params);
     let mut cache_fields_def: Vec<TokenStream> = Vec::new();
@@ -168,11 +178,21 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
         }
     }
 
+    let (stack_size_def, stack_size_init) = if context.stack_limit.is_some() {
+        (
+            Some(quote_spanned! { span => _stack_size: usize, }),
+            Some(quote_spanned! { span => _stack_size: 0, }),
+        )
+    } else {
+        (None, None)
+    };
+
     quote_spanned! { span =>
         #[allow(unused_parens)]
         struct ParseState<'input #(, #grammar_lifetime_params)*> {
             _phantom: ::std::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
             #(#cache_fields_def),*
+            #stack_size_def
         }
 
         impl<'input #(, #grammar_lifetime_params)*> ParseState<'input #(, #grammar_lifetime_params)*> {
@@ -180,6 +200,7 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
                 ParseState {
                     _phantom: ::std::marker::PhantomData,
                     #(#cache_fields: ::std::collections::HashMap::new()),*
+                    #stack_size_init
                 }
             }
         }
@@ -221,6 +242,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         parse_state_ty,
         grammar_lifetime_params,
         extra_args_def,
+        stack_limit,
         ..
     } = context;
 
@@ -231,7 +253,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
     let body = compile_expr(&context, &rule.expr, rule.ret_type.is_some());
 
-    let wrapped_body = if cfg!(feature = "trace") {
+    let trace_wrapped_body = if cfg!(feature = "trace") {
         let str_rule_name = rule.name.to_string();
         quote_spanned! { span => {
             let loc = ::peg::Parse::position_repr(__input, __pos);
@@ -251,6 +273,22 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         }}
     } else {
         body
+    };
+
+    let wrapped_body = if let Some(lim) = stack_limit {
+        quote_spanned! { span => {
+            if __state._stack_size > #lim {
+                __err_state.mark_failure(__pos, "STACK OVERFLOW");
+                return ::peg::RuleResult::Failed;
+            }
+            __state._stack_size += 1;
+            let __peg_result: ::peg::RuleResult<#ret_ty> = {#trace_wrapped_body};
+            __state._stack_size -= 1;
+
+            __peg_result
+        }}
+    } else {
+        trace_wrapped_body
     };
 
     let rule_params = rule_params_list(&context, rule);

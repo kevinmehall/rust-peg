@@ -860,14 +860,74 @@ pub mod peg {
                     ::peg::RuleResult::Matched(__pos, __value)
                 }
                 ::peg::RuleResult::Failed => {
-                    let __seq_res = __parse_peg_rule(__input, __state, __err_state, __pos);
-                    match __seq_res {
-                        ::peg::RuleResult::Matched(__pos, r) => {
-                            ::peg::RuleResult::Matched(__pos, (|| Item::Rule(r))())
+                    let __choice_res = {
+                        let __seq_res = __parse_peg_rule(__input, __state, __err_state, __pos);
+                        match __seq_res {
+                            ::peg::RuleResult::Matched(__pos, r) => {
+                                ::peg::RuleResult::Matched(__pos, (|| Item::Rule(r))())
+                            }
+                            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
                         }
-                        ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                    };
+                    match __choice_res {
+                        ::peg::RuleResult::Matched(__pos, __value) => {
+                            ::peg::RuleResult::Matched(__pos, __value)
+                        }
+                        ::peg::RuleResult::Failed => {
+                            let __seq_res =
+                                __parse_stack_limit(__input, __state, __err_state, __pos);
+                            match __seq_res {
+                                ::peg::RuleResult::Matched(__pos, l) => {
+                                    ::peg::RuleResult::Matched(__pos, (|| Item::StackLimit(l))())
+                                }
+                                ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                            }
+                        }
                     }
                 }
+            }
+        }
+    }
+    fn __parse_stack_limit<'input>(
+        __input: &'input Input,
+        __state: &mut ParseState<'input>,
+        __err_state: &mut ::peg::error::ErrorState,
+        __pos: usize,
+    ) -> ::peg::RuleResult<TokenStream> {
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
+        match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "stack_limit") {
+            ::peg::RuleResult::Matched(__pos, __val) => {
+                let __seq_res = {
+                    let str_start = __pos;
+                    match match __parse_INTEGER(__input, __state, __err_state, __pos) {
+                        ::peg::RuleResult::Matched(pos, _) => ::peg::RuleResult::Matched(pos, ()),
+                        ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                    } {
+                        ::peg::RuleResult::Matched(__newpos, _) => ::peg::RuleResult::Matched(
+                            __newpos,
+                            ::peg::ParseSlice::parse_slice(__input, str_start, __newpos),
+                        ),
+                        ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                    }
+                };
+                match __seq_res {
+                    ::peg::RuleResult::Matched(__pos, i) => {
+                        match ::peg::ParseLiteral::parse_string_literal(__input, __pos, ";") {
+                            ::peg::RuleResult::Matched(__pos, __val) => {
+                                ::peg::RuleResult::Matched(__pos, (|| i)())
+                            }
+                            ::peg::RuleResult::Failed => {
+                                __err_state.mark_failure(__pos, "\";\"");
+                                ::peg::RuleResult::Failed
+                            }
+                        }
+                    }
+                    ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                }
+            }
+            ::peg::RuleResult::Failed => {
+                __err_state.mark_failure(__pos, "\"stack_limit\"");
+                ::peg::RuleResult::Failed
             }
         }
     }
