@@ -253,7 +253,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
     let body = compile_expr(&context, &rule.expr, rule.ret_type.is_some());
 
-    let trace_wrapped_body = if cfg!(feature = "trace") {
+    let wrapped_body = if cfg!(feature = "trace") {
         let str_rule_name = rule.name.to_string();
         quote_spanned! { span => {
             let loc = ::peg::Parse::position_repr(__input, __pos);
@@ -275,26 +275,33 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         body
     };
 
-    let wrapped_body = if let Some(lim) = stack_limit {
+    let stack_increment = stack_limit.as_ref().map(|lim| {
         quote_spanned! { span => {
             if __state._stack_size > #lim {
                 __err_state.mark_failure(__pos, "STACK OVERFLOW");
                 return ::peg::RuleResult::Failed;
             }
             __state._stack_size += 1;
-            let __peg_result: ::peg::RuleResult<#ret_ty> = {#trace_wrapped_body};
-            __state._stack_size -= 1;
-
-            __peg_result
         }}
+    });
+
+    let stack_decrement = if stack_limit.is_some() {
+        Some(quote_spanned! { span => {
+            __state._stack_size -= 1;
+        }})
     } else {
-        trace_wrapped_body
+        None
     };
 
     let rule_params = rule_params_list(&context, rule);
 
     let fn_body = match &rule.cache {
-        None => wrapped_body,
+        None => quote_spanned! { span => {
+            #stack_increment
+            let __rule_result: ::peg::RuleResult<#ret_ty> = { #wrapped_body };
+            #stack_decrement
+            __rule_result
+        }},
         Some(cache_type) => {
             let cache_field = format_ident!("{}_cache", rule.name);
 
@@ -317,8 +324,9 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
                         #cache_trace
                         return entry.clone();
                     }
-
+                    #stack_increment
                     let __rule_result = #wrapped_body;
+                    #stack_decrement
                     __state.#cache_field.insert(__pos, __rule_result.clone());
                     __rule_result
                 },
@@ -326,6 +334,18 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
                 // `#[cache_left_rec] support for recursive rules using the technique described here:
                 // <https://medium.com/@gvanrossum_83706/left-recursive-peg-grammars-65dab3c580e1>
                 {
+                    let stack_save = if stack_limit.is_some() {
+                        Some(
+                            quote_spanned! { span => let __stack_size_before = __state._stack_size; },
+                        )
+                    } else {
+                        None
+                    };
+                    let stack_restore = if stack_limit.is_some() {
+                        Some(quote_spanned! { span => __state._stack_size = __stack_size_before; })
+                    } else {
+                        None
+                    };
                     quote_spanned! { span =>
                         if let Some(entry) = __state.#cache_field.get(&__pos) {
                             #cache_trace
@@ -334,7 +354,9 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
                         __state.#cache_field.insert(__pos, ::peg::RuleResult::Failed);
                         let mut __last_result = ::peg::RuleResult::Failed;
+                        #stack_save
                         loop {
+                            #stack_increment
                             let __current_result = { #wrapped_body };
                             match __current_result {
                                 ::peg::RuleResult::Failed => break,
@@ -348,7 +370,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
                                     }
                             }
                         }
-
+                        #stack_restore
                         return __last_result;
                     }
                 }
