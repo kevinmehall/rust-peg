@@ -11,6 +11,7 @@ grammar list() for str {
         = head:number() "," tail:of_one_or_two() { prepend(head, tail) }
         / single:number() { vec![single] }
 
+    #[cache]
     rule number() -> i64
         = n:$(['0'..='9']+) { n.parse().unwrap() }
 }

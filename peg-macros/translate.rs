@@ -191,7 +191,7 @@ fn make_parse_state(grammar: &Grammar, context: &Context) -> TokenStream {
         #[allow(unused_parens)]
         struct ParseState<'input #(, #grammar_lifetime_params)*> {
             _phantom: ::std::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
-            #(#cache_fields_def),*
+            #(#cache_fields_def,)*
             #stack_size_def
         }
 
@@ -199,7 +199,7 @@ fn make_parse_state(grammar: &Grammar, context: &Context) -> TokenStream {
             fn new() -> ParseState<'input #(, #grammar_lifetime_params)*> {
                 ParseState {
                     _phantom: ::std::marker::PhantomData,
-                    #(#cache_fields: ::std::collections::HashMap::new()),*
+                    #(#cache_fields: ::std::collections::HashMap::new(),)*
                     #stack_size_init
                 }
             }
