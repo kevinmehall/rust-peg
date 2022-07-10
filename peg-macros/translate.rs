@@ -43,6 +43,13 @@ fn extra_args_call(grammar: &Grammar) -> TokenStream {
     quote!(#(#args)*)
 }
 
+fn stack_limit(grammar: &Grammar) -> Option<TokenStream> {
+    grammar.items.iter().find_map(|it| match it {
+        Item::StackLimit(lim) => Some(quote!(#lim)),
+        _ => None,
+    })
+}
+
 #[derive(Clone)]
 struct Context<'a> {
     rules: &'a HashMap<String, &'a Rule>,
@@ -52,6 +59,7 @@ struct Context<'a> {
     parse_state_ty: TokenStream,
     extra_args_call: TokenStream,
     extra_args_def: TokenStream,
+    stack_limit: Option<TokenStream>,
 }
 
 pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
@@ -67,6 +75,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
         parse_state_ty: quote!(&mut ParseState<'input #(, #grammar_lifetime_params)*>),
         extra_args_call: extra_args_call(grammar),
         extra_args_def: extra_args_def(grammar),
+        stack_limit: stack_limit(grammar),
     };
 
     let mut seen_rule_names = HashSet::new();
@@ -112,10 +121,11 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
                 items.push(compile_rule(context, rule));
             }
+            _ => {}
         }
     }
 
-    let parse_state = make_parse_state(grammar);
+    let parse_state = make_parse_state(grammar, context);
     let Grammar {
         name,
         doc,
@@ -152,7 +162,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     }
 }
 
-fn make_parse_state(grammar: &Grammar) -> TokenStream {
+fn make_parse_state(grammar: &Grammar, context: &Context) -> TokenStream {
     let span = Span::mixed_site();
     let grammar_lifetime_params = ty_params_slice(&grammar.lifetime_params);
     let mut cache_fields_def: Vec<TokenStream> = Vec::new();
@@ -168,18 +178,29 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
         }
     }
 
+    let (stack_size_def, stack_size_init) = if context.stack_limit.is_some() {
+        (
+            Some(quote_spanned! { span => _stack_size: usize, }),
+            Some(quote_spanned! { span => _stack_size: 0, }),
+        )
+    } else {
+        (None, None)
+    };
+
     quote_spanned! { span =>
         #[allow(unused_parens)]
         struct ParseState<'input #(, #grammar_lifetime_params)*> {
             _phantom: ::std::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
-            #(#cache_fields_def),*
+            #(#cache_fields_def,)*
+            #stack_size_def
         }
 
         impl<'input #(, #grammar_lifetime_params)*> ParseState<'input #(, #grammar_lifetime_params)*> {
             fn new() -> ParseState<'input #(, #grammar_lifetime_params)*> {
                 ParseState {
                     _phantom: ::std::marker::PhantomData,
-                    #(#cache_fields: ::std::collections::HashMap::new()),*
+                    #(#cache_fields: ::std::collections::HashMap::new(),)*
+                    #stack_size_init
                 }
             }
         }
@@ -221,6 +242,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         parse_state_ty,
         grammar_lifetime_params,
         extra_args_def,
+        stack_limit,
         ..
     } = context;
 
@@ -253,10 +275,33 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         body
     };
 
+    let stack_increment = stack_limit.as_ref().map(|lim| {
+        quote_spanned! { span => {
+            if __state._stack_size > #lim {
+                __err_state.mark_failure(__pos, "STACK OVERFLOW");
+                return ::peg::RuleResult::Failed;
+            }
+            __state._stack_size += 1;
+        }}
+    });
+
+    let stack_decrement = if stack_limit.is_some() {
+        Some(quote_spanned! { span => {
+            __state._stack_size -= 1;
+        }})
+    } else {
+        None
+    };
+
     let rule_params = rule_params_list(&context, rule);
 
     let fn_body = match &rule.cache {
-        None => wrapped_body,
+        None => quote_spanned! { span => {
+            #stack_increment
+            let __rule_result: ::peg::RuleResult<#ret_ty> = { #wrapped_body };
+            #stack_decrement
+            __rule_result
+        }},
         Some(cache_type) => {
             let cache_field = format_ident!("{}_cache", rule.name);
 
@@ -279,8 +324,9 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
                         #cache_trace
                         return entry.clone();
                     }
-
+                    #stack_increment
                     let __rule_result = #wrapped_body;
+                    #stack_decrement
                     __state.#cache_field.insert(__pos, __rule_result.clone());
                     __rule_result
                 },
@@ -288,6 +334,18 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
                 // `#[cache_left_rec] support for recursive rules using the technique described here:
                 // <https://medium.com/@gvanrossum_83706/left-recursive-peg-grammars-65dab3c580e1>
                 {
+                    let stack_save = if stack_limit.is_some() {
+                        Some(
+                            quote_spanned! { span => let __stack_size_before = __state._stack_size; },
+                        )
+                    } else {
+                        None
+                    };
+                    let stack_restore = if stack_limit.is_some() {
+                        Some(quote_spanned! { span => __state._stack_size = __stack_size_before; })
+                    } else {
+                        None
+                    };
                     quote_spanned! { span =>
                         if let Some(entry) = __state.#cache_field.get(&__pos) {
                             #cache_trace
@@ -296,7 +354,9 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
                         __state.#cache_field.insert(__pos, ::peg::RuleResult::Failed);
                         let mut __last_result = ::peg::RuleResult::Failed;
+                        #stack_save
                         loop {
+                            #stack_increment
                             let __current_result = { #wrapped_body };
                             match __current_result {
                                 ::peg::RuleResult::Failed => break,
@@ -310,7 +370,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
                                     }
                             }
                         }
-
+                        #stack_restore
                         return __last_result;
                     }
                 }
