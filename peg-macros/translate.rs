@@ -20,10 +20,8 @@ pub fn report_error_expr(span: Span, msg: String) -> TokenStream {
 fn group_check_prefix(group: &Group, prefix: char) -> Option<TokenStream> {
     let mut iter = group.stream().into_iter();
     match iter.next() {
-        Some(TokenTree::Punct(p)) if p.as_char() == prefix => {
-            Some(iter.collect())
-        }
-        _ => None
+        Some(TokenTree::Punct(p)) if p.as_char() == prefix => Some(iter.collect()),
+        _ => None,
     }
 }
 
@@ -57,8 +55,7 @@ struct Context<'a> {
 }
 
 pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
-
-    let analysis = analysis::check(&grammar);
+    let analysis = analysis::check(grammar);
 
     let grammar_lifetime_params = ty_params_slice(&grammar.lifetime_params);
 
@@ -97,20 +94,19 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 
                 if rule.visibility.is_some() {
                     for param in &rule.params {
-                        match &param.ty {
-                            RuleParamTy::Rule(..) => items.push(report_error(
-                                    param.name.span(),
-                                    format!("parameters on `pub rule` must be Rust types"),
-                            )),
-                            _ => {}
+                        if let RuleParamTy::Rule(..) = &param.ty {
+                            items.push(report_error(
+                                param.name.span(),
+                                "parameters on `pub rule` must be Rust types".to_string(),
+                            ))
                         }
                     }
 
                     items.push(compile_rule_export(context, rule));
                 } else if rule.no_eof {
                     items.push(report_error(
-                            rule.name.span(),
-                            format!("#[no_eof] is only meaningful for `pub rule`"),
+                        rule.name.span(),
+                        "#[no_eof] is only meaningful for `pub rule`".to_string(),
                     ));
                 }
 
@@ -119,15 +115,27 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
         }
     }
 
-    let parse_state = make_parse_state(&grammar);
-    let Grammar { name, doc, input_type, visibility, .. } = grammar;
+    let parse_state = make_parse_state(grammar);
+    let Grammar {
+        name,
+        doc,
+        input_type,
+        visibility,
+        ..
+    } = grammar;
 
-    let mut errors: Vec<TokenStream> = analysis.left_recursion.iter()
+    let mut errors: Vec<TokenStream> = analysis
+        .left_recursion
+        .iter()
         .map(|rec| report_error(rec.span, rec.msg()))
         .collect();
 
-    errors.extend(analysis.loop_nullability.iter()
-        .map(|nl| report_error(nl.span, nl.msg())));
+    errors.extend(
+        analysis
+            .loop_nullability
+            .iter()
+            .map(|nl| report_error(nl.span, nl.msg())),
+    );
 
     quote_spanned! { Span::mixed_site() =>
         #doc
@@ -183,7 +191,11 @@ fn ty_params_slice(ty_params: &Option<Vec<TokenStream>>) -> &[TokenStream] {
 }
 
 fn rule_params_list(context: &Context, rule: &Rule) -> Vec<TokenStream> {
-    let Context { input_ty, parse_state_ty, .. } = context;
+    let Context {
+        input_ty,
+        parse_state_ty,
+        ..
+    } = context;
     let span = rule.span.resolved_at(Span::mixed_site());
     rule.params.iter().map(|param| {
         let name = &param.name;
@@ -200,11 +212,17 @@ fn rule_params_list(context: &Context, rule: &Rule) -> Vec<TokenStream> {
 /// Returns `RuleResult<T>`.
 fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let span = rule.span.resolved_at(Span::mixed_site());
-    let name = format_ident!("__parse_{}", rule.name, span=span);
+    let name = format_ident!("__parse_{}", rule.name, span = span);
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let ty_params = ty_params_slice(&rule.ty_params);
 
-    let Context { input_ty, parse_state_ty, grammar_lifetime_params, extra_args_def, .. } = context;
+    let Context {
+        input_ty,
+        parse_state_ty,
+        grammar_lifetime_params,
+        extra_args_def,
+        ..
+    } = context;
 
     let mut context = context.clone();
     context
@@ -256,20 +274,20 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
             };
 
             match cache_type {
-                Cache::Simple =>
-                    quote_spanned! { span =>
-                        if let Some(entry) = __state.#cache_field.get(&__pos) {
-                            #cache_trace
-                            return entry.clone();
-                        }
+                Cache::Simple => quote_spanned! { span =>
+                    if let Some(entry) = __state.#cache_field.get(&__pos) {
+                        #cache_trace
+                        return entry.clone();
+                    }
 
-                        let __rule_result = #wrapped_body;
-                        __state.#cache_field.insert(__pos, __rule_result.clone());
-                        __rule_result
-                    },
+                    let __rule_result = #wrapped_body;
+                    __state.#cache_field.insert(__pos, __rule_result.clone());
+                    __rule_result
+                },
                 Cache::Recursive =>
-                    // `#[cache_left_rec] support for recursive rules using the technique described here:
-                    // <https://medium.com/@gvanrossum_83706/left-recursive-peg-grammars-65dab3c580e1>
+                // `#[cache_left_rec] support for recursive rules using the technique described here:
+                // <https://medium.com/@gvanrossum_83706/left-recursive-peg-grammars-65dab3c580e1>
+                {
                     quote_spanned! { span =>
                         if let Some(entry) = __state.#cache_field.get(&__pos) {
                             #cache_trace
@@ -295,6 +313,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 
                         return __last_result;
                     }
+                }
             }
         }
     };
@@ -312,7 +331,12 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
 fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let span = rule.span.resolved_at(Span::mixed_site());
 
-    let Rule { doc, name, visibility, .. } = rule;
+    let Rule {
+        doc,
+        name,
+        visibility,
+        ..
+    } = rule;
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let parse_fn = format_ident!("__parse_{}", rule.name.to_string(), span = name.span());
     let ty_params = ty_params_slice(&rule.ty_params);
@@ -326,11 +350,17 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
         })
         .collect();
 
-    let Context { input_ty, extra_args_call, extra_args_def, grammar_lifetime_params, .. } = context;
+    let Context {
+        input_ty,
+        extra_args_call,
+        extra_args_def,
+        grammar_lifetime_params,
+        ..
+    } = context;
     let eof_check = if rule.no_eof {
-        quote_spanned!{ span => true }
+        quote_spanned! { span => true }
     } else {
-        quote_spanned!{ span => ::peg::Parse::is_eof(__input, __pos) }
+        quote_spanned! { span => ::peg::Parse::is_eof(__input, __pos) }
     };
 
     // Parse once. If it succeeds or throws an error, return that.
@@ -399,20 +429,29 @@ fn labeled_seq(context: &Context, exprs: &[TaggedExpr], inner: TokenStream) -> T
     })
 }
 
-fn compile_expr_continuation(context: &Context, e: &SpannedExpr, result_name: Option<&Ident>, continuation: TokenStream) -> TokenStream {
+fn compile_expr_continuation(
+    context: &Context,
+    e: &SpannedExpr,
+    result_name: Option<&Ident>,
+    continuation: TokenStream,
+) -> TokenStream {
     let span = e.span.resolved_at(Span::mixed_site());
 
     let result_pat = name_or_ignore(result_name);
     match e.expr {
-        LiteralExpr(ref s) => {
-            compile_literal_expr(s, continuation)
-        }
+        LiteralExpr(ref s) => compile_literal_expr(s, continuation),
 
         PatternExpr(ref pattern) => {
-            let result_name = result_name.cloned().unwrap_or_else(|| Ident::new("__ch", span));
-            compile_pattern_expr(pattern, result_name, quote_spanned!{ span =>
-                { let __pos = __next; { #continuation } }
-            })
+            let result_name = result_name
+                .cloned()
+                .unwrap_or_else(|| Ident::new("__ch", span));
+            compile_pattern_expr(
+                pattern,
+                result_name,
+                quote_spanned! { span =>
+                    { let __pos = __next; { #continuation } }
+                },
+            )
         }
 
         _ => {
@@ -431,7 +470,7 @@ fn compile_expr_continuation(context: &Context, e: &SpannedExpr, result_name: Op
 fn compile_literal_expr(s: &Literal, continuation: TokenStream) -> TokenStream {
     let span = s.span().resolved_at(Span::mixed_site());
     let escaped_str = s.to_string();
-    quote_spanned! { span => 
+    quote_spanned! { span =>
             match ::peg::ParseLiteral::parse_string_literal(__input, __pos, #s) {
             ::peg::RuleResult::Matched(__pos, __val) => { #continuation }
             ::peg::RuleResult::Failed => { __err_state.mark_failure(__pos, #escaped_str); ::peg::RuleResult::Failed }
@@ -439,16 +478,21 @@ fn compile_literal_expr(s: &Literal, continuation: TokenStream) -> TokenStream {
     }
 }
 
-fn compile_pattern_expr(pattern_group: &Group, result_name: Ident, success_res: TokenStream) -> TokenStream {
+fn compile_pattern_expr(
+    pattern_group: &Group,
+    result_name: Ident,
+    success_res: TokenStream,
+) -> TokenStream {
     let span = pattern_group.span().resolved_at(Span::mixed_site());
     let pat_str = pattern_group.to_string();
     let failure_res = quote_spanned! { span => { __err_state.mark_failure(__pos, #pat_str); ::peg::RuleResult::Failed } };
 
-    let (pattern, in_set, not_in_set) = if let Some(pattern) = group_check_prefix(pattern_group, '^') {
-        (pattern, failure_res, success_res)
-    } else {
-        (pattern_group.stream(), success_res, failure_res)
-    };
+    let (pattern, in_set, not_in_set) =
+        if let Some(pattern) = group_check_prefix(pattern_group, '^') {
+            (pattern, failure_res, success_res)
+        } else {
+            (pattern_group.stream(), success_res, failure_res)
+        };
 
     quote_spanned! { span =>
         match ::peg::ParseElem::parse_elem(__input, __pos) {
@@ -465,18 +509,27 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
     let span = e.span.resolved_at(Span::mixed_site());
 
     match e.expr {
-        LiteralExpr(ref s) => {
-            compile_literal_expr(s, quote_spanned! { span =>
+        LiteralExpr(ref s) => compile_literal_expr(
+            s,
+            quote_spanned! { span =>
                  ::peg::RuleResult::Matched(__pos, __val)
-            })
-        }
+            },
+        ),
 
         PatternExpr(ref pattern_group) => {
             let res_name = Ident::new("__ch", span);
-            let res = if result_used { quote!(#res_name) } else { quote_spanned!{ span => () }};
-            compile_pattern_expr(pattern_group, res_name, quote_spanned! { span =>
-                ::peg::RuleResult::Matched(__next, #res)
-            })
+            let res = if result_used {
+                quote!(#res_name)
+            } else {
+                quote_spanned! { span => () }
+            };
+            compile_pattern_expr(
+                pattern_group,
+                res_name,
+                quote_spanned! { span =>
+                    ::peg::RuleResult::Matched(__next, #res)
+                },
+            )
         }
 
         RuleExpr(ref rule_name, ref rule_args)
@@ -485,11 +538,11 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             if !rule_args.is_empty() {
                 return report_error_expr(
                     rule_name.span(),
-                    format!("rule closure does not accept arguments"),
+                    "rule closure does not accept arguments".to_string(),
                 );
             }
 
-            quote_spanned!{ span=> #rule_name(__input, __state, __err_state, __pos) }
+            quote_spanned! { span=> #rule_name(__input, __state, __err_state, __pos) }
         }
 
         RuleExpr(ref rule_name, ref rule_args) => {
@@ -538,9 +591,9 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 .collect();
 
             if result_used {
-                quote_spanned!{ span=> #func(__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*) }
+                quote_spanned! { span=> #func(__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*) }
             } else {
-                quote_spanned!{ span=>
+                quote_spanned! { span=>
                     match #func(__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*){
                         ::peg::RuleResult::Matched(pos, _) => ::peg::RuleResult::Matched(pos, ()),
                         ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
@@ -550,10 +603,11 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
         }
 
         MethodExpr(ref method, ref args) => {
-            quote_spanned!{ span=> __input.#method(__pos, #args) }
+            quote_spanned! { span=> __input.#method(__pos, #args) }
         }
 
-        ChoiceExpr(ref exprs) => ordered_choice(span,
+        ChoiceExpr(ref exprs) => ordered_choice(
+            span,
             exprs
                 .iter()
                 .map(|expr| compile_expr(context, expr, result_used)),
@@ -563,14 +617,14 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             let optional_res = compile_expr(context, e, result_used);
 
             if result_used {
-                quote_spanned!{ span=>
+                quote_spanned! { span=>
                     match #optional_res {
                         ::peg::RuleResult::Matched(__newpos, __value) => { ::peg::RuleResult::Matched(__newpos, Some(__value)) },
                         ::peg::RuleResult::Failed => { ::peg::RuleResult::Matched(__pos, None) },
                     }
                 }
             } else {
-                quote_spanned!{ span=>
+                quote_spanned! { span=>
                     match #optional_res {
                         ::peg::RuleResult::Matched(__newpos, _) => { ::peg::RuleResult::Matched(__newpos, ()) },
                         ::peg::RuleResult::Failed => { ::peg::RuleResult::Matched(__pos, ()) },
@@ -579,7 +633,11 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             }
         }
 
-        Repeat{ ref inner, ref bound, ref sep} => {
+        Repeat {
+            ref inner,
+            ref bound,
+            ref sep,
+        } => {
             let inner = compile_expr(context, inner, result_used);
 
             let (min, max) = match bound {
@@ -591,7 +649,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
 
             let match_sep = if let Some(sep) = sep {
                 let sep_inner = compile_expr(context, sep, false);
-                quote_spanned!{ span=>
+                quote_spanned! { span=>
                     let __pos = if __repeat_value.is_empty() { __pos } else {
                         let __sep_res = #sep_inner;
                         match __sep_res {
@@ -605,7 +663,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             };
 
             let result = if result_used {
-                quote_spanned!{ span=> __repeat_value }
+                quote_spanned! { span=> __repeat_value }
             } else {
                 quote!(())
             };
@@ -621,11 +679,11 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 };
 
             let max_check = max.map(|max| {
-                quote_spanned!{ span=> if __repeat_value.len() >= #max { break } }
+                quote_spanned! { span=> if __repeat_value.len() >= #max { break } }
             });
 
             let result_check = if let Some(min) = min {
-                quote_spanned!{ span=>
+                quote_spanned! { span=>
                     if __repeat_value.len() >= #min {
                         ::peg::RuleResult::Matched(__repeat_pos, #result)
                     } else {
@@ -633,10 +691,10 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                     }
                 }
             } else {
-                quote_spanned!{ span=> ::peg::RuleResult::Matched(__repeat_pos, #result) }
+                quote_spanned! { span=> ::peg::RuleResult::Matched(__repeat_pos, #result) }
             };
 
-            quote_spanned!{ span=> {
+            quote_spanned! { span=> {
                 let mut __repeat_pos = __pos;
                 #repeat_vec
 
@@ -664,7 +722,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
 
         PosAssertExpr(ref e) => {
             let assert_res = compile_expr(context, e, result_used);
-            quote_spanned!{ span=> {
+            quote_spanned! { span=> {
                 __err_state.suppress_fail += 1;
                 let __assert_res = #assert_res;
                 __err_state.suppress_fail -= 1;
@@ -677,7 +735,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
 
         NegAssertExpr(ref e) => {
             let assert_res = compile_expr(context, e, false);
-            quote_spanned!{ span=> {
+            quote_spanned! { span=> {
                 __err_state.suppress_fail += 1;
                 let __assert_res = #assert_res;
                 __err_state.suppress_fail -= 1;
@@ -688,13 +746,13 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             }}
         }
 
-        ActionExpr(ref exprs, ref code) => labeled_seq(context, &exprs, {
+        ActionExpr(ref exprs, ref code) => labeled_seq(context, exprs, {
             if let Some(code) = code {
                 let code_span = code.span().resolved_at(Span::mixed_site());
 
                 // Peek and see if the first token in the block is '?'. If so, it's a conditional block
-                if let Some(body) = group_check_prefix(&code, '?') {
-                    quote_spanned!{code_span =>
+                if let Some(body) = group_check_prefix(code, '?') {
+                    quote_spanned! {code_span =>
                         match (||{ #body })() {
                             Ok(res) => ::peg::RuleResult::Matched(__pos, res),
                             Err(expected) => {
@@ -704,10 +762,10 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                         }
                     }
                 } else {
-                    quote_spanned!{code_span => ::peg::RuleResult::Matched(__pos, (||#code)()) }
+                    quote_spanned! {code_span => ::peg::RuleResult::Matched(__pos, (||#code)()) }
                 }
             } else {
-                quote_spanned!{ span => ::peg::RuleResult::Matched(__pos, ()) }
+                quote_spanned! { span => ::peg::RuleResult::Matched(__pos, ()) }
             }
         }),
         MatchStrExpr(ref expr) => {
@@ -749,8 +807,8 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 for op in &level.operators {
                     let op_span = op.span.resolved_at(Span::mixed_site());
 
-                    if op.elements.len() < 1 {
-                        return report_error(op_span, format!("incomplete rule"));
+                    if op.elements.is_empty() {
+                        return report_error(op_span, "incomplete rule".to_string());
                     }
 
                     let left_arg = &op.elements[0];
@@ -777,7 +835,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                             match &op.elements[1].expr.expr {
                                 &MarkerExpr(..) => (),
                                 _ => {
-                                    return report_error(op_span, format!("span capture rule must be `l:position!() n:@ r:position!()"));
+                                    return report_error(op_span, "span capture rule must be `l:position!() n:@ r:position!()".to_string());
                                 }
                             }
 
@@ -793,7 +851,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                             let new_prec = match (la, ra) {
                                 (true, false) => prec + 1, // left associative
                                 (false, true) => prec,     // right associative
-                                _ => return report_error(op_span, format!("precedence rules must use `@` and `(@)` to indicate associativity"))
+                                _ => return report_error(op_span, "precedence rules must use `@` and `(@)` to indicate associativity".to_string())
                             };
 
                             post_rules.push(
@@ -937,7 +995,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             }}
         }
         MarkerExpr { .. } => {
-            return report_error(span, format!("`@` is only allowed in `precedence!{{}}`"));
+            report_error(span, "`@` is only allowed in `precedence!{}`".to_string())
         }
     }
 }
