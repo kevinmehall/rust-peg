@@ -1236,45 +1236,45 @@ pub mod peg {
                     let __choice_res =
                         match ::peg::ParseLiteral::parse_string_literal(__input, __pos, "&") {
                             ::peg::RuleResult::Matched(__pos, __val) => {
-                                let __seq_res =
-                                    match match ::peg::ParseLiteral::parse_string_literal(
-                                        __input, __pos, "mut",
-                                    ) {
-                                        ::peg::RuleResult::Matched(__pos, __val) => {
-                                            ::peg::RuleResult::Matched(__pos, __val)
-                                        }
-                                        ::peg::RuleResult::Failed => {
-                                            __err_state.mark_failure(__pos, "\"mut\"");
-                                            ::peg::RuleResult::Failed
-                                        }
-                                    } {
-                                        ::peg::RuleResult::Matched(__newpos, _) => {
-                                            ::peg::RuleResult::Matched(__newpos, ())
-                                        }
-                                        ::peg::RuleResult::Failed => {
-                                            ::peg::RuleResult::Matched(__pos, ())
-                                        }
-                                    };
+                                let __seq_res = match match __parse_LIFETIME(
+                                    __input,
+                                    __state,
+                                    __err_state,
+                                    __pos,
+                                ) {
+                                    ::peg::RuleResult::Matched(pos, _) => {
+                                        ::peg::RuleResult::Matched(pos, ())
+                                    }
+                                    ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                                } {
+                                    ::peg::RuleResult::Matched(__newpos, _) => {
+                                        ::peg::RuleResult::Matched(__newpos, ())
+                                    }
+                                    ::peg::RuleResult::Failed => {
+                                        ::peg::RuleResult::Matched(__pos, ())
+                                    }
+                                };
                                 match __seq_res {
                                     ::peg::RuleResult::Matched(__pos, _) => {
-                                        let __seq_res = match match __parse_LIFETIME(
-                                            __input,
-                                            __state,
-                                            __err_state,
-                                            __pos,
-                                        ) {
-                                            ::peg::RuleResult::Matched(pos, _) => {
-                                                ::peg::RuleResult::Matched(pos, ())
-                                            }
-                                            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
-                                        } {
-                                            ::peg::RuleResult::Matched(__newpos, _) => {
-                                                ::peg::RuleResult::Matched(__newpos, ())
-                                            }
-                                            ::peg::RuleResult::Failed => {
-                                                ::peg::RuleResult::Matched(__pos, ())
-                                            }
-                                        };
+                                        let __seq_res =
+                                            match match ::peg::ParseLiteral::parse_string_literal(
+                                                __input, __pos, "mut",
+                                            ) {
+                                                ::peg::RuleResult::Matched(__pos, __val) => {
+                                                    ::peg::RuleResult::Matched(__pos, __val)
+                                                }
+                                                ::peg::RuleResult::Failed => {
+                                                    __err_state.mark_failure(__pos, "\"mut\"");
+                                                    ::peg::RuleResult::Failed
+                                                }
+                                            } {
+                                                ::peg::RuleResult::Matched(__newpos, _) => {
+                                                    ::peg::RuleResult::Matched(__newpos, ())
+                                                }
+                                                ::peg::RuleResult::Failed => {
+                                                    ::peg::RuleResult::Matched(__pos, ())
+                                                }
+                                            };
                                         match __seq_res {
                                             ::peg::RuleResult::Matched(__pos, _) => {
                                                 let __seq_res = match __parse_rust_type(
