@@ -32,6 +32,7 @@ peg::parser!( grammar ra() for str {
     pub rule ty_arg<T>(x: &T) = ""
     pub rule ty_arg_bound<T: Copy>(x: T) = ""
     pub rule ty_arg_bound2<'a, T: std::marker::Copy + ?Sized + 'a>(x: T) = ""
+    pub rule ty_arg_bound_ret<T: std::str::FromStr>() -> T = {? "".parse().or(Err("oops")) }
 });
 
 use ra::*;
