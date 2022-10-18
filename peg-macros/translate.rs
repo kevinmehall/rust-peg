@@ -389,9 +389,10 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
             __err_state.reparse_for_error();
 
             match #parse_fn(__input, &mut __state, &mut __err_state, ::peg::Parse::start(__input) #extra_args_call #(, #rule_params_call)*) {
-                ::peg::RuleResult::<#ret_ty>::Matched(__pos, __value) => {
+                ::peg::RuleResult::Matched(__pos, __value) => {
                     if #eof_check {
                         panic!("Parser is nondeterministic: succeeded when reparsing for error position");
+                        return Ok(__value); // dead code, but needed for type inference
                     } else {
                         __err_state.mark_failure(__pos, "EOF");
                     }

@@ -50,11 +50,12 @@ pub mod peg {
             &mut __err_state,
             ::peg::Parse::start(__input),
         ) {
-            ::peg::RuleResult::<Grammar>::Matched(__pos, __value) => {
+            ::peg::RuleResult::Matched(__pos, __value) => {
                 if ::peg::Parse::is_eof(__input, __pos) {
                     panic!(
                         "Parser is nondeterministic: succeeded when reparsing for error position"
                     );
+                    return Ok(__value);
                 } else {
                     __err_state.mark_failure(__pos, "EOF");
                 }
