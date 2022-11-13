@@ -1,7 +1,7 @@
 use peg::parser;
 
 parser! {
-    pub grammar g() for str {
+    pub grammar g() for &str {
         pub rule r#break() = "foo"
     }
 }

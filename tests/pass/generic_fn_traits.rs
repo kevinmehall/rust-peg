@@ -1,5 +1,5 @@
 peg::parser!(
-grammar parser() for str {
+grammar parser() for &str {
     pub rule foo<F: Fn(&str) -> u32 + Copy>(f: F) -> u32
         = s:$(['0'..='9']+) { f(s) }
     pub rule bar(f: impl Fn(&str) -> u32 + Copy,) -> u32

@@ -1,4 +1,4 @@
-peg::parser!( grammar lookahead() for str {
+peg::parser!( grammar lookahead<'input>() for &'input str {
     pub rule consonants()
         = (!['a'|'e'|'i'|'o'|'u']['a'..='z'])+
 

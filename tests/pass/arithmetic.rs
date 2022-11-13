@@ -1,6 +1,6 @@
 use arithmetic::expression;
 
-peg::parser!( grammar arithmetic() for str {
+peg::parser!( grammar arithmetic() for &str {
     pub rule expression() -> i64
         = sum()
 

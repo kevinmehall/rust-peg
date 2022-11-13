@@ -1,5 +1,5 @@
 peg::parser!(
-grammar parser() for str {
+grammar parser<'input>() for &'input str {
     #[allow(unused_imports)]
     use ::std::{
         borrow::{

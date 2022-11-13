@@ -1,7 +1,7 @@
 use std::{fmt::Debug, str::FromStr};
 
 peg::parser!(
-grammar parser() for str {
+grammar parser() for &str {
     use std::cell::Cell;
     pub rule nums<C, T>() -> C
     where C: Default + Extend<T>,

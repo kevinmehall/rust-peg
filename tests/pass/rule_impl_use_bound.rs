@@ -3,7 +3,7 @@ use core::fmt::Debug;
 
 // `--features trace` code names the return type, so doesn't work with `impl Trait`
 #[cfg(not(feature = "trace"))]
-peg::parser!( grammar test() for str {
+peg::parser!( grammar test<'input>() for &'input str {
     pub rule foo() -> impl for<'a> PartialEq<&'a str> + Debug + use<'input>
         = $("foo")
     pub rule bar() -> impl for<'a> PartialEq<&'a str> + Debug + use<>
