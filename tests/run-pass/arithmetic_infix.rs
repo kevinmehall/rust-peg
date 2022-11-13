@@ -1,7 +1,7 @@
 
 extern crate peg;
 
-peg::parser!( grammar arithmetic() for str {
+peg::parser!( grammar arithmetic() for &str {
     rule number() -> i64
         = n:$(['0'..='9']+) { n.parse().unwrap() }
 

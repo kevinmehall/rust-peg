@@ -10,7 +10,7 @@ struct HashMap;
 mod peg {}
 
 realpeg::parser!{
-    grammar p() for str {
+    grammar p() for &str {
         pub rule number() -> f64 = n:$(['0'..='9']+) { n.parse().unwrap() }
 
         #[cache]

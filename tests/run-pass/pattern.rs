@@ -1,6 +1,6 @@
-peg::parser!( grammar test() for str {
+peg::parser!( grammar test<'i>() for &'i str {
     pub rule alphanumeric() = ['a'..='z' | 'A'..='Z' | '0'..='9']*
-    pub rule inverted_pat() -> &'input str = "(" s:$([^')']*) ")" {s}
+    pub rule inverted_pat() -> &'i str = "(" s:$([^')']*) ")" {s}
 
     pub rule capture() -> char = ['a'..='z']
     pub rule capture2() -> (char, char) = a:['a'..='z'] b:['0'..='9'] { (a, b) }

@@ -1,6 +1,6 @@
 extern crate peg;
 
-peg::parser!( grammar test_grammar() for str {
+peg::parser!( grammar test_grammar() for &str {
     pub rule options() -> Option<()>
         = "abc" v:"def"? {v}
 

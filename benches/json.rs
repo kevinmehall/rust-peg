@@ -5,7 +5,7 @@ extern crate test;
 
 use test::Bencher;
 
-peg::parser!(grammar parser() for str {
+peg::parser!(grammar parser() for &str {
 // JSON grammar (RFC 4627). Note that this only checks for valid JSON and does not build a syntax
 // tree.
 

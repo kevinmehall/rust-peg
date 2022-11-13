@@ -1,6 +1,6 @@
 extern crate peg;
 
-peg::parser!{ grammar memo() for str {
+peg::parser!{ grammar memo<'input>() for &'input str {
     #[cache]
     rule r() -> &'input str
         = s:$(['a'..='z']+) { s }

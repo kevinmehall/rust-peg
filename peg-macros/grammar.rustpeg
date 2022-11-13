@@ -1,4 +1,4 @@
-pub grammar peg() for FlatTokenStream {
+pub grammar peg() for &FlatTokenStream {
 
 use crate::ast::*;
 use crate::ast::Expr::*;

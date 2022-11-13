@@ -43,7 +43,7 @@
 //!
 //! ```rust
 //! peg::parser!{
-//!   grammar list_parser() for str {
+//!   grammar list_parser() for &str {
 //!     rule number() -> u32
 //!       = n:$(['0'..='9']+) {? n.parse().or(Err("u32")) }
 //!
@@ -162,7 +162,7 @@
 //! algorithm.
 //!
 //! ```rust,no_run
-//! # peg::parser!{grammar doc() for str {
+//! # peg::parser!{grammar doc() for &str {
 //! # pub rule number() -> i64 = "..." { 0 }
 //! pub rule arithmetic() -> i64 = precedence!{
 //!   x:(@) "+" y:@ { x + y }
@@ -226,7 +226,7 @@
 //! For example:
 //!
 //! ```rust,no_run
-//! # peg::parser!{grammar doc() for str {
+//! # peg::parser!{grammar doc() for &str {
 //! rule num_radix(radix: u32) -> u32
 //!   = n:$(['0'..='9']+) {? u32::from_str_radix(n, radix).or(Err("number")) }
 //!
@@ -244,7 +244,7 @@
 //!
 //! Some rules should never appear in error messages, and can be suppressed with `quiet!{e}`:
 //! ```rust,no_run
-//! # peg::parser!{grammar doc() for str {
+//! # peg::parser!{grammar doc() for &str {
 //! rule whitespace() = quiet!{[' ' | '\n' | '\t']+}
 //! # }}
 //! # fn main() {}
@@ -254,7 +254,7 @@
 //! can use `quiet!{}` and `expected!()` together:
 //!
 //! ```rust,no_run
-//! # peg::parser!{grammar doc() for str {
+//! # peg::parser!{grammar doc() for &str {
 //! rule identifier()
 //!   = quiet!{[ 'a'..='z' | 'A'..='Z']['a'..='z' | 'A'..='Z' | '0'..='9' ]+}
 //!   / expected!("identifier")
@@ -269,7 +269,7 @@
 //!    pub struct Expr;
 //! }
 //!
-//! peg::parser!{grammar doc() for str {
+//! peg::parser!{grammar doc() for &str {
 //!     use self::ast::Expr;
 //! }}
 //! # fn main() {}
@@ -285,7 +285,7 @@
 //! module or function:
 //!
 //! ```rust,no_run
-//! # peg::parser!{grammar doc() for str {
+//! # peg::parser!{grammar doc() for &str {
 //! /// Parse an array expression.
 //! pub rule array() -> Vec<i32> = "[...]" { vec![] }
 //! # }}

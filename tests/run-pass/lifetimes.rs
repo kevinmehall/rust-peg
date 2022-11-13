@@ -2,7 +2,7 @@
 pub struct Token<'text>(&'text str);
 
 peg::parser!{
-    grammar tokenparser<'t>() for [Token<'t>] {
+    grammar tokenparser<'t>() for &'t [Token<'t>] {
         pub rule program() -> Vec<&'t str> = list()
 
         // add this indirection to ensure that rule args work with a global lifetime

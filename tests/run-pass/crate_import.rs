@@ -1,7 +1,7 @@
 extern crate peg;
 
 peg::parser!{
-    pub grammar foo_parser() for str {
+    pub grammar foo_parser() for &str {
         use crate::types::Foo;
 
         pub rule foo() -> Foo

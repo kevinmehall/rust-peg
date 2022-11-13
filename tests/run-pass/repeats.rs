@@ -1,6 +1,6 @@
 extern crate peg;
 
-peg::parser!( grammar repeats() for str {
+peg::parser!( grammar repeats<'i>() for &'i str {
     rule number() -> i64
         = n:$(['0'..='9']+) { n.parse().unwrap() }
 
@@ -25,7 +25,7 @@ peg::parser!( grammar repeats() for str {
     pub rule repeat_sep_3() -> Vec<i64>
         = digit() **<3> ","
 
-    pub rule repeat_variable() -> Vec<&'input str>
+    pub rule repeat_variable() -> Vec<&'i str>
         = (count:digit() s:$(['a'..='z'|'0'..='9']*<{count as usize}>) {s})*
 });
 
