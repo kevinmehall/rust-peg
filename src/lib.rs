@@ -256,7 +256,7 @@
 //! ```rust,no_run
 //! # peg::parser!{grammar doc() for str {
 //! rule identifier()
-//!   = quiet!{[ 'a'..='z' | 'A'..='Z']['a'..='z' | 'A'..='Z' | '0'..='9' ]+}
+//!   = quiet!{[ 'a'..='z' | 'A'..='Z']['a'..='z' | 'A'..='Z' | '0'..='9' ]*}
 //!   / expected!("identifier")
 //! # }}
 //! # fn main() {}
