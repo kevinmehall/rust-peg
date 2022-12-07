@@ -2,15 +2,13 @@
 pub mod peg {
     #[allow(unused_imports)]
     use super::*;
-    type Input = FlatTokenStream;
-    type PositionRepr = <Input as ::peg::Parse>::PositionRepr;
     #[allow(unused_parens)]
-    struct ParseState<'input> {
-        _phantom: ::std::marker::PhantomData<(&'input ())>,
+    struct ParseState {
+        _phantom: ::std::marker::PhantomData<()>,
         primary_cache: ::std::collections::HashMap<usize, ::peg::RuleResult<SpannedExpr>>,
     }
-    impl<'input> ParseState<'input> {
-        fn new() -> ParseState<'input> {
+    impl ParseState {
+        fn new() -> ParseState {
             ParseState {
                 _phantom: ::std::marker::PhantomData,
                 primary_cache: ::std::collections::HashMap::new(),
@@ -21,9 +19,12 @@ pub mod peg {
     use crate::ast::*;
     use crate::tokens::FlatTokenStream;
     use proc_macro2::{Delimiter, Group, Ident, Literal, Span, TokenStream};
-    pub fn peg_grammar<'input>(
-        __input: &'input Input,
-    ) -> ::std::result::Result<Grammar, ::peg::error::ParseError<PositionRepr>> {
+    pub fn peg_grammar(
+        __input: &FlatTokenStream,
+    ) -> ::std::result::Result<
+        Grammar,
+        ::peg::error::ParseError<<&FlatTokenStream as ::peg::Parse>::PositionRepr>,
+    > {
         #![allow(non_snake_case, unused)]
         let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
         let mut __state = ParseState::new();
@@ -64,9 +65,9 @@ pub mod peg {
         }
         Err(__err_state.into_parse_error(__input))
     }
-    fn __parse_peg_grammar<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_peg_grammar(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Grammar> {
@@ -136,9 +137,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_rust_lifetime_params<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rust_lifetime_params(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Vec<TokenStream>> {
@@ -225,9 +226,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_grammar_args<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_grammar_args(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Vec<(Ident, TokenStream)>> {
@@ -367,9 +368,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_peg_rule<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_peg_rule(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Rule> {
@@ -478,9 +479,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_cacheflag<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_cacheflag(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Option<Cache>> {
@@ -586,9 +587,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_no_eof_flag<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_no_eof_flag(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<bool> {
@@ -640,9 +641,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_rule_param_ty<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rule_param_ty(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<RuleParamTy> {
@@ -738,9 +739,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_rule_params<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rule_params(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Vec<RuleParam>> {
@@ -839,9 +840,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_item<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_item(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Item> {
@@ -872,9 +873,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_rust_doc_comment<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rust_doc_comment(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Option<TokenStream>> {
@@ -961,9 +962,9 @@ pub mod peg {
             ::peg::RuleResult::Failed => ::peg::RuleResult::Matched(__pos, None),
         }
     }
-    fn __parse_rust_visibility<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rust_visibility(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Option<TokenStream>> {
@@ -1032,9 +1033,9 @@ pub mod peg {
             ::peg::RuleResult::Failed => ::peg::RuleResult::Matched(__pos, None),
         }
     }
-    fn __parse_rust_use<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rust_use(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<TokenStream> {
@@ -1126,9 +1127,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_rust_path<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rust_path(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {
@@ -1217,9 +1218,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_rust_type<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rust_type(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {
@@ -1460,9 +1461,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_rust_ty_path<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rust_ty_path(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {
@@ -1616,9 +1617,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_rust_ty_params<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rust_ty_params(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Vec<TokenStream>> {
@@ -1710,9 +1711,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_rust_generic_param<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rust_generic_param(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {
@@ -1948,18 +1949,18 @@ pub mod peg {
             }
         }
     }
-    fn __parse_expression<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_expression(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
         #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __parse_choice(__input, __state, __err_state, __pos)
     }
-    fn __parse_choice<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_choice(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
@@ -2027,9 +2028,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_sequence<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_sequence(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
@@ -2092,9 +2093,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_labeled<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_labeled(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<TaggedExpr> {
@@ -2142,9 +2143,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_suffixed<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_suffixed(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
@@ -2371,9 +2372,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_repeatcount<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_repeatcount(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<BoundedRepeat> {
@@ -2496,9 +2497,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_repeatnum<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_repeatnum(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<TokenStream> {
@@ -2532,9 +2533,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_prefixed<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_prefixed(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
@@ -2660,9 +2661,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_primary<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_primary(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<SpannedExpr> {
@@ -2966,9 +2967,9 @@ pub mod peg {
         __state.primary_cache.insert(__pos, __rule_result.clone());
         __rule_result
     }
-    fn __parse_rule_arg<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_rule_arg(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<RuleArg> {
@@ -3044,9 +3045,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_precedence_level<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_precedence_level(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<PrecedenceLevel> {
@@ -3085,9 +3086,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_precedence_op<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_precedence_op(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<PrecedenceOperator> {
@@ -3139,18 +3140,18 @@ pub mod peg {
             }
         }
     }
-    fn __parse_sp<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_sp(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Span> {
         #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __input.next_span(__pos)
     }
-    fn __parse_KEYWORD<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_KEYWORD(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {
@@ -3240,9 +3241,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_IDENT<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_IDENT(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Ident> {
@@ -3274,45 +3275,45 @@ pub mod peg {
             }
         }
     }
-    fn __parse_LITERAL<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_LITERAL(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Literal> {
         #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __input.literal(__pos)
     }
-    fn __parse_PAREN_GROUP<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_PAREN_GROUP(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Group> {
         #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __input.group(__pos, Delimiter::Parenthesis)
     }
-    fn __parse_BRACE_GROUP<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_BRACE_GROUP(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Group> {
         #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __input.group(__pos, Delimiter::Brace)
     }
-    fn __parse_BRACKET_GROUP<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_BRACKET_GROUP(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<Group> {
         #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
         __input.group(__pos, Delimiter::Bracket)
     }
-    fn __parse_LIFETIME<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_LIFETIME(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {
@@ -3334,9 +3335,9 @@ pub mod peg {
             }
         }
     }
-    fn __parse_INTEGER<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
+    fn __parse_INTEGER(
+        __input: &FlatTokenStream,
+        __state: &mut ParseState,
         __err_state: &mut ::peg::error::ErrorState,
         __pos: usize,
     ) -> ::peg::RuleResult<()> {

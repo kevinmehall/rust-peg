@@ -1,6 +1,6 @@
 extern crate peg;
 
-peg::parser!{ grammar parser() for str {
+peg::parser!{ grammar parser() for &str {
     pub rule one_letter() = ['a'..='z']
 
     pub rule parse() -> usize

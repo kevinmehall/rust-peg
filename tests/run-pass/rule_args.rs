@@ -1,6 +1,6 @@
 extern crate peg;
 
-peg::parser!( grammar ra() for str {
+peg::parser!( grammar ra<'input>() for &'input str {
     use peg::ParseLiteral;
 
     rule number() -> i64
@@ -29,7 +29,7 @@ peg::parser!( grammar ra() for str {
 
     pub rule lt_arg<'a>() = ""
     pub rule lt_arg_mut<'a>(x: &'a mut ()) = ""
-    pub rule ty_arg<T>(x: &T) = ""
+    pub rule ty_arg<T>(x: std::marker::PhantomData<T>) = ""
     pub rule ty_arg_bound<T: Copy>(x: T) = ""
     pub rule ty_arg_bound2<'a, T: std::marker::Copy + ?Sized + 'a>(x: T) = ""
     pub rule ty_arg_bound_ret<T: std::str::FromStr>() -> T = {? "".parse().or(Err("oops")) }

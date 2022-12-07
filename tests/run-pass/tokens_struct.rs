@@ -5,25 +5,30 @@ use peg::{Parse, ParseElem, RuleResult};
 /// elements by `&T` reference, which is `Copy`.
 pub struct SliceByRef<'a, T>(pub &'a [T]);
 
+impl<'a, T> Clone for SliceByRef<'a, T> {
+    fn clone(&self) -> Self { *self }
+}
+impl<'a, T> Copy for SliceByRef<'a, T> {}
+
 impl<'a , T> Parse for SliceByRef<'a, T> {
     type PositionRepr = usize;
-    fn start(&self) -> usize {
+    fn start(self) -> usize {
         0
     }
 
-    fn is_eof(&self, pos: usize) -> bool {
+    fn is_eof(self, pos: usize) -> bool {
         pos >= self.0.len()
     }
 
-    fn position_repr(&self, pos: usize) -> usize {
+    fn position_repr(self, pos: usize) -> usize {
         pos
     }
 }
 
-impl<'a, T: 'a> ParseElem<'a> for SliceByRef<'a, T> {
+impl<'a, T: 'a> ParseElem for SliceByRef<'a, T> {
     type Element = &'a T;
 
-    fn parse_elem(&'a self, pos: usize) -> RuleResult<&'a T> {
+    fn parse_elem(self, pos: usize) -> RuleResult<&'a T> {
         match self.0[pos..].first() {
             Some(c) => RuleResult::Matched(pos + 1, c),
             None => RuleResult::Failed,
@@ -43,7 +48,7 @@ pub struct Token {
 }
 
 peg::parser!{
-    grammar tokenparser<'a>() for SliceByRef<'a, Token> {
+    grammar tokenparser<'input>() for SliceByRef<'input, Token> {
         // The [] syntax works just like (and expands into) an arm of a match
         // in regular Rust, so you can use a pattern that matches one field
         // and ignores the rest
@@ -67,7 +72,7 @@ fn main() {
         Token { token_type: TokenType::Number, term: "123".into() }
     ];
 
-    assert!(tokenparser::word_by_field(&SliceByRef(&word_tok[..])).is_ok());
-    assert!(tokenparser::word_by_eq(&SliceByRef(&word_tok[..])).is_ok());
-    assert!(tokenparser::number(&SliceByRef(&number_tok[..])).is_ok());
+    assert!(tokenparser::word_by_field(SliceByRef(&word_tok[..])).is_ok());
+    assert!(tokenparser::word_by_eq(SliceByRef(&word_tok[..])).is_ok());
+    assert!(tokenparser::number(SliceByRef(&number_tok[..])).is_ok());
 }

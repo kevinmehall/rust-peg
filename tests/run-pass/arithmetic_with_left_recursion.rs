@@ -2,7 +2,7 @@ extern crate peg;
 
 use arithmetic::sum;
 
-peg::parser!( grammar arithmetic() for str {
+peg::parser!( grammar arithmetic() for &str {
     #[cache_left_rec]
     pub rule sum() -> i64
         = l:sum() "+" r:number() { l+r }

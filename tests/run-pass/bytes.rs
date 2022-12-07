@@ -2,7 +2,7 @@ extern crate peg;
 use peg::parser;
 
 parser!{
-    grammar byteparser() for [u8] {
+    grammar byteparser<'input>() for &'input [u8] {
         pub rule commands() -> Vec<&'input[u8]> = command()*
         rule command() -> &'input [u8] = ">" val:$([b' ' ..= b'~']+) [0] { val }
     }

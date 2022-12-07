@@ -5,7 +5,7 @@ extern crate test;
 
 use test::Bencher;
 
-peg::parser!(grammar parser() for str {
+peg::parser!(grammar parser() for &str {
 crate rule expr() = eq()
 
 #[cache]
