@@ -4,7 +4,7 @@ use super::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
 use core::fmt::Display;
 
 /// Line and column within a string
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub struct LineCol {
     /// Line (1-indexed)
     pub line: usize,

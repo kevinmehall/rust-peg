@@ -57,7 +57,7 @@ rule rust_path()
 
 rule rust_type()
     = BRACKET_GROUP()
-    / "&" "mut"? LIFETIME()? rust_type()
+    / "&" LIFETIME()? "mut"? rust_type()
     / "dyn" rust_type()
     / "impl" rust_type()
     / "(" rust_type() ** "," ")"

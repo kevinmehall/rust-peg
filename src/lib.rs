@@ -90,7 +90,7 @@
 //!     Rust block returns a `Result<T, &str>` instead of a value directly. On
 //!     `Ok(v)`, it matches successfully and returns `v`. On `Err(e)`, the match
 //!     of the entire expression fails and it tries alternatives or reports a
-//!     parse error with the `&str` `e`.
+//!     parse failure with the `&str` `e`.
 //!   * `e1 / e2 / e3` - _Ordered choice:_ try to match `e1`. If the match succeeds, return its
 //!     result, otherwise try `e2`, and so on.
 //!
@@ -141,7 +141,7 @@
 //!
 //! If your input type is a slice of an enum type, a pattern could match an enum variant like
 //! `[Token::Operator('+')]`.
-//! 
+//!
 //! Variables captured by the pattern are accessible in a subsequent action
 //! block: `[Token::Integer(i)] { i }`
 //!
@@ -214,30 +214,30 @@
 //! To allow matching a prefix of the input, add the `#[no_eof]` attribute before `pub rule`.
 //! Take care to not miss a malformed `x` at the last position if the rule ends with a `x()*`
 //! repeat expression.
-//! 
+//!
 //! ## Rule parameters
-//! 
+//!
 //! Rules can be parameterized with types, lifetimes, and values, just like Rust functions.
 //!
 //! In addition to Rust values, rules can also accept PEG expression fragments as arguments by using
 //! `rule<R>` as a parameter type. When calling such a rule, use `<>` around a PEG expression in the
 //! argument list to capture the expression and pass it to the rule.
-//! 
+//!
 //! For example:
-//! 
+//!
 //! ```rust,no_run
 //! # peg::parser!{grammar doc() for str {
 //! rule num_radix(radix: u32) -> u32
 //!   = n:$(['0'..='9']+) {? u32::from_str_radix(n, radix).or(Err("number")) }
-//! 
+//!
 //! rule list<T>(x: rule<T>) -> Vec<T> = "[" v:(x() ** ",") ","? "]" {v}
-//! 
+//!
 //! pub rule octal_list() -> Vec<u32> = list(<num_radix(8)>)
 //! # }}
 //! # fn main() {}
 //! ```
 //!
-//! ## Error reporting
+//! ## Failure reporting
 //!
 //! When a match fails, position information is automatically recorded to report a set of
 //! "expected" tokens that would have allowed the parser to advance further.
@@ -256,7 +256,7 @@
 //! ```rust,no_run
 //! # peg::parser!{grammar doc() for str {
 //! rule identifier()
-//!   = quiet!{[ 'a'..='z' | 'A'..='Z']['a'..='z' | 'A'..='Z' | '0'..='9' ]+}
+//!   = quiet!{[ 'a'..='z' | 'A'..='Z']['a'..='z' | 'A'..='Z' | '0'..='9' ]*}
 //!   / expected!("identifier")
 //! # }}
 //! # fn main() {}
@@ -313,8 +313,8 @@
 //! like `expr() "x" / expr() "y" / expr() "z"`, but this could be rewritten to
 //! `expr() ("x" / "y" / "z")` which would be even faster.
 //!
-//! `#[cache_left_rec]` extends the `#[cache]` mechanism with the ability to resolve 
-//! left-recursive rules, which are otherwise an error. 
+//! `#[cache_left_rec]` extends the `#[cache]` mechanism with the ability to resolve
+//! left-recursive rules, which are otherwise an error.
 //!
 //! The `precedence!{}` syntax is another way to handle nested operators and avoid
 //! repeatedly matching an expression rule.
