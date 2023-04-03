@@ -4,15 +4,15 @@ use crate::{Parse, RuleResult};
 use std::fmt::{self, Debug, Display};
 
 #[cfg(feature = "std")]
-use std::collections::HashSet as Set;
+use std::collections::BTreeSet;
 
 #[cfg(feature = "alloc")]
-use {alloc::collections::BTreeSet as Set, alloc::vec::Vec};
+use {alloc::collections::BTreeSet, alloc::vec::Vec};
 
 /// A set of literals or names that failed to match
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct ExpectedSet {
-    expected: Set<&'static str>,
+    expected: BTreeSet<&'static str>,
 }
 
 impl ExpectedSet {
@@ -94,7 +94,7 @@ impl ErrorState {
             suppress_fail: 0,
             reparsing_on_error: false,
             expected: ExpectedSet {
-                expected: Set::new(),
+                expected: BTreeSet::new(),
             },
         }
     }
