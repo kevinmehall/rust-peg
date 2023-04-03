@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "std"), feature(error_in_core))]
+#![cfg_attr(feature = "unstable", feature(error_in_core))]
 
 use std::fmt::Display;
 

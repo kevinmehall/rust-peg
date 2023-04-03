@@ -63,6 +63,7 @@ impl<L: Display> Display for ParseError<L> {
     }
 }
 
+#[cfg(any(feature = "std", feature = "unstable"))]
 impl<L: Display + Debug> ::std::error::Error for ParseError<L> {
     fn description(&self) -> &str {
         "parse error"

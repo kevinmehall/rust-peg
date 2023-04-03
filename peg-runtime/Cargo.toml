@@ -13,3 +13,4 @@ path = "lib.rs"
 [features]
 std = []
 alloc = []
+unstable = []
