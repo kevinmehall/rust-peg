@@ -7,6 +7,11 @@ error[E0308]: mismatched types
    |                           expected struct `X`, found struct `Y`
    |                           arguments to this enum variant are incorrect
    |
+help: the type constructed contains `Y` due to the type of the argument passed
+  --> $DIR/rust_action_type_error.rs:7:27
+   |
+7  |     rule foo() -> X = "a" { Y } //~ ERROR
+   |                           ^^^^^ this argument influences the type of `{{root}}`
 note: tuple variant defined here
   --> $DIR/lib.rs:14:5
    |
