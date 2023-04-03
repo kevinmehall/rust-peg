@@ -1,13 +1,18 @@
 //! Parse error reporting
 
 use crate::{Parse, RuleResult};
-use std::collections::HashSet;
 use std::fmt::{self, Debug, Display};
+
+#[cfg(feature = "std")]
+use std::collections::HashSet as Set;
+
+#[cfg(feature = "alloc")]
+use {alloc::collections::BTreeSet as Set, alloc::vec::Vec};
 
 /// A set of literals or names that failed to match
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct ExpectedSet {
-    expected: HashSet<&'static str>,
+    expected: Set<&'static str>,
 }
 
 impl ExpectedSet {
@@ -88,7 +93,7 @@ impl ErrorState {
             suppress_fail: 0,
             reparsing_on_error: false,
             expected: ExpectedSet {
-                expected: HashSet::new(),
+                expected: Set::new(),
             },
         }
     }
