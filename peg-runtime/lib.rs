@@ -54,7 +54,7 @@ pub trait ParseSlice<'input>: Parse {
     fn parse_slice(&'input self, p1: usize, p2: usize) -> Self::Slice;
 }
 
-#[cfg(feature = "alloc")]
+#[cfg(not(feature = "std"))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
 extern crate core as std;

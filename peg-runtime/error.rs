@@ -6,7 +6,7 @@ use std::fmt::{self, Debug, Display};
 #[cfg(feature = "std")]
 use std::collections::BTreeSet;
 
-#[cfg(feature = "alloc")]
+#[cfg(not(feature = "std"))]
 use {alloc::collections::BTreeSet, alloc::vec::Vec};
 
 /// A set of literals or names that failed to match

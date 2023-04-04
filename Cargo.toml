@@ -28,6 +28,5 @@ harness = false
 [features]
 default = ["std"]
 trace = ["peg-macros/trace"]
-alloc = ["peg-runtime/alloc"]
 std = ["peg-runtime/std"]
 unstable = ["peg-runtime/unstable"]
