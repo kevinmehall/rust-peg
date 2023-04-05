@@ -1,20 +1,20 @@
 error[E0308]: mismatched types
-  --> $DIR/rust_action_type_error.rs:7:27
-   |
-7  |     rule foo() -> X = "a" { Y } //~ ERROR
-   |                           ^^^^^
-   |                           |
-   |                           expected struct `X`, found struct `Y`
-   |                           arguments to this enum variant are incorrect
-   |
+ --> tests/compile-fail/rust_action_type_error.rs:7:27
+  |
+7 |     rule foo() -> X = "a" { Y } //~ ERROR
+  |                           ^^^^^
+  |                           |
+  |                           expected struct `X`, found struct `Y`
+  |                           arguments to this enum variant are incorrect
+  |
 help: the type constructed contains `Y` due to the type of the argument passed
-  --> $DIR/rust_action_type_error.rs:7:27
+  --> tests/compile-fail/rust_action_type_error.rs:7:27
    |
 7  |     rule foo() -> X = "a" { Y } //~ ERROR
    |                           ^^^^^ this argument influences the type of `{{root}}`
 note: tuple variant defined here
-  --> $DIR/lib.rs:14:5
+  --> peg-runtime/lib.rs
    |
-14 |     Matched(usize, T),
+   |     Matched(usize, T),
    |     ^^^^^^^
    = note: this error originates in the macro `peg::parser` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -18,7 +18,7 @@ peg-macros = { path = "./peg-macros", version = "= 0.8.1" }
 peg-runtime = { path = "./peg-runtime", version = "= 0.8.1" }
 
 [dev-dependencies]
-trybuild = "1.0"
+trybuild = "1.0.80"
 
 [[test]]
 name = "trybuild"
