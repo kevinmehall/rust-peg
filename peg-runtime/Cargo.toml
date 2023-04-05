@@ -9,3 +9,7 @@ edition = "2018"
 
 [lib]
 path = "lib.rs"
+
+[features]
+std = []
+unstable = []

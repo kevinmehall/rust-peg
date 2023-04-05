@@ -1,13 +1,18 @@
 //! Parse error reporting
 
 use crate::{Parse, RuleResult};
-use std::collections::HashSet;
 use std::fmt::{self, Debug, Display};
+
+#[cfg(feature = "std")]
+use std::collections::BTreeSet;
+
+#[cfg(not(feature = "std"))]
+use {alloc::collections::BTreeSet, alloc::vec::Vec};
 
 /// A set of literals or names that failed to match
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct ExpectedSet {
-    expected: HashSet<&'static str>,
+    expected: BTreeSet<&'static str>,
 }
 
 impl ExpectedSet {
@@ -58,6 +63,7 @@ impl<L: Display> Display for ParseError<L> {
     }
 }
 
+#[cfg(any(feature = "std", feature = "unstable"))]
 impl<L: Display + Debug> ::std::error::Error for ParseError<L> {
     fn description(&self) -> &str {
         "parse error"
@@ -88,7 +94,7 @@ impl ErrorState {
             suppress_fail: 0,
             reparsing_on_error: false,
             expected: ExpectedSet {
-                expected: HashSet::new(),
+                expected: BTreeSet::new(),
             },
         }
     }

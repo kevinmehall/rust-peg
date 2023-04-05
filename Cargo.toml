@@ -26,4 +26,7 @@ path = "tests/trybuild.rs"
 harness = false
 
 [features]
+default = ["std"]
 trace = ["peg-macros/trace"]
+std = ["peg-runtime/std"]
+unstable = ["peg-runtime/unstable"]

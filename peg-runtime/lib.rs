@@ -1,3 +1,6 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(feature = "unstable", feature(error_in_core))]
+
 use std::fmt::Display;
 
 pub mod error;
@@ -50,3 +53,8 @@ pub trait ParseSlice<'input>: Parse {
     /// Get a slice of input.
     fn parse_slice(&'input self, p1: usize, p2: usize) -> Self::Slice;
 }
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+#[cfg(not(feature = "std"))]
+extern crate core as std;
