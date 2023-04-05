@@ -158,28 +158,39 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
     let mut cache_fields_def: Vec<TokenStream> = Vec::new();
     let mut cache_fields: Vec<Ident> = Vec::new();
     for rule in grammar.iter_rules() {
-        if rule.cache.is_some() && rule.params.is_empty() && rule.ty_params.is_none() {
-            let name = format_ident!("{}_cache", rule.name);
-            let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
-            cache_fields_def.push(
-                quote_spanned! { span =>  #name: ::std::collections::HashMap<usize, ::peg::RuleResult<#ret_ty>> },
-            );
-            cache_fields.push(name);
+        match &rule.cache {
+            Some(cache) if rule.params.is_empty() && rule.ty_params.is_none() => {
+                let name = format_ident!("{}_cache", rule.name);
+                let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
+
+                let cache_type = match cache {
+                    Cache::Simple(None) | Cache::Recursive(None) => {
+                        quote! { ::std::collections::HashMap }
+                    }
+                    Cache::Simple(Some(ty)) | Cache::Recursive(Some(ty)) => ty.clone(),
+                };
+
+                cache_fields_def.push(
+                    quote_spanned! { span =>  #name: #cache_type<usize, ::peg::RuleResult<#ret_ty>> },
+                );
+                cache_fields.push(name);
+            }
+            _ => {}
         }
     }
 
     quote_spanned! { span =>
         #[allow(unused_parens)]
         struct ParseState<'input #(, #grammar_lifetime_params)*> {
-            _phantom: ::std::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
+            _phantom: ::core::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
             #(#cache_fields_def),*
         }
 
         impl<'input #(, #grammar_lifetime_params)*> ParseState<'input #(, #grammar_lifetime_params)*> {
             fn new() -> ParseState<'input #(, #grammar_lifetime_params)*> {
                 ParseState {
-                    _phantom: ::std::marker::PhantomData,
-                    #(#cache_fields: ::std::collections::HashMap::new()),*
+                    _phantom: ::core::marker::PhantomData,
+                    #(#cache_fields: ::core::default::Default::default()),*
                 }
             }
         }
@@ -274,7 +285,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
             };
 
             match cache_type {
-                Cache::Simple => quote_spanned! { span =>
+                Cache::Simple(_) => quote_spanned! { span =>
                     if let Some(entry) = __state.#cache_field.get(&__pos) {
                         #cache_trace
                         return entry.clone();
@@ -284,7 +295,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
                     __state.#cache_field.insert(__pos, __rule_result.clone());
                     __rule_result
                 },
-                Cache::Recursive =>
+                Cache::Recursive(_) =>
                 // `#[cache_left_rec] support for recursive rules using the technique described here:
                 // <https://medium.com/@gvanrossum_83706/left-recursive-peg-grammars-65dab3c580e1>
                 {
@@ -369,7 +380,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     quote_spanned! { span =>
         #doc
-        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_lifetime_params),*>>> {
+        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::core::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_lifetime_params),*>>> {
             #![allow(non_snake_case, unused)]
 
             let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
