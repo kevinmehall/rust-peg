@@ -171,14 +171,14 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
     quote_spanned! { span =>
         #[allow(unused_parens)]
         struct ParseState<'input #(, #grammar_lifetime_params)*> {
-            _phantom: ::std::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
+            _phantom: ::core::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
             #(#cache_fields_def),*
         }
 
         impl<'input #(, #grammar_lifetime_params)*> ParseState<'input #(, #grammar_lifetime_params)*> {
             fn new() -> ParseState<'input #(, #grammar_lifetime_params)*> {
                 ParseState {
-                    _phantom: ::std::marker::PhantomData,
+                    _phantom: ::core::marker::PhantomData,
                     #(#cache_fields: ::std::collections::HashMap::new()),*
                 }
             }
@@ -369,7 +369,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     quote_spanned! { span =>
         #doc
-        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::std::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_lifetime_params),*>>> {
+        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::core::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_lifetime_params),*>>> {
             #![allow(non_snake_case, unused)]
 
             let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
