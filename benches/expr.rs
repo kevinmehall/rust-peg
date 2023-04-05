@@ -3,6 +3,8 @@ extern crate peg;
 
 extern crate test;
 
+#[cfg(not(feature = "std"))] #[macro_use] extern crate alloc;
+
 use test::Bencher;
 
 peg::parser!(grammar parser() for str {

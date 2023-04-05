@@ -1,4 +1,8 @@
-use std::fmt::Display;
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(not(feature = "std"))] extern crate alloc;
+
+use core::fmt::Display;
 
 pub mod error;
 mod slice;
@@ -7,7 +11,7 @@ pub mod str;
 /// The result type used internally in the parser.
 ///
 /// You'll only need this if implementing the `Parse*` traits for a custom input
-/// type. The public API of a parser adapts errors to `std::result::Result`.
+/// type. The public API of a parser adapts errors to `core::result::Result`.
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub enum RuleResult<T> {
     /// Success, with final location

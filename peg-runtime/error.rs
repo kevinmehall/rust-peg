@@ -1,13 +1,15 @@
 //! Parse error reporting
 
 use crate::{Parse, RuleResult};
-use std::collections::HashSet;
-use std::fmt::{self, Debug, Display};
+use core::fmt::{self, Debug, Display};
+
+#[cfg(not(feature = "std"))] use alloc::{collections::btree_set::BTreeSet, vec::Vec};
+#[cfg(feature = "std")] use std::collections::BTreeSet;
 
 /// A set of literals or names that failed to match
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct ExpectedSet {
-    expected: HashSet<&'static str>,
+    expected: BTreeSet<&'static str>,
 }
 
 impl ExpectedSet {
@@ -49,7 +51,7 @@ pub struct ParseError<L> {
 }
 
 impl<L: Display> Display for ParseError<L> {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
+    fn fmt(&self, fmt: &mut ::core::fmt::Formatter) -> ::core::result::Result<(), ::core::fmt::Error> {
         write!(
             fmt,
             "error at {}: expected {}",
@@ -58,6 +60,8 @@ impl<L: Display> Display for ParseError<L> {
     }
 }
 
+// Unfortuantely, std::error::Error never made it into core::error
+#[cfg(feature = "std")]
 impl<L: Display + Debug> ::std::error::Error for ParseError<L> {
     fn description(&self) -> &str {
         "parse error"
@@ -88,7 +92,7 @@ impl ErrorState {
             suppress_fail: 0,
             reparsing_on_error: false,
             expected: ExpectedSet {
-                expected: HashSet::new(),
+                expected: BTreeSet::new(),
             },
         }
     }

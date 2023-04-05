@@ -2,6 +2,8 @@ extern crate peg;
 
 use arithmetic::sum;
 
+#[cfg(not(feature = "std"))] #[macro_use] extern crate alloc;
+
 peg::parser!( grammar arithmetic() for str {
     #[cache_left_rec]
     pub rule sum() -> i64

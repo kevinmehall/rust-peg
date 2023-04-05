@@ -11,9 +11,12 @@ edition = "2018"
 quote = "1.0"
 proc-macro2 = "1.0.24"
 peg-runtime = { version = "= 0.8.1", path = "../peg-runtime" }
+cfg-if = "1.0.0"
 
 [features]
+std = ["peg-runtime/std"]
 trace = []
+hashbrown = []
 
 [lib]
 proc-macro = true

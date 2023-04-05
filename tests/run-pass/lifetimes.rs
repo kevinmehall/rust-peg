@@ -1,3 +1,5 @@
+#[cfg(not(feature = "std"))] #[macro_use] extern crate alloc;
+
 #[derive(Copy, Clone)]
 pub struct Token<'text>(&'text str);
 

@@ -1,7 +1,7 @@
 //! Utilities for `str` input
 
 use super::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
-use std::fmt::Display;
+use core::fmt::Display;
 
 /// Line and column within a string
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
@@ -17,7 +17,7 @@ pub struct LineCol {
 }
 
 impl Display for LineCol {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
+    fn fmt(&self, fmt: &mut ::core::fmt::Formatter) -> ::core::result::Result<(), ::core::fmt::Error> {
         write!(fmt, "{}:{}", self.line, self.column)
     }
 }
