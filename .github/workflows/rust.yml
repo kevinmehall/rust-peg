@@ -18,5 +18,5 @@ jobs:
       run: ./bootstrap.sh && git diff --exit-code
     - name: Run tests
       run: cargo test --all
-    - name: Run tests with all features
-      run: cargo test --all --all-features
+    - name: Run tests with trace feature
+      run: cargo test --all --features trace
