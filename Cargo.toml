@@ -20,6 +20,8 @@ peg-runtime = { path = "./peg-runtime", version = "= 0.8.1" }
 [dev-dependencies]
 trybuild = "1.0.80"
 tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.16", features = ["json"] }
+serde_json = "1.0.95"
 
 [[test]]
 name = "trybuild"
