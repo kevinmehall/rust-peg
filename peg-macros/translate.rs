@@ -319,7 +319,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let trace = if cfg!(feature = "trace") {
         let str_rule_name = rule.name.to_string();
 
-        quote!( #[tracing::instrument(fields(rule = #str_rule_name))] )
+        quote!( #[tracing::instrument(skip_all, fields(rule = #str_rule_name, pos = __pos))] )
     } else {
         quote!()
     };
@@ -371,7 +371,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     };
 
     let trace = if cfg!(feature = "trace") {
-        quote!( #[tracing::instrument] )
+        quote!( #[tracing::instrument(skip_all, err)] )
     } else {
         quote!()
     };
@@ -943,7 +943,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             };
 
             let trace = if cfg!(feature = "trace") {
-                quote!( #[tracing::instrument] )
+                quote!( #[tracing::instrument(skip_all, fields(min_prec, lpos))] )
             } else {
                 quote!()
             };
