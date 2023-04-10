@@ -41,6 +41,7 @@ version = "0.8.1"
 dependencies = [
  "peg-macros",
  "peg-runtime",
+ "tracing",
  "trybuild",
 ]
 

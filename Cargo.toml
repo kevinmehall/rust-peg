@@ -19,6 +19,7 @@ peg-runtime = { path = "./peg-runtime", version = "= 0.8.1" }
 
 [dev-dependencies]
 trybuild = "1.0.80"
+tracing = "0.1.37"
 
 [[test]]
 name = "trybuild"
