@@ -168,15 +168,8 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
         }
     }
 
-    let trace = if cfg!(feature = "trace") {
-        quote!( #[derive(Debug)] )
-    } else {
-        quote!()
-    };
-
     quote_spanned! { span =>
         #[allow(unused_parens)]
-        #trace
         struct ParseState<'input #(, #grammar_lifetime_params)*> {
             _phantom: ::core::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
             #(#cache_fields_def),*
