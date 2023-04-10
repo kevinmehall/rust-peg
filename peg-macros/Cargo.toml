@@ -11,9 +11,10 @@ edition = "2018"
 quote = "1.0"
 proc-macro2 = "1.0.24"
 peg-runtime = { version = "= 0.8.1", path = "../peg-runtime" }
+tracing = { version = "0.1.37", optional = true, features = ["attributes"] }
 
 [features]
-trace = []
+trace = ["dep:tracing"]
 
 [lib]
 proc-macro = true
