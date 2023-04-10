@@ -27,11 +27,9 @@ rule peg_rule() -> Rule
         { Rule { span, doc, name:header.0, ty_params:header.1, params:header.2, expr, ret_type, visibility, no_eof, cache } }
 
     rule cacheflag() -> Option<Cache> = 
-        "#" "[" "cache" "]" {Some(Cache::Simple(None))} / 
-        "#" "[" "cache" "(" t:$(rust_type()) ")" "]" {Some(Cache::Simple(Some(t)))} / 
-        "#" "[" "cache_left_rec" "]" {Some(Cache::Recursive(None))} / 
-        "#" "[" "cache_left_rec" "(" t:$(rust_type()) ")" "]" {Some(Cache::Recursive(Some(t)))} / 
-        {None}
+        "#" "[" "cache" ty:("(" t:$(rust_type()) ")" { t })?  "]" { Some(Cache::Simple(ty)) } /
+        "#" "[" "cache_left_rec" ty:("(" t:$(rust_type()) ")" { t })? "]" { Some(Cache::Recursive(ty)) } / 
+        { None }
 
     rule no_eof_flag() -> bool = "#" "[" "no_eof" "]" {true} / {false}
 
