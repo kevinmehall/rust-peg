@@ -168,8 +168,15 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
         }
     }
 
+    let trace = if cfg!(feature = "trace") {
+        quote!( #[derive(Debug)] )
+    } else {
+        quote!()
+    };
+
     quote_spanned! { span =>
         #[allow(unused_parens)]
+        #trace
         struct ParseState<'input #(, #grammar_lifetime_params)*> {
             _phantom: ::core::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
             #(#cache_fields_def),*
@@ -232,18 +239,17 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let body = compile_expr(&context, &rule.expr, rule.ret_type.is_some());
 
     let wrapped_body = if cfg!(feature = "trace") {
-        let str_rule_name = rule.name.to_string();
         quote_spanned! { span => {
             let loc = ::peg::Parse::position_repr(__input, __pos);
-            println!("[PEG_TRACE] Attempting to match rule `{}` at {}", #str_rule_name, loc);
+            tracing::trace!(loc = %loc, "Attempting");
             let __peg_result: ::peg::RuleResult<#ret_ty> = {#body};
             match __peg_result {
                 ::peg::RuleResult::Matched(epos, _) => {
                     let eloc = ::peg::Parse::position_repr(__input, epos);
-                    println!("[PEG_TRACE] Matched rule `{}` at {} to {}", #str_rule_name, loc, eloc);
+                    tracing::trace!(eloc = %eloc, "Matched");
                 }
                 ::peg::RuleResult::Failed => {
-                    println!("[PEG_TRACE] Failed to match rule `{}` at {}", #str_rule_name, loc);
+                    tracing::trace!("Failed");
                 }
             }
 
@@ -261,12 +267,11 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
             let cache_field = format_ident!("{}_cache", rule.name);
 
             let cache_trace = if cfg!(feature = "trace") {
-                let str_rule_name = rule.name.to_string();
                 quote_spanned! { span =>
                     let loc = ::peg::Parse::position_repr(__input, __pos);
                     match &entry {
-                        &::peg::RuleResult::Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}", #str_rule_name, loc),
-                        &Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}", #str_rule_name, loc),
+                        &::peg::RuleResult::Matched(..) => tracing::trace!(loc = %loc, "Cache matched"),
+                        &::peg::RuleResult::Failed => tracing::trace!(loc = %loc, "Cache failed"),
                     };
                 }
             } else {
@@ -318,7 +323,16 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
         }
     };
 
+    let trace = if cfg!(feature = "trace") {
+        let str_rule_name = rule.name.to_string();
+
+        quote!( #[tracing::instrument(fields(rule = #str_rule_name))] )
+    } else {
+        quote!()
+    };
+
     quote_spanned! { span =>
+        #trace
         fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
             #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
             #fn_body
@@ -363,11 +377,18 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
         quote_spanned! { span => ::peg::Parse::is_eof(__input, __pos) }
     };
 
+    let trace = if cfg!(feature = "trace") {
+        quote!( #[tracing::instrument] )
+    } else {
+        quote!()
+    };
+
     // Parse once. If it succeeds or throws an error, return that.
     // If it fails, parse again to determine the set of all tokens
     // that were expected at the failure position.
 
     quote_spanned! { span =>
+        #trace
         #doc
         #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::core::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_lifetime_params),*>>> {
             #![allow(non_snake_case, unused)]
@@ -921,17 +942,24 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
 
             let (enter, leave) = if cfg!(feature = "trace") {
                 (
-                    quote_spanned! {span => println!("[PEG_TRACE] Entering level {}", min_prec);},
-                    quote_spanned! {span => println!("[PEG_TRACE] Leaving level {}", min_prec);},
+                    quote_spanned! {span => tracing::trace!("Entering");},
+                    quote_spanned! {span => tracing::trace!("Leaving");},
                 )
             } else {
                 (quote!(), quote!())
+            };
+
+            let trace = if cfg!(feature = "trace") {
+                quote!( #[tracing::instrument] )
+            } else {
+                quote!()
             };
 
             // The closures below must be defined within the function call to which they are passed
             // due to https://github.com/rust-lang/rust/issues/41078
 
             quote_spanned! { span => {
+                #trace
                 fn __infix_parse<T, S>(
                     state: &mut S,
                     err_state: &mut ::peg::error::ErrorState,
