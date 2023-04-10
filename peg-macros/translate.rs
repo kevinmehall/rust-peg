@@ -239,10 +239,10 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
             match __peg_result {
                 ::peg::RuleResult::Matched(epos, _) => {
                     let eloc = ::peg::Parse::position_repr(__input, epos);
-                    tracing::trace!(eloc = %eloc, "Matched");
+                    tracing::trace!(loc = %loc, eloc = %eloc, "Matched");
                 }
                 ::peg::RuleResult::Failed => {
-                    tracing::trace!("Failed");
+                    tracing::trace!(loc = %loc, "Failed");
                 }
             }
 
