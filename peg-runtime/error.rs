@@ -71,7 +71,6 @@ impl<L: Display + Debug> ::std::error::Error for ParseError<L> {
 }
 
 #[doc(hidden)]
-#[derive(Debug)]
 pub struct ErrorState {
     /// Furthest failure we've hit so far.
     pub max_err_pos: usize,
