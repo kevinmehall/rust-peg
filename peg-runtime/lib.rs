@@ -69,7 +69,11 @@ pub trait ParseSlice<'input>: Parse {
     fn parse_slice(&'input self, p1: usize, p2: usize) -> Self::Slice;
 }
 
-#[cfg(not(feature = "std"))]
+// Requires `alloc` flag only if `unstable`, otherwise, requires `std` disabled
+#[cfg(any(
+    all(feature = "unstable", not(feature = "std"), feature = "alloc"),
+    not(any(feature = "unstable", feature = "std"))
+))]
 extern crate alloc;
 #[cfg(not(feature = "std"))]
 extern crate core as std;
