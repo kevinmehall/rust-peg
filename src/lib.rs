@@ -340,6 +340,8 @@
 //! ...
 //! ```
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 extern crate peg_macros;
 extern crate peg_runtime as runtime;
 
