@@ -10,7 +10,7 @@ pub rule peg_grammar() -> Grammar
         { Grammar { doc, visibility, name, lifetime_params, args, input_type, items } }
 
     rule rust_lifetime_params() -> Vec<TokenStream>
-        = "<" p:(($(LIFETIME())) ++ ",") ">" { p }
+        = "<" p:(($(LIFETIME())) ++ ",") ">" { p.to_vec() }
 
 rule grammar_args() -> Vec<(Ident, TokenStream)>
     = "(" args:((i:IDENT() ":" t:$(rust_type()) { (i, t) })**",") ","? ")" { args }
@@ -67,7 +67,7 @@ rule rust_ty_path()
     = "::"? (IDENT() ("::"? "<" (LIFETIME() / rust_type() / BRACE_GROUP() / LITERAL()) ++ "," ">")?) ++ "::"
 
 rule rust_ty_params() -> Vec<TokenStream>
-    = "<" p:($(rust_generic_param()) ++ ",") ">" { p }
+    = "<" p:($(rust_generic_param()) ++ ",") ">" { p.to_vec() }
 
 rule rust_generic_param()
     = LIFETIME() (":" LIFETIME() ++ "+")?
@@ -79,7 +79,7 @@ rule choice() -> SpannedExpr = sp:sp() s:sequence() ++ "/" {
     if s.len() == 1 {
         s.into_iter().next().unwrap()
     } else {
-        ChoiceExpr(s).at(sp)
+        ChoiceExpr(s.to_vec()).at(sp)
     }
 }
 
@@ -140,7 +140,7 @@ rule primary() -> SpannedExpr
 
 rule precedence_level() -> PrecedenceLevel
   = operators:precedence_op()+
-  { PrecedenceLevel{ operators: operators } }
+  { PrecedenceLevel{ operators: operators.to_vec() } }
 
 rule precedence_op() -> PrecedenceOperator
   = span:sp() elements:labeled()* action:BRACE_GROUP()

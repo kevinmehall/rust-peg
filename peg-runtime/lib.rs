@@ -7,6 +7,21 @@ pub mod error;
 mod slice;
 pub mod str;
 
+#[cfg(feature = "unstable")]
+pub mod __private {
+    #[cfg(not(feature = "std"))]
+    pub use {alloc::vec, alloc::vec::Vec};
+
+    #[cfg(feature = "std")]
+    pub use {std::vec, std::vec::Vec};
+
+    #[cfg(feature = "arrayvec")]
+    pub use arrayvec::ArrayVec;
+
+    #[cfg(feature = "smallvec")]
+    pub use smallvec::SmallVec;
+}
+
 /// The result type used internally in the parser.
 ///
 /// You'll only need this if implementing the `Parse*` traits for a custom input

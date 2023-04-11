@@ -669,10 +669,61 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 quote!(())
             };
 
+            let repeat_vec = if cfg!(feature = "unstable") {
+                // Optimization to use stack allocation when bounds can be made certain
+                // However, the implementation is being conservative here, so if variables that are constants
+                // which its array size can be determined in compile time, would still be using heap
+
+                // If you do not set a max bound, this would make it even alloc-free
+
+                // TODO: add an user attribute level hint to let the generator forcefully treat it as a constant
+                // TODO: even further optimization using staticvec when min and max are both the same (although technically we should use a slice)
+
+                let min = min.clone();
+                let max = max.clone();
+
+                match (min, max) {
+                    (_, Some(max)) => {
+                        match max.to_string().parse::<usize>() {
+                            // It is bounded and we know that the max is a constant, so by convention we can use an array vector
+                            #[cfg(feature = "arrayvec")]
+                            Ok(max) => {
+                                quote_spanned! { span => ::peg::__private::ArrayVec::<_, #max>::default() }
+                            }
+                            // We don't know whether that is a constant, but do we know it will consume this much memory at best, assuming the user input is correct
+                            _ => {
+                                quote_spanned! { span => ::peg::__private::Vec::with_capacity(#max) }
+                            }
+                        }
+                    }
+
+                    (Some(min), _) => {
+                        match min.to_string().parse::<usize>() {
+                            // It is unbounded but at least we know we must have allocated at least min elements
+                            // When it exceeds min, it will just spill to heap
+                            #[cfg(feature = "smallvec")]
+                            Ok(min) => {
+                                quote_spanned! { span => ::peg::__private::SmallVec::<[_; #min] >::default() }
+                            }
+                            // We don't know whether that is a constant, but do we know we at least have to consume this much memory, assuming the user input is correct
+                            _ => {
+                                quote_spanned! { span => ::peg::__private::Vec::with_capacity(#min) }
+                            }
+                        }
+                    }
+                    // Base case. Typically this is both-boundless kind of repetition
+                    _ => quote! { vec!() },
+                }
+            } else {
+                // Don't do any optimizations yet. Keep the original behavior.
+                // TODO: move the min/max bound optimization out once it is proven worth it
+                quote! { vec!() }
+            };
+
             let (repeat_vec, repeat_step) =
                 if result_used || min.is_some() || max.is_some() || sep.is_some() {
                     (
-                        Some(quote_spanned! { span => let mut __repeat_value = vec!(); }),
+                        Some(quote_spanned! { span => let mut __repeat_value = #repeat_vec; }),
                         Some(quote_spanned! { span => __repeat_value.push(__value); }),
                     )
                 } else {

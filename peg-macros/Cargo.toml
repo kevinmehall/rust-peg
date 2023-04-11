@@ -11,9 +11,15 @@ edition = "2018"
 quote = "1.0"
 proc-macro2 = "1.0.24"
 peg-runtime = { version = "= 0.8.1", path = "../peg-runtime" }
+smallvec = { version = "1.10.0", optional = true }
+arrayvec = { version = "0.7.2", optional = true }
 
 [features]
 trace = []
+unstable = []
+alloc = ["smallvec"]
+arrayvec = ["dep:arrayvec", "unstable"]
+smallvec = ["dep:smallvec", "unstable", "alloc"]
 
 [lib]
 proc-macro = true

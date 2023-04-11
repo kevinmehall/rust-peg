@@ -18,6 +18,9 @@ peg-macros = { path = "./peg-macros", version = "= 0.8.1" }
 peg-runtime = { path = "./peg-runtime", version = "= 0.8.1" }
 
 [dev-dependencies]
+arrayvec = "0.7.2"
+assert_matches = "1.5.0"
+smallvec = "1.10.0"
 trybuild = "1.0.80"
 
 [[test]]
@@ -29,4 +32,7 @@ harness = false
 default = ["std"]
 trace = ["peg-macros/trace"]
 std = ["peg-runtime/std"]
-unstable = ["peg-runtime/unstable"]
+alloc = ["peg-runtime/alloc", "peg-macros/alloc"]
+unstable = ["peg-runtime/unstable", "peg-macros/unstable"]
+arrayvec = ["peg-runtime/arrayvec", "peg-macros/arrayvec"]
+smallvec = ["peg-runtime/smallvec", "peg-macros/smallvec"]

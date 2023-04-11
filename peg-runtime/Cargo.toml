@@ -11,5 +11,12 @@ edition = "2018"
 path = "lib.rs"
 
 [features]
-std = []
+std = ["arrayvec?/std"]
+alloc = ["smallvec"]
 unstable = []
+arrayvec = ["dep:arrayvec", "unstable"]
+smallvec = ["dep:smallvec", "unstable", "alloc"]
+
+[dependencies]
+arrayvec = { version = "0.7.2", optional = true, default-features = false }
+smallvec = { version = "1.10.0", optional = true }

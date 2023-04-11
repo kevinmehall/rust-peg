@@ -48,7 +48,7 @@
 //!       = n:$(['0'..='9']+) {? n.parse().or(Err("u32")) }
 //!
 //!     pub rule list() -> Vec<u32>
-//!       = "[" l:(number() ** ",") "]" { l }
+//!       = "[" l:(number() ** ",") "]" { l.to_vec() }
 //!   }
 //! }
 //!
@@ -109,6 +109,12 @@
 //!     delimited with `delim` and return the results as a `Vec`. [(details)](#repeat-ranges)
 //!   * `expression ++ delim` - _Delimited repeat (one or more):_ match one or more repetitions of `expression`
 //!     delimited with `delim` and return the results as a `Vec`.
+//!
+//!   _unstable_: Relaxing `Vec` to `&[T]` of all the above operators respectively. This opens up certain optimizations and
+//!    even the possibility of removing `alloc` dependency.
+//!
+//!   _unstable_ and _arrayvec_: Treat `expression*<n,m>` and `expression **<n,m> delim` to use `ArrayVec` under the unstable assumption. **This does not require `alloc`**.
+//!   _unstable_ and _smallvec_: Treat `Vec` to use `SmallVec` under the unstable assumption. If _arrayvec_ is also enabled, _arrayvec_ precedes.
 //!
 //!  ### Special
 //!   * `$(e)` - _Slice:_ match the expression `e`, and return the slice of the input
@@ -230,7 +236,7 @@
 //! rule num_radix(radix: u32) -> u32
 //!   = n:$(['0'..='9']+) {? u32::from_str_radix(n, radix).or(Err("number")) }
 //!
-//! rule list<T>(x: rule<T>) -> Vec<T> = "[" v:(x() ** ",") ","? "]" {v}
+//! rule list<T>(x: rule<T>) -> Vec<T> = "[" v:(x() ** ",") ","? "]" { v.to_vec() }
 //!
 //! pub rule octal_list() -> Vec<u32> = list(<num_radix(8)>)
 //! # }}
