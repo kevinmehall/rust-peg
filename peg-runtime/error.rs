@@ -6,8 +6,18 @@ use std::fmt::{self, Debug, Display};
 #[cfg(feature = "std")]
 use std::collections::BTreeSet;
 
-#[cfg(not(feature = "std"))]
-use {alloc::collections::BTreeSet, alloc::vec::Vec};
+#[cfg(any(
+    all(feature = "unstable", not(feature = "std"), feature = "alloc"),
+    not(any(feature = "unstable", feature = "std"))
+))]
+use alloc::collections::BTreeSet;
+
+#[cfg(all(
+    feature = "unstable", 
+    not(any(feature = "std", feature = "alloc"))
+))]
+type BTreeSet<T> = scapegoat::SgSet<T, 128>;
+
 
 /// A set of literals or names that failed to match
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -29,9 +39,7 @@ impl Display for ExpectedSet {
         } else if self.expected.len() == 1 {
             write!(fmt, "{}", self.expected.iter().next().unwrap())?;
         } else {
-            let mut errors = self.tokens().collect::<Vec<_>>();
-            errors.sort();
-            let mut iter = errors.into_iter();
+            let mut iter = self.tokens().into_iter();
 
             write!(fmt, "one of {}", iter.next().unwrap())?;
             for elem in iter {

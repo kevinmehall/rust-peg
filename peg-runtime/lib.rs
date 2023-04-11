@@ -9,7 +9,10 @@ pub mod str;
 
 #[cfg(feature = "unstable")]
 pub mod __private {
-    #[cfg(not(feature = "std"))]
+    #[cfg(all(
+        not(feature = "std"),
+        feature = "alloc"
+    ))]
     pub use {alloc::vec, alloc::vec::Vec};
 
     #[cfg(feature = "std")]

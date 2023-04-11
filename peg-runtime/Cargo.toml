@@ -13,10 +13,11 @@ path = "lib.rs"
 [features]
 std = ["arrayvec?/std"]
 alloc = ["smallvec"]
-unstable = []
+unstable = ["scapegoat"]
 arrayvec = ["dep:arrayvec", "unstable"]
 smallvec = ["dep:smallvec", "unstable", "alloc"]
 
 [dependencies]
 arrayvec = { version = "0.7.2", optional = true, default-features = false }
+scapegoat = { version = "2.3.0", optional = true }
 smallvec = { version = "1.10.0", optional = true }
