@@ -12,6 +12,7 @@ keywords = ["peg", "parser", "parsing", "grammar"]
 categories = ["parsing"]
 readme = "README.md"
 edition = "2018"
+rust-version = "1.68.0" # if changed, also update .github/workflows/rust.yml
 
 [dependencies]
 peg-macros = { path = "./peg-macros", version = "= 0.8.1" }
@@ -19,6 +20,7 @@ peg-runtime = { path = "./peg-runtime", version = "= 0.8.1" }
 
 [dev-dependencies]
 trybuild = "1.0.80"
+version_check = "0.9"
 
 [[test]]
 name = "trybuild"
