@@ -60,11 +60,13 @@ pub fn main() {
 [annotate-snippets]: https://crates.io/crates/annotate-snippets
 [codespan-reporting]: https://crates.io/crates/codespan-reporting
 [codemap-diagnostic]: https://crates.io/crates/codemap-diagnostic
+
 ## Development
 
 The `rust-peg` grammar is written in `rust-peg`: `peg-macros/grammar.rustpeg`. To avoid the circular dependency, a precompiled grammar is checked in as `peg-macros/grammar.rs`. To regenerate this, run the `./bootstrap.sh` script.
 
-There is a large test suite which uses [`trybuild`](https://crates.io/crates/trybuild) to support testing for compilation failure errors.
+There is a large test suite which uses [`trybuild`](https://crates.io/crates/trybuild) to test both functionality (`tests/run-pass`) and error messages for incorrect grammars (`tests/compile-fail`). Because `rustc` error messages change, the `compile-fail` tests are only run on the minimum supported Rust version to avoid spurious failures.
+
 Use `cargo test` to run the entire suite,
 or `cargo test -- trybuild trybuild=lifetimes.rs` to test just the indicated file.
 Add `--features trace` to trace these tests.

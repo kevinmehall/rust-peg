@@ -157,7 +157,7 @@
 //! ### Repeat ranges
 //!
 //! The repeat operators `*` and `**` can be followed by an optional range specification of the
-//! form `<n>` (exact), `<n,>` (min), `<,m>` (max) or `<n,m>` (range), where `n` and `m` are either
+//! form `<n>` (exact), `<n,>` (min-inclusive), `<,m>` (max-inclusive) or `<n,m>` (range-inclusive), where `n` and `m` are either
 //! integers, or a Rust `usize` expression enclosed in `{}`.
 //!
 //! ### Precedence climbing
