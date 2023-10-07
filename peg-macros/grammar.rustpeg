@@ -124,7 +124,7 @@ rule primary() -> SpannedExpr
   = sp:sp() "precedence" "!" "{" levels:precedence_level()**"--" "}" { PrecedenceExpr{ levels:levels }.at(sp) }
   / sp:sp() "position" "!" "(" ")" { PositionExpr.at(sp) }
   / sp:sp() "quiet" "!" "{" e:expression() "}" { QuietExpr(Box::new(e)).at(sp) }
-  / sp:sp() "expected" "!" "(" s:LITERAL() ")" { FailExpr(s).at(sp) }
+  / sp:sp() "expected" "!" s:PAREN_GROUP() { FailExpr(s).at(sp) }
   / &("_" / "__" / "___") sp:sp() name:IDENT() { RuleExpr(name, Vec::new()).at(sp) }
   / sp:sp() name:IDENT() "(" args:(rule_arg() ** ",") ")" { RuleExpr(name, args).at(sp) }
   / sp:sp() l:LITERAL() { LiteralExpr(l).at(sp) }

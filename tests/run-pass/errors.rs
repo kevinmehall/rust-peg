@@ -11,6 +11,8 @@ peg::parser!{ grammar parser() for str {
     pub rule q() = (quiet!{
         ("a" / "b" / "c") ("1" / "2")
     } / expected!("letter followed by number"))+
+
+    pub rule var(s: &'static str) = expected!(s)
 }}
 
 fn main() {
@@ -59,4 +61,8 @@ aaaabaaaa
     let err = parser::q("a1bb").unwrap_err();
     assert_eq!(err.location.offset, 2);
     assert_eq!(err.expected.to_string(), "one of EOF, letter followed by number");
+
+    let err = parser::var("", "asdf").unwrap_err();
+    assert_eq!(err.expected.to_string(), "asdf");
+
 }
