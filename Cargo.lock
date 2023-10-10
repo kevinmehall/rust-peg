@@ -31,7 +31,7 @@ checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
 
 [[package]]
 name = "peg"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "peg-macros",
  "peg-runtime",
@@ -41,7 +41,7 @@ dependencies = [
 
 [[package]]
 name = "peg-macros"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "peg-runtime",
  "proc-macro2",
@@ -50,7 +50,7 @@ dependencies = [
 
 [[package]]
 name = "peg-runtime"
-version = "0.8.1"
+version = "0.8.2"
 
 [[package]]
 name = "proc-macro2"
