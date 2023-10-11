@@ -43,7 +43,7 @@ rule item() -> Item
 
 rule rust_doc_comment() -> Option<TokenStream> = $(("#" "[" "doc" "=" LITERAL() "]")*)?
 
-rule rust_visibility() -> Option<TokenStream> = $("pub" PAREN_GROUP()? / "crate")?
+rule rust_visibility() -> Option<TokenStream> = $("pub" PAREN_GROUP()?)?
 
 rule rust_use() -> TokenStream
     = v:$("use" rust_path() (
@@ -147,7 +147,7 @@ rule precedence_op() -> PrecedenceOperator
   { PrecedenceOperator{ span, elements, action } }
 
 rule sp() -> Span = ##next_span()
-rule KEYWORD() = "pub" / "crate" / "rule" / "use" / "type"
+rule KEYWORD() = "pub" / "rule" / "use" / "type"
 rule IDENT() -> Ident = !KEYWORD() i:##ident() {i}
 rule LITERAL() -> Literal = ##literal()
 rule PAREN_GROUP()   -> Group = ##group(Delimiter::Parenthesis)

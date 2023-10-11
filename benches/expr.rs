@@ -1,4 +1,4 @@
-#![feature(test, crate_visibility_modifier)]
+#![feature(test)]
 extern crate peg;
 
 extern crate test;
@@ -6,7 +6,7 @@ extern crate test;
 use test::Bencher;
 
 peg::parser!(grammar parser() for str {
-crate rule expr() = eq()
+pub(crate) rule expr() = eq()
 
 #[cache]
 rule eq() = additive() "=" eq() / additive()
