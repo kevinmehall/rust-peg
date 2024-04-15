@@ -215,6 +215,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let name = format_ident!("__parse_{}", rule.name, span = span);
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let ty_params = ty_params_slice(&rule.ty_params);
+    let where_clause = rule.where_clause.as_ref().into_iter();
 
     let Context {
         input_ty,
@@ -319,7 +320,14 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     };
 
     quote_spanned! { span =>
-        fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty, __state: #parse_state_ty, __err_state: &mut ::peg::error::ErrorState, __pos: usize #extra_args_def #(, #rule_params)*) -> ::peg::RuleResult<#ret_ty> {
+        fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(
+            __input: #input_ty,
+            __state: #parse_state_ty,
+            __err_state: &mut ::peg::error::ErrorState,
+            __pos: usize #extra_args_def #(, #rule_params)*,
+        ) -> ::peg::RuleResult<#ret_ty>
+        #(#where_clause)*
+        {
             #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
             #fn_body
         }
@@ -340,6 +348,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
     let parse_fn = format_ident!("__parse_{}", rule.name.to_string(), span = name.span());
     let ty_params = ty_params_slice(&rule.ty_params);
+    let where_clause = rule.where_clause.as_ref().into_iter();
     let rule_params = rule_params_list(context, rule);
     let rule_params_call: Vec<TokenStream> = rule
         .params
@@ -369,7 +378,14 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     quote_spanned! { span =>
         #doc
-        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(__input: #input_ty #extra_args_def #(, #rule_params)*) -> ::core::result::Result<#ret_ty, ::peg::error::ParseError<PositionRepr<#(#grammar_lifetime_params),*>>> {
+        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(
+            __input: #input_ty #extra_args_def #(, #rule_params)*
+        ) -> ::core::result::Result<
+            #ret_ty,
+            ::peg::error::ParseError<PositionRepr<#(#grammar_lifetime_params),*>>
+        >
+        #(#where_clause)*
+        {
             #![allow(non_snake_case, unused)]
 
             let mut __err_state = ::peg::error::ErrorState::new(::peg::Parse::start(__input));
