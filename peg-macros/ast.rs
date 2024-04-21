@@ -40,6 +40,7 @@ pub struct Rule {
     pub params: Vec<RuleParam>,
     pub expr: SpannedExpr,
     pub ret_type: Option<TokenStream>,
+    pub where_clause: Option<TokenStream>,
     pub doc: Option<TokenStream>,
     pub visibility: Option<TokenStream>,
     pub cache: Option<Cache>,
