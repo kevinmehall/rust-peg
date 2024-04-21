@@ -1,3 +1,4 @@
+use proc_macro2::Delimiter;
 use proc_macro2::{Group, Ident, Literal, Span, TokenStream, TokenTree};
 use std::collections::{HashMap, HashSet};
 
@@ -510,6 +511,8 @@ fn compile_pattern_expr(
         } else {
             (pattern_group.stream(), success_res, failure_res)
         };
+
+    let pattern = Group::new(Delimiter::None, pattern);
 
     quote_spanned! { span =>
         match ::peg::ParseElem::parse_elem(__input, __pos) {

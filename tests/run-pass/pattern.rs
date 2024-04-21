@@ -4,6 +4,8 @@ peg::parser!( grammar test() for str {
 
     pub rule capture() -> char = ['a'..='z']
     pub rule capture2() -> (char, char) = a:['a'..='z'] b:['0'..='9'] { (a, b) }
+
+    pub rule open_range() -> char = ['a'..]
 });
 
 fn main() {
