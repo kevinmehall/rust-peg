@@ -6,6 +6,8 @@ peg::parser!( grammar test() for str {
     pub rule capture2() -> (char, char) = a:['a'..='z'] b:['0'..='9'] { (a, b) }
 
     pub rule open_range() -> char = ['a'..]
+
+    pub rule if_guard() -> char = [x if x.is_ascii_digit()]
 });
 
 fn main() {
@@ -16,5 +18,9 @@ fn main() {
 
     assert_eq!(test::capture("x"), Ok('x'));
     assert_eq!(test::capture2("a1"), Ok(('a', '1')));
+
+    assert_eq!(test::if_guard("1"), Ok('1'));
+    assert!(test::if_guard("a").is_err());
+
 }
 

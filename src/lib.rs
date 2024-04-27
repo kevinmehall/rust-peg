@@ -132,8 +132,11 @@
 //!
 //! The `[pat]` syntax expands into a [Rust `match`
 //! pattern](https://doc.rust-lang.org/book/ch18-03-pattern-syntax.html) against the next character
-//! (or element) of the input. When the pattern begins with `^`, the matching behavior is inverted:
+//! (or element) of the input.
+//! 
+//! When the pattern begins with `^`, the matching behavior is inverted:
 //! the expression succeeds only if the pattern does *not* match.
+//! `[^' ']` matches any character other than a space.
 //!
 //! To match sets of characters, use Rust's `..=` inclusive range pattern
 //! syntax and `|` to match multiple patterns. For example `['a'..='z' | 'A'..='Z']` matches an
@@ -143,11 +146,17 @@
 //! `[Token::Operator('+')]`.
 //!
 //! Variables captured by the pattern are accessible in a subsequent action
-//! block: `[Token::Integer(i)] { i }`
+//! block: `[Token::Integer(i)] { i }`.
+//! 
+//! The pattern expression also evaluates to the matched element, which can be
+//! captured into a variable or used as the return value of a rule: `c:['+'|'-']`.
+//! 
+//! Like Rust `match`, pattern expressions support guard expressions:
+//! `[c if c.is_ascii_digit()]`.
 //!
 //! `[_]` matches any single element. As this always matches except at end-of-file, combining it
 //! with negative lookahead as `![_]` is the idiom for matching EOF in PEG.
-//!
+//! 
 //! ### Repeat ranges
 //!
 //! The repeat operators `*` and `**` can be followed by an optional range specification of the
