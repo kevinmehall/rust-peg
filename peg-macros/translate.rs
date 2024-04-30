@@ -435,6 +435,7 @@ fn ordered_choice(span: Span, mut rs: impl DoubleEndedIterator<Item = TokenStrea
             let __choice_res = #preferred;
             match __choice_res {
                 ::peg::RuleResult::Matched(__pos, __value) => ::peg::RuleResult::Matched(__pos, __value),
+                ::peg::RuleResult::Failed if __err_state.is_cut => ::peg::RuleResult::Failed, 
                 ::peg::RuleResult::Failed => #fallback
             }
         }}
@@ -1016,6 +1017,12 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
         }
         MarkerExpr { .. } => {
             report_error(span, "`@` is only allowed in `precedence!{}`".to_string())
+        }
+        CutExpr => {
+            quote_spanned!{ span => {
+                __err_state.is_cut = true;
+                ::peg::RuleResult::Matched(__pos, __pos)
+            }}
         }
     }
 }

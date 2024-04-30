@@ -106,7 +106,8 @@ rule labeled() -> TaggedExpr
         { TaggedExpr{ name: label, expr: expression } }
 
 rule suffixed() -> SpannedExpr
-    = e:prefixed() sp:sp() "?" { OptionalExpr(Box::new(e)).at(sp) }
+    = sp:sp() "~>" { CutExpr.at(sp) }
+    / e:prefixed() sp:sp() "?" { OptionalExpr(Box::new(e)).at(sp) }
     / e:prefixed() sp:sp() "**" count:repeatcount() sep:primary() { Repeat { inner: Box::new(e), bound: count, sep: Some(Box::new(sep)) }.at(sp) }
     / e:prefixed() sp:sp() "++" sep:primary() { Repeat { inner: Box::new(e), bound: BoundedRepeat::Plus, sep: Some(Box::new(sep)) }.at(sp )}
     / e:prefixed() sp:sp() "*" count:repeatcount() { Repeat { inner: Box::new(e), bound: count, sep: None }.at(sp) }

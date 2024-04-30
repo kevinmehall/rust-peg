@@ -166,7 +166,7 @@ impl<'a> LeftRecursionVisitor<'a> {
 
             LiteralExpr(_) | PatternExpr(_) | MethodExpr(_, _) | FailExpr(_) | MarkerExpr(_) => false,
 
-            PositionExpr => true,
+            PositionExpr | CutExpr => true,
         }
     }
 }
@@ -273,7 +273,7 @@ impl<'a> LoopNullabilityVisitor<'a> {
             }
 
             LiteralExpr(_) | PatternExpr(_) | MethodExpr(_, _) | FailExpr(_) | MarkerExpr(_) => false,
-            PositionExpr => true,
+            PositionExpr | CutExpr => true,
         }
     }
 }

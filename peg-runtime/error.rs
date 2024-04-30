@@ -79,6 +79,9 @@ pub struct ErrorState {
     /// Non-zero => yes, to support nested blocks.
     pub suppress_fail: usize,
 
+    /// Are we cut from other choices?
+    pub is_cut: bool,
+
     /// Are we reparsing after a failure? If so, compute and store expected set of all alternative expectations
     /// when we are at offset `max_err_pos`.
     pub reparsing_on_error: bool,
@@ -92,6 +95,7 @@ impl ErrorState {
         ErrorState {
             max_err_pos: initial_pos,
             suppress_fail: 0,
+            is_cut: false,
             reparsing_on_error: false,
             expected: ExpectedSet {
                 expected: BTreeSet::new(),

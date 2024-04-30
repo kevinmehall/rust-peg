@@ -90,6 +90,7 @@ pub enum Expr {
         levels: Vec<PrecedenceLevel>,
     },
     MarkerExpr(bool),
+    CutExpr,
 }
 
 impl Expr {
