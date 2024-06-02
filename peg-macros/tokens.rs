@@ -122,7 +122,12 @@ impl Parse for FlatTokenStream {
     }
 
     fn position_repr(&self, pos: usize) -> Sp {
-        Sp(self.tokens[pos].span(), pos)
+        let span = self.tokens.get(pos)
+            .map_or_else(
+                || Span::call_site(),
+                |t| t.span()
+            );
+        Sp(span, pos)
     }
 }
 
