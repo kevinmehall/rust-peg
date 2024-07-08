@@ -347,7 +347,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
         ..
     } = rule;
     let ret_ty = rule.ret_type.clone().unwrap_or_else(|| quote!(()));
-    let parse_fn = format_ident!("__parse_{}", rule.name.to_string(), span = name.span());
+    let parse_fn = format_ident!("__parse_{}", rule.name, span = name.span());
     let ty_params = ty_params_slice(&rule.ty_params);
     let where_clause = rule.where_clause.as_ref().into_iter();
     let rule_params = rule_params_list(context, rule);
