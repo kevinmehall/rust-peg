@@ -28,8 +28,8 @@ pub enum Item {
 
 #[derive(Debug)]
 pub enum Cache {
-    Simple,
-    Recursive
+    Simple(Option<TokenStream>),
+    Recursive(Option<TokenStream>),
 }
 
 #[derive(Debug)]
@@ -78,7 +78,11 @@ pub enum Expr {
     MethodExpr(Ident, TokenStream),
     ChoiceExpr(Vec<SpannedExpr>),
     OptionalExpr(Box<SpannedExpr>),
-    Repeat { inner: Box<SpannedExpr>, bound: BoundedRepeat, sep: Option<Box<SpannedExpr>> },
+    Repeat {
+        inner: Box<SpannedExpr>,
+        bound: BoundedRepeat,
+        sep: Option<Box<SpannedExpr>>,
+    },
     PosAssertExpr(Box<SpannedExpr>),
     NegAssertExpr(Box<SpannedExpr>),
     ActionExpr(Vec<TaggedExpr>, Option<Group>),
@@ -94,7 +98,10 @@ pub enum Expr {
 
 impl Expr {
     pub fn at(self, sp: Span) -> SpannedExpr {
-        SpannedExpr { expr: self, span:sp }
+        SpannedExpr {
+            expr: self,
+            span: sp,
+        }
     }
 }
 
@@ -128,14 +135,14 @@ impl BoundedRepeat {
     pub fn has_lower_bound(&self) -> bool {
         match self {
             BoundedRepeat::None | BoundedRepeat::Both(None, _) => false,
-            BoundedRepeat::Plus | BoundedRepeat::Exact(_) | BoundedRepeat::Both(Some(_), _) => true
+            BoundedRepeat::Plus | BoundedRepeat::Exact(_) | BoundedRepeat::Both(Some(_), _) => true,
         }
     }
 
     pub fn has_upper_bound(&self) -> bool {
         match self {
-            BoundedRepeat::None |  BoundedRepeat::Plus | BoundedRepeat::Both(_, None) => false,
-            BoundedRepeat::Exact(_) | BoundedRepeat::Both(_, Some(_)) => true
+            BoundedRepeat::None | BoundedRepeat::Plus | BoundedRepeat::Both(_, None) => false,
+            BoundedRepeat::Exact(_) | BoundedRepeat::Both(_, Some(_)) => true,
         }
     }
 }
