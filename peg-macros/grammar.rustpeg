@@ -59,8 +59,8 @@ rule rust_path()
 rule rust_type()
     = BRACKET_GROUP()
     / "&" LIFETIME()? "mut"? rust_type()
-    / "dyn" rust_type() ++ "+"
-    / "impl" rust_type() ++ "+"
+    / "dyn" rust_ty_param_bound() ++ "+"
+    / "impl" rust_ty_param_bound() ++ "+"
     / "(" (rust_type() ++ "," ","?)? ")"
     / ("<" rust_type() ("as" rust_ty_path())? ">")? rust_ty_path()
 
@@ -73,12 +73,20 @@ rule rust_ty_params() -> Vec<TokenStream>
 rule rust_where_clause()
     = "where" (
         LIFETIME() (":" LIFETIME() ++ "+")?
-        / ("for" rust_ty_params())? rust_type() ":" (LIFETIME() / "?"? rust_ty_path()) ++ "+"
+        / rust_for_lifetimes()? rust_type() ":" rust_ty_param_bound() ++ "+"
     ) ** "," ","?
 
 rule rust_generic_param()
     = LIFETIME() (":" LIFETIME() ++ "+")?
-    / IDENT() (":"(LIFETIME() / "?"? rust_ty_path()) ++ "+")?
+    / IDENT() (":" rust_ty_param_bound() ++ "+")?
+
+rule rust_for_lifetimes()
+    = "for" rust_ty_params()
+
+rule rust_ty_param_bound()
+    = LIFETIME() 
+    / "?"? rust_for_lifetimes()? rust_ty_path()
+    / "(" "?"? rust_for_lifetimes()? rust_ty_path() ")"
 
 rule expression() -> SpannedExpr = choice()
 
