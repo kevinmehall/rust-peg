@@ -2,12 +2,12 @@ extern crate peg;
 use peg::parser;
 
 // C++ in Rust
-pub trait Operation<'a>: std::fmt::Debug {}
-pub trait Operand<'a>: std::fmt::Debug + AsDynOperand<'a> {}
-pub trait Location<'a>: Operand<'a> {}
+trait Operation<'a>: std::fmt::Debug {}
+trait Operand<'a>: std::fmt::Debug + AsDynOperand<'a> {}
+trait Location<'a>: Operand<'a> {}
 impl<'a, T: ?Sized + Location<'a>> Operand<'a> for T {}
 
-pub trait AsDynOperand<'a> {
+trait AsDynOperand<'a> {
     fn as_dyn_operand(self: Box<Self>) -> Box<dyn Operand<'a> + 'a>;
 }
 
@@ -20,7 +20,7 @@ impl<'a, T: /* Sized + */ Operand<'a> + 'a> AsDynOperand<'a> for T {
 
 
 #[derive(Debug)]
-struct Program<'a>(Vec<Box<dyn Operation<'a> + 'a>>);
+pub struct Program<'a>(Vec<Box<dyn Operation<'a> + 'a>>);
 
 #[derive(Debug)]
 struct Add<'a> {
