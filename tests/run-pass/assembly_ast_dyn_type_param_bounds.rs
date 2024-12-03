@@ -7,6 +7,8 @@ trait Operand<'a>: std::fmt::Debug + AsDynOperand<'a> {}
 trait Location<'a>: Operand<'a> {}
 impl<'a, T: ?Sized + Location<'a>> Operand<'a> for T {}
 
+// Thanks to quinedot for their comprehensive write-up on dyn Traits.
+// https://quinedot.github.io/rust-learning/dyn-trait-combining.html#manual-supertrait-upcasting
 trait AsDynOperand<'a> {
     fn as_dyn_operand(self: Box<Self>) -> Box<dyn Operand<'a> + 'a>;
 }
