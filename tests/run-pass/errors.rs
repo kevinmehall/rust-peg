@@ -4,7 +4,10 @@ peg::parser!{ grammar parser() for str {
     pub rule one_letter() = ['a'..='z']
 
     pub rule parse() -> usize
-        = v:( "a" / "\n" )* { v.len() }
+        = v:( "a" / "\n" )* {
+            let counter: ItemCounter = v;
+            counter.count()
+        }
 
     pub rule error_pos() = ("a" / "\n" / "\r")*
 
@@ -14,6 +17,26 @@ peg::parser!{ grammar parser() for str {
 
     pub rule var(s: &'static str) = expected!(s)
 }}
+
+struct ItemCounter {
+    count: usize,
+}
+impl Default for ItemCounter {
+    fn default() -> Self {
+        Self { count: 0 }
+    }
+}
+impl ItemCounter {
+    pub fn count(&self) -> usize {
+        self.count
+    }
+}
+impl Extend<()> for ItemCounter {
+    #[inline]
+    fn extend<T: IntoIterator<Item = ()>>(&mut self, into_iter: T) {
+        self.count += into_iter.into_iter().count();
+    }
+}
 
 fn main() {
     // errors at eof
