@@ -113,7 +113,7 @@ pub mod peg {
                                                         __err_state,
                                                         __pos,
                                                     );
-                                                    match __seq_res { :: peg :: RuleResult :: Matched (__pos , args) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , "for") { :: peg :: RuleResult :: Matched (__pos , __val) => { { let __seq_res = { let str_start = __pos ; match match __parse_rust_type (__input , __state , __err_state , __pos) { :: peg :: RuleResult :: Matched (pos , _) => :: peg :: RuleResult :: Matched (pos , ()) , :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , } { :: peg :: RuleResult :: Matched (__newpos , _) => { :: peg :: RuleResult :: Matched (__newpos , :: peg :: ParseSlice :: parse_slice (__input , str_start , __newpos)) } , :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , } } ; match __seq_res { :: peg :: RuleResult :: Matched (__pos , input_type) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , "{") { :: peg :: RuleResult :: Matched (__pos , __val) => { { let __seq_res = { let mut __repeat_pos = __pos ; let mut __repeat_value = Default :: default () ; let mut __repeat_count = 0usize ; loop { let __pos = __repeat_pos ; let __step_res = __parse_item (__input , __state , __err_state , __pos) ; match __step_res { :: peg :: RuleResult :: Matched (__newpos , __value) => { __repeat_pos = __newpos ; core :: iter :: Extend :: extend (& mut __repeat_value , Some (__value)) ; } , :: peg :: RuleResult :: Failed => { break ; } } __repeat_count += 1 ; } :: peg :: RuleResult :: Matched (__repeat_pos , __repeat_value) } ; match __seq_res { :: peg :: RuleResult :: Matched (__pos , items) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , "}") { :: peg :: RuleResult :: Matched (__pos , __val) => { :: peg :: RuleResult :: Matched (__pos , (|| { Grammar { doc , visibility , name , lifetime_params , args , input_type , items } }) ()) } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\"}\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , } } } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\"{\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , } } } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\"for\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , }
+                                                    match __seq_res { :: peg :: RuleResult :: Matched (__pos , args) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , "for") { :: peg :: RuleResult :: Matched (__pos , __val) => { { let __seq_res = { let str_start = __pos ; match match __parse_rust_type (__input , __state , __err_state , __pos) { :: peg :: RuleResult :: Matched (pos , _) => :: peg :: RuleResult :: Matched (pos , ()) , :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , } { :: peg :: RuleResult :: Matched (__newpos , _) => { :: peg :: RuleResult :: Matched (__newpos , :: peg :: ParseSlice :: parse_slice (__input , str_start , __newpos)) } , :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , } } ; match __seq_res { :: peg :: RuleResult :: Matched (__pos , input_type) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , "{") { :: peg :: RuleResult :: Matched (__pos , __val) => { { let __seq_res = { let mut __repeat_pos = __pos ; let mut __repeat_value = :: core :: default :: Default :: default () ; let mut __repeat_count = 0usize ; loop { let __pos = __repeat_pos ; let __step_res = __parse_item (__input , __state , __err_state , __pos) ; match __step_res { :: peg :: RuleResult :: Matched (__newpos , __value) => { __repeat_pos = __newpos ; :: core :: iter :: Extend :: extend (& mut __repeat_value , Some (__value)) ; } , :: peg :: RuleResult :: Failed => { break ; } } __repeat_count += 1 ; } :: peg :: RuleResult :: Matched (__repeat_pos , __repeat_value) } ; match __seq_res { :: peg :: RuleResult :: Matched (__pos , items) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , "}") { :: peg :: RuleResult :: Matched (__pos , __val) => { :: peg :: RuleResult :: Matched (__pos , (|| { Grammar { doc , visibility , name , lifetime_params , args , input_type , items } }) ()) } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\"}\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , } } } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\"{\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , } } } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\"for\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , }
                                                 }
                                                 ::peg::RuleResult::Failed => {
                                                     ::peg::RuleResult::Failed
@@ -147,7 +147,7 @@ pub mod peg {
             ::peg::RuleResult::Matched(__pos, __val) => {
                 let __seq_res = {
                     let mut __repeat_pos = __pos;
-                    let mut __repeat_value = Default::default();
+                    let mut __repeat_value = ::core::default::Default::default();
                     let mut __repeat_count = 0usize;
                     loop {
                         let __pos = __repeat_pos;
@@ -192,7 +192,7 @@ pub mod peg {
                         match __step_res {
                             ::peg::RuleResult::Matched(__newpos, __value) => {
                                 __repeat_pos = __newpos;
-                                core::iter::Extend::extend(&mut __repeat_value, Some(__value));
+                                ::core::iter::Extend::extend(&mut __repeat_value, Some(__value));
                             }
                             ::peg::RuleResult::Failed => {
                                 break;
@@ -260,7 +260,7 @@ pub mod peg {
             ::peg::RuleResult::Matched(__pos, __val) => {
                 let __seq_res = {
                     let mut __repeat_pos = __pos;
-                    let mut __repeat_value = Default::default();
+                    let mut __repeat_value = ::core::default::Default::default();
                     let mut __repeat_count = 0usize;
                     loop {
                         let __pos = __repeat_pos;
@@ -340,7 +340,7 @@ pub mod peg {
                         match __step_res {
                             ::peg::RuleResult::Matched(__newpos, __value) => {
                                 __repeat_pos = __newpos;
-                                core::iter::Extend::extend(&mut __repeat_value, Some(__value));
+                                ::core::iter::Extend::extend(&mut __repeat_value, Some(__value));
                             }
                             ::peg::RuleResult::Failed => {
                                 break;
@@ -776,7 +776,7 @@ pub mod peg {
                 let __seq_res = match {
                     let __seq_res = {
                         let mut __repeat_pos = __pos;
-                        let mut __repeat_value = Default::default();
+                        let mut __repeat_value = ::core::default::Default::default();
                         let mut __repeat_count = 0usize;
                         loop {
                             let __pos = __repeat_pos;
@@ -837,7 +837,10 @@ pub mod peg {
                             match __step_res {
                                 ::peg::RuleResult::Matched(__newpos, __value) => {
                                     __repeat_pos = __newpos;
-                                    core::iter::Extend::extend(&mut __repeat_value, Some(__value));
+                                    ::core::iter::Extend::extend(
+                                        &mut __repeat_value,
+                                        Some(__value),
+                                    );
                                 }
                                 ::peg::RuleResult::Failed => {
                                     break;
@@ -1796,7 +1799,7 @@ pub mod peg {
             ::peg::RuleResult::Matched(__pos, __val) => {
                 let __seq_res = {
                     let mut __repeat_pos = __pos;
-                    let mut __repeat_value = Default::default();
+                    let mut __repeat_value = ::core::default::Default::default();
                     let mut __repeat_count = 0usize;
                     loop {
                         let __pos = __repeat_pos;
@@ -1846,7 +1849,7 @@ pub mod peg {
                         match __step_res {
                             ::peg::RuleResult::Matched(__newpos, __value) => {
                                 __repeat_pos = __newpos;
-                                core::iter::Extend::extend(&mut __repeat_value, Some(__value));
+                                ::core::iter::Extend::extend(&mut __repeat_value, Some(__value));
                             }
                             ::peg::RuleResult::Failed => {
                                 break;
@@ -2474,7 +2477,7 @@ pub mod peg {
                 ::peg::RuleResult::Matched(__pos, sp) => {
                     let __seq_res = {
                         let mut __repeat_pos = __pos;
-                        let mut __repeat_value = Default::default();
+                        let mut __repeat_value = ::core::default::Default::default();
                         let mut __repeat_count = 0usize;
                         loop {
                             let __pos = __repeat_pos;
@@ -2501,7 +2504,10 @@ pub mod peg {
                             match __step_res {
                                 ::peg::RuleResult::Matched(__newpos, __value) => {
                                     __repeat_pos = __newpos;
-                                    core::iter::Extend::extend(&mut __repeat_value, Some(__value));
+                                    ::core::iter::Extend::extend(
+                                        &mut __repeat_value,
+                                        Some(__value),
+                                    );
                                 }
                                 ::peg::RuleResult::Failed => {
                                     break;
@@ -2547,7 +2553,7 @@ pub mod peg {
                 ::peg::RuleResult::Matched(__pos, sp) => {
                     let __seq_res = {
                         let mut __repeat_pos = __pos;
-                        let mut __repeat_value = Default::default();
+                        let mut __repeat_value = ::core::default::Default::default();
                         let mut __repeat_count = 0usize;
                         loop {
                             let __pos = __repeat_pos;
@@ -2555,7 +2561,10 @@ pub mod peg {
                             match __step_res {
                                 ::peg::RuleResult::Matched(__newpos, __value) => {
                                     __repeat_pos = __newpos;
-                                    core::iter::Extend::extend(&mut __repeat_value, Some(__value));
+                                    ::core::iter::Extend::extend(
+                                        &mut __repeat_value,
+                                        Some(__value),
+                                    );
                                 }
                                 ::peg::RuleResult::Failed => {
                                     break;
@@ -3199,7 +3208,8 @@ pub mod peg {
                                             ::peg::RuleResult::Matched(__pos, __val) => {
                                                 let __seq_res = {
                                                     let mut __repeat_pos = __pos;
-                                                    let mut __repeat_value = Default::default();
+                                                    let mut __repeat_value =
+                                                        ::core::default::Default::default();
                                                     let mut __repeat_count = 0usize;
                                                     loop {
                                                         let __pos = __repeat_pos;
@@ -3227,7 +3237,7 @@ pub mod peg {
                                                                 __value,
                                                             ) => {
                                                                 __repeat_pos = __newpos;
-                                                                core::iter::Extend::extend(
+                                                                ::core::iter::Extend::extend(
                                                                     &mut __repeat_value,
                                                                     Some(__value),
                                                                 );
@@ -3403,7 +3413,7 @@ pub mod peg {
                                                                     __err_state,
                                                                     __pos,
                                                                 );
-                                                                match __seq_res { :: peg :: RuleResult :: Matched (__pos , name) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , "(") { :: peg :: RuleResult :: Matched (__pos , __val) => { { let __seq_res = { let mut __repeat_pos = __pos ; let mut __repeat_value = Default :: default () ; let mut __repeat_count = 0usize ; loop { let __pos = __repeat_pos ; let __pos = if __repeat_count == 0 { __pos } else { let __sep_res = match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , ",") { :: peg :: RuleResult :: Matched (__pos , __val) => { :: peg :: RuleResult :: Matched (__pos , __val) } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\",\"") ; :: peg :: RuleResult :: Failed } } ; match __sep_res { :: peg :: RuleResult :: Matched (__newpos , _) => { __newpos } , :: peg :: RuleResult :: Failed => break , } } ; let __step_res = __parse_rule_arg (__input , __state , __err_state , __pos) ; match __step_res { :: peg :: RuleResult :: Matched (__newpos , __value) => { __repeat_pos = __newpos ; core :: iter :: Extend :: extend (& mut __repeat_value , Some (__value)) ; } , :: peg :: RuleResult :: Failed => { break ; } } __repeat_count += 1 ; } :: peg :: RuleResult :: Matched (__repeat_pos , __repeat_value) } ; match __seq_res { :: peg :: RuleResult :: Matched (__pos , args) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , ")") { :: peg :: RuleResult :: Matched (__pos , __val) => { :: peg :: RuleResult :: Matched (__pos , (|| { RuleExpr (name , args) . at (sp) }) ()) } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\")\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , } } } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\"(\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , }
+                                                                match __seq_res { :: peg :: RuleResult :: Matched (__pos , name) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , "(") { :: peg :: RuleResult :: Matched (__pos , __val) => { { let __seq_res = { let mut __repeat_pos = __pos ; let mut __repeat_value = :: core :: default :: Default :: default () ; let mut __repeat_count = 0usize ; loop { let __pos = __repeat_pos ; let __pos = if __repeat_count == 0 { __pos } else { let __sep_res = match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , ",") { :: peg :: RuleResult :: Matched (__pos , __val) => { :: peg :: RuleResult :: Matched (__pos , __val) } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\",\"") ; :: peg :: RuleResult :: Failed } } ; match __sep_res { :: peg :: RuleResult :: Matched (__newpos , _) => { __newpos } , :: peg :: RuleResult :: Failed => break , } } ; let __step_res = __parse_rule_arg (__input , __state , __err_state , __pos) ; match __step_res { :: peg :: RuleResult :: Matched (__newpos , __value) => { __repeat_pos = __newpos ; :: core :: iter :: Extend :: extend (& mut __repeat_value , Some (__value)) ; } , :: peg :: RuleResult :: Failed => { break ; } } __repeat_count += 1 ; } :: peg :: RuleResult :: Matched (__repeat_pos , __repeat_value) } ; match __seq_res { :: peg :: RuleResult :: Matched (__pos , args) => { match :: peg :: ParseLiteral :: parse_string_literal (__input , __pos , ")") { :: peg :: RuleResult :: Matched (__pos , __val) => { :: peg :: RuleResult :: Matched (__pos , (|| { RuleExpr (name , args) . at (sp) }) ()) } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\")\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , } } } :: peg :: RuleResult :: Failed => { __err_state . mark_failure (__pos , "\"(\"") ; :: peg :: RuleResult :: Failed } } } :: peg :: RuleResult :: Failed => :: peg :: RuleResult :: Failed , }
                                                             }
                                                             ::peg::RuleResult::Failed => {
                                                                 ::peg::RuleResult::Failed
@@ -3568,7 +3578,7 @@ pub mod peg {
         {
             let __seq_res = {
                 let mut __repeat_pos = __pos;
-                let mut __repeat_value = Default::default();
+                let mut __repeat_value = ::core::default::Default::default();
                 let mut __repeat_count = 0usize;
                 loop {
                     let __pos = __repeat_pos;
@@ -3576,7 +3586,7 @@ pub mod peg {
                     match __step_res {
                         ::peg::RuleResult::Matched(__newpos, __value) => {
                             __repeat_pos = __newpos;
-                            core::iter::Extend::extend(&mut __repeat_value, Some(__value));
+                            ::core::iter::Extend::extend(&mut __repeat_value, Some(__value));
                         }
                         ::peg::RuleResult::Failed => {
                             break;
@@ -3614,7 +3624,7 @@ pub mod peg {
                 ::peg::RuleResult::Matched(__pos, span) => {
                     let __seq_res = {
                         let mut __repeat_pos = __pos;
-                        let mut __repeat_value = Default::default();
+                        let mut __repeat_value = ::core::default::Default::default();
                         let mut __repeat_count = 0usize;
                         loop {
                             let __pos = __repeat_pos;
@@ -3622,7 +3632,10 @@ pub mod peg {
                             match __step_res {
                                 ::peg::RuleResult::Matched(__newpos, __value) => {
                                     __repeat_pos = __newpos;
-                                    core::iter::Extend::extend(&mut __repeat_value, Some(__value));
+                                    ::core::iter::Extend::extend(
+                                        &mut __repeat_value,
+                                        Some(__value),
+                                    );
                                 }
                                 ::peg::RuleResult::Failed => {
                                     break;

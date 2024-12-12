@@ -690,9 +690,11 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
 
             let (repeat_vec, repeat_step) = if result_used {
                 (
-                    Some(quote_spanned! { span => let mut __repeat_value = Default::default(); }),
                     Some(
-                        quote_spanned! { span => core::iter::Extend::extend(&mut __repeat_value, Some(__value)); },
+                        quote_spanned! { span => let mut __repeat_value = ::core::default::Default::default(); },
+                    ),
+                    Some(
+                        quote_spanned! { span => ::core::iter::Extend::extend(&mut __repeat_value, Some(__value)); },
                     ),
                 )
             } else {
