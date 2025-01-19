@@ -139,6 +139,7 @@ rule primary() -> SpannedExpr
   / "(" sp:sp() "@" ")" { MarkerExpr(true).at(sp) }
   / sp:sp() "@" { MarkerExpr(false).at(sp) }
   / sp:sp() "##" method:IDENT() args:PAREN_GROUP() { MethodExpr(method, args.stream()).at(sp) }
+  / sp:sp() "#" code:BRACE_GROUP() { CustomExpr(code).at(sp) }
   / "(" expression:expression() ")" { expression }
 
     rule rule_arg() -> RuleArg

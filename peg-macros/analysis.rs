@@ -164,7 +164,12 @@ impl<'a> LeftRecursionVisitor<'a> {
                nullable
             }
 
-            LiteralExpr(_) | PatternExpr(_) | MethodExpr(_, _) | FailExpr(_) | MarkerExpr(_) => false,
+            | LiteralExpr(_)
+            | PatternExpr(_)
+            | MethodExpr(_, _)
+            | CustomExpr(_)
+            | FailExpr(_)
+            | MarkerExpr(_) => false,
 
             PositionExpr => true,
         }
@@ -220,7 +225,7 @@ impl<'a> LoopNullabilityVisitor<'a> {
                 let name = rule_ident.to_string();
                 *self.rule_nullability.get(&name).unwrap_or(&false)
             }
-            
+
             ActionExpr(ref elems, ..) => {
                 let mut nullable = true;
                 for elem in elems {
@@ -250,7 +255,7 @@ impl<'a> LoopNullabilityVisitor<'a> {
                 if inner_nullable && sep_nullable && !bound.has_upper_bound() {
                     self.errors.push(LoopNullabilityError { span: this_expr.span });
                 }
-                
+
                 inner_nullable | !bound.has_lower_bound()
             }
 
@@ -269,10 +274,16 @@ impl<'a> LoopNullabilityVisitor<'a> {
                     }
                 }
 
-                nullable 
+                nullable
             }
 
-            LiteralExpr(_) | PatternExpr(_) | MethodExpr(_, _) | FailExpr(_) | MarkerExpr(_) => false,
+            | LiteralExpr(_)
+            | PatternExpr(_)
+            | MethodExpr(_, _)
+            | CustomExpr(_)
+            | FailExpr(_)
+            | MarkerExpr(_) => false,
+
             PositionExpr => true,
         }
     }

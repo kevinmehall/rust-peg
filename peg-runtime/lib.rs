@@ -10,7 +10,9 @@ pub mod str;
 /// The result type used internally in the parser.
 ///
 /// You'll only need this if implementing the `Parse*` traits for a custom input
-/// type. The public API of a parser adapts errors to `std::result::Result`.
+/// type, or using the `#{}` syntax to embed a custom Rust snippet within the parser.
+///
+/// The public API of a parser adapts errors to `std::result::Result` instead of using this type.
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub enum RuleResult<T> {
     /// Success, with final location

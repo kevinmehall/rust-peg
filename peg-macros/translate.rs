@@ -626,6 +626,10 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             quote_spanned! { span=> __input.#method(__pos, #args) }
         }
 
+        CustomExpr(ref code) => {
+            quote_spanned! { span=> (#code)(__input, __pos) }
+        }
+
         ChoiceExpr(ref exprs) => ordered_choice(
             span,
             exprs
