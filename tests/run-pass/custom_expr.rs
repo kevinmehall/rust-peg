@@ -1,4 +1,4 @@
-use peg::{ RuleResult, ParseLiteral };
+use peg::RuleResult;
 
 peg::parser!( grammar test() for str {
     rule position() -> usize = #{|input, pos| RuleResult::Matched(pos, pos)}
@@ -6,8 +6,15 @@ peg::parser!( grammar test() for str {
 
     pub rule fail() -> usize = #{|input, pos| RuleResult::Failed}
 
-    rule literal(literal: &str) = #{|input, pos| ParseLiteral::parse_string_literal(input, pos, literal) }
-    pub rule test2() = literal("foo") "_" literal("bar")
+    rule custom_literal(literal: &str) = #{|input, pos| {
+        let l = literal.len();
+        if input.len() >= pos + l && &input.as_bytes()[pos..pos + l] == literal.as_bytes() {
+            RuleResult::Matched(pos + l, ())
+        } else {
+            RuleResult::Failed
+        }
+    }}
+    pub rule test2() = custom_literal("foo") "_" custom_literal("bar")
 });
 
 fn main() {

@@ -627,7 +627,8 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
         }
 
         CustomExpr(ref code) => {
-            quote_spanned! { span=> (#code)(__input, __pos) }
+            let code = code.stream();
+            quote_spanned! { span=> ::peg::call_custom_closure((#code), __input, __pos) }
         }
 
         ChoiceExpr(ref exprs) => ordered_choice(
