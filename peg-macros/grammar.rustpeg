@@ -144,7 +144,7 @@ rule primary() -> SpannedExpr
 
     rule rule_arg() -> RuleArg
         = "<" e:expression() ">" { RuleArg::Peg(e) }
-        / tt:$( ##eat_until(',')+ ) { RuleArg::Rust(tt) }
+        / tt:$( #{|input, pos| input.eat_until(pos, ',')}+ ) { RuleArg::Rust(tt) }
 
 rule precedence_level() -> PrecedenceLevel
   = operators:precedence_op()+
@@ -154,13 +154,13 @@ rule precedence_op() -> PrecedenceOperator
   = span:sp() elements:labeled()* action:BRACE_GROUP()
   { PrecedenceOperator{ span, elements, action } }
 
-rule sp() -> Span = ##next_span()
+rule sp() -> Span = #{|input, pos| input.next_span(pos)}
 rule KEYWORD() = "pub" / "rule" / "use" / "type" / "where"
-rule IDENT() -> Ident = !KEYWORD() i:##ident() {i}
-rule LITERAL() -> Literal = ##literal()
-rule PAREN_GROUP()   -> Group = ##group(Delimiter::Parenthesis)
-rule BRACE_GROUP()   -> Group = ##group(Delimiter::Brace)
-rule BRACKET_GROUP() -> Group = ##group(Delimiter::Bracket)
+rule IDENT() -> Ident = !KEYWORD() i:#{|input, pos| input.ident(pos)} {i}
+rule LITERAL() -> Literal = #{|input, pos| input.literal(pos)}
+rule PAREN_GROUP()   -> Group = #{|input, pos| input.group(pos, Delimiter::Parenthesis)}
+rule BRACE_GROUP()   -> Group = #{|input, pos| input.group(pos, Delimiter::Brace)}
+rule BRACKET_GROUP() -> Group = #{|input, pos| input.group(pos, Delimiter::Bracket)}
 rule LIFETIME() = "'" IDENT()
 rule INTEGER() = LITERAL()
 

@@ -3503,7 +3503,11 @@ pub mod peg {
                             let mut __repeat_value = vec![];
                             loop {
                                 let __pos = __repeat_pos;
-                                let __step_res = __input.eat_until(__pos, ',');
+                                let __step_res = ::peg::call_custom_closure(
+                                    (|input, pos| input.eat_until(pos, ',')),
+                                    __input,
+                                    __pos,
+                                );
                                 match __step_res {
                                     ::peg::RuleResult::Matched(__newpos, __value) => {
                                         __repeat_pos = __newpos;
@@ -3639,7 +3643,7 @@ pub mod peg {
         __pos: usize,
     ) -> ::peg::RuleResult<Span> {
         #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
-        __input.next_span(__pos)
+        ::peg::call_custom_closure((|input, pos| input.next_span(pos)), __input, __pos)
     }
     fn __parse_KEYWORD<'input>(
         __input: &'input Input,
@@ -3755,7 +3759,8 @@ pub mod peg {
             };
             match __seq_res {
                 ::peg::RuleResult::Matched(__pos, _) => {
-                    let __seq_res = __input.ident(__pos);
+                    let __seq_res =
+                        ::peg::call_custom_closure((|input, pos| input.ident(pos)), __input, __pos);
                     match __seq_res {
                         ::peg::RuleResult::Matched(__pos, i) => {
                             ::peg::RuleResult::Matched(__pos, (|| i)())
@@ -3774,7 +3779,7 @@ pub mod peg {
         __pos: usize,
     ) -> ::peg::RuleResult<Literal> {
         #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
-        __input.literal(__pos)
+        ::peg::call_custom_closure((|input, pos| input.literal(pos)), __input, __pos)
     }
     fn __parse_PAREN_GROUP<'input>(
         __input: &'input Input,
@@ -3783,7 +3788,11 @@ pub mod peg {
         __pos: usize,
     ) -> ::peg::RuleResult<Group> {
         #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
-        __input.group(__pos, Delimiter::Parenthesis)
+        ::peg::call_custom_closure(
+            (|input, pos| input.group(pos, Delimiter::Parenthesis)),
+            __input,
+            __pos,
+        )
     }
     fn __parse_BRACE_GROUP<'input>(
         __input: &'input Input,
@@ -3792,7 +3801,11 @@ pub mod peg {
         __pos: usize,
     ) -> ::peg::RuleResult<Group> {
         #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
-        __input.group(__pos, Delimiter::Brace)
+        ::peg::call_custom_closure(
+            (|input, pos| input.group(pos, Delimiter::Brace)),
+            __input,
+            __pos,
+        )
     }
     fn __parse_BRACKET_GROUP<'input>(
         __input: &'input Input,
@@ -3801,7 +3814,11 @@ pub mod peg {
         __pos: usize,
     ) -> ::peg::RuleResult<Group> {
         #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
-        __input.group(__pos, Delimiter::Bracket)
+        ::peg::call_custom_closure(
+            (|input, pos| input.group(pos, Delimiter::Bracket)),
+            __input,
+            __pos,
+        )
     }
     fn __parse_LIFETIME<'input>(
         __input: &'input Input,
