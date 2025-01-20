@@ -10,7 +10,9 @@ pub mod str;
 /// The result type used internally in the parser.
 ///
 /// You'll only need this if implementing the `Parse*` traits for a custom input
-/// type. The public API of a parser adapts errors to `std::result::Result`.
+/// type, or using the `#{}` syntax to embed a custom Rust snippet within the parser.
+///
+/// The public API of a parser adapts errors to `std::result::Result` instead of using this type.
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub enum RuleResult<T> {
     /// Success, with final location
@@ -58,3 +60,10 @@ pub trait ParseSlice<'input>: Parse {
 extern crate alloc;
 #[cfg(not(feature = "std"))]
 extern crate core as std;
+
+// needed for type inference on the `#{|input, pos| ..}` closure, since there
+// are different type inference rules on closures in function args.
+#[doc(hidden)]
+pub fn call_custom_closure<I, T>(f: impl FnOnce(I, usize) -> RuleResult<T>, input: I, pos: usize) -> RuleResult<T> {
+    f(input, pos)
+}

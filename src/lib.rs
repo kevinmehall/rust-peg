@@ -125,6 +125,8 @@
 //!     at the current location.
 //!   * `precedence!{ ... }` - Parse infix, prefix, or postfix expressions by precedence climbing.
 //!     [(details)](#precedence-climbing)
+//!   * `#{|input, pos| ... }` - _Custom:_ The provided closure is passed the full input and current
+//!      parse position, and returns a [`RuleResult`].
 //!
 //! ## Expression details
 //!

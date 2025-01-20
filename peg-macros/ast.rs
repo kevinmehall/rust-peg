@@ -76,6 +76,7 @@ pub enum Expr {
     PatternExpr(Group),
     RuleExpr(Ident, Vec<RuleArg>),
     MethodExpr(Ident, TokenStream),
+    CustomExpr(Group),
     ChoiceExpr(Vec<SpannedExpr>),
     OptionalExpr(Box<SpannedExpr>),
     Repeat { inner: Box<SpannedExpr>, bound: BoundedRepeat, sep: Option<Box<SpannedExpr>> },
