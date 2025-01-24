@@ -675,7 +675,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             let match_sep = if let Some(sep) = sep {
                 let sep_inner = compile_expr(context, sep, false);
                 quote_spanned! { span=>
-                    let __pos = if __repeat_value.is_empty() { __pos } else {
+                    let __pos = if __repeat_count == 0 { __pos } else {
                         let __sep_res = #sep_inner;
                         match __sep_res {
                             ::peg::RuleResult::Matched(__newpos, _) => { __newpos },
@@ -693,23 +693,26 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 quote!(())
             };
 
-            let (repeat_vec, repeat_step) =
-                if result_used || min.is_some() || max.is_some() || sep.is_some() {
-                    (
-                        Some(quote_spanned! { span => let mut __repeat_value = vec!(); }),
-                        Some(quote_spanned! { span => __repeat_value.push(__value); }),
-                    )
-                } else {
-                    (None, None)
-                };
+            let (repeat_vec, repeat_step) = if result_used {
+                (
+                    Some(
+                        quote_spanned! { span => let mut __repeat_value = ::core::default::Default::default(); },
+                    ),
+                    Some(
+                        quote_spanned! { span => ::core::iter::Extend::extend(&mut __repeat_value, Some(__value)); },
+                    ),
+                )
+            } else {
+                (None, None)
+            };
 
             let max_check = max.map(|max| {
-                quote_spanned! { span=> if __repeat_value.len() >= #max { break } }
+                quote_spanned! { span=> if __repeat_count >= #max { break } }
             });
 
             let result_check = if let Some(min) = min {
                 quote_spanned! { span=>
-                    if __repeat_value.len() >= #min {
+                    if __repeat_count >= #min {
                         ::peg::RuleResult::Matched(__repeat_pos, #result)
                     } else {
                         ::peg::RuleResult::Failed
@@ -723,6 +726,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 let mut __repeat_pos = __pos;
                 #repeat_vec
 
+                let mut __repeat_count = 0usize;
                 loop {
                     let __pos = __repeat_pos;
 
@@ -739,6 +743,8 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                             break;
                         }
                     }
+
+                    __repeat_count += 1;
                 }
 
                 #result_check

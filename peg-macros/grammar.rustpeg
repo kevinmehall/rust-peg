@@ -83,6 +83,7 @@ rule rust_generic_param()
 rule expression() -> SpannedExpr = choice()
 
 rule choice() -> SpannedExpr = sp:sp() s:sequence() ++ "/" {
+    let s: Vec<_> = s;
     if s.len() == 1 {
         s.into_iter().next().unwrap()
     } else {

@@ -97,18 +97,18 @@
 //! ### Repetition
 //!   * `expression?` - _Optional:_ match zero or one repetitions of `expression`. Returns an
 //!     `Option`.
-//!   * `expression*` - _Repeat:_ match zero or more repetitions of `expression` and return the
-//!     results as a `Vec`.
-//!   * `expression+` - _One-or-more:_ match one or more repetitions of `expression` and return the
-//!     results as a `Vec`.
+//!   * `expression*` - _Repeat:_ match zero or more repetitions of `expression` and stores the
+//!     results in any collection implementing `Default` and `Extend`.
+//!   * `expression+` - _One-or-more:_ match one or more repetitions of `expression` and stores the
+//!     results in any collection implementing `Default` and `Extend`.
 //!   * `expression*<n,m>` - _Range repeat:_ match between `n` and `m` repetitions of `expression`
-//!     return the results as a `Vec`. [(details)](#repeat-ranges)
+//!     store the results in any collection implementing `Default` and `Extend`. [(details)](#repeat-ranges)
 //!   * `expression ** delim` - _Delimited repeat:_ match zero or more repetitions of `expression`
-//!     delimited with `delim` and return the results as a `Vec`.
+//!     delimited with `delim` and stores the results in any collection implementing `Default` and `Extend`.
 //!   * `expression **<n,m> delim` - _Delimited repeat (range):_ match between `n` and `m` repetitions of `expression`
-//!     delimited with `delim` and return the results as a `Vec`. [(details)](#repeat-ranges)
+//!     delimited with `delim` and stores the results in any collection implementing `Default` and `Extend`)
 //!   * `expression ++ delim` - _Delimited repeat (one or more):_ match one or more repetitions of `expression`
-//!     delimited with `delim` and return the results as a `Vec`.
+//!     delimited with `delim` and stores the results in any collection implementing `Default` and `Extend`.
 //!
 //!  ### Special
 //!   * `$(e)` - _Slice:_ match the expression `e`, and return the slice of the input

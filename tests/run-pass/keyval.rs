@@ -6,9 +6,7 @@ peg::parser!( grammar keyval() for str {
         = n:$(['0'..='9']+) { n.parse().unwrap() }
 
     pub rule keyvals() -> HashMap<i64, i64>
-        = kvs:keyval() ++ "\n" {
-            kvs.iter().cloned().collect::<HashMap<i64, i64>>()
-        }
+        = kvs:keyval() ++ "\n" { kvs }
 
     rule keyval() -> (i64, i64)
         = k:number() ":" + v:number() { (k, v) }
