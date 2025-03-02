@@ -74,7 +74,7 @@ pub struct SpannedExpr {
 pub enum Expr {
     LiteralExpr(Literal),
     PatternExpr(Group),
-    RuleExpr(Ident, Vec<RuleArg>),
+    RuleExpr(Ident, Option<TokenStream>, Vec<RuleArg>),
     MethodExpr(Ident, TokenStream),
     CustomExpr(Group),
     ChoiceExpr(Vec<SpannedExpr>),

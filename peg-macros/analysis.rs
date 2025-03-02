@@ -86,7 +86,7 @@ impl<'a> LeftRecursionVisitor<'a> {
     fn walk_expr(&mut self, this_expr: &SpannedExpr) -> bool {
         use self::Expr::*;
         match this_expr.expr {
-            RuleExpr(ref rule_ident, _) => {
+            RuleExpr(ref rule_ident, _, _) => {
                 let name = rule_ident.to_string();
 
                 if let Some(rule) = self.rules.get(&name) {
@@ -221,7 +221,7 @@ impl<'a> LoopNullabilityVisitor<'a> {
     fn walk_expr(&mut self, this_expr: &SpannedExpr) -> bool {
         use self::Expr::*;
         match this_expr.expr {
-            RuleExpr(ref rule_ident, _) => {
+            RuleExpr(ref rule_ident, _, _) => {
                 let name = rule_ident.to_string();
                 *self.rule_nullability.get(&name).unwrap_or(&false)
             }

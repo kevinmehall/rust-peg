@@ -552,7 +552,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             )
         }
 
-        RuleExpr(ref rule_name, ref rule_args)
+        RuleExpr(ref rule_name, ref generics, ref rule_args)
             if context.rules_from_args.contains(&rule_name.to_string()) =>
         {
             if !rule_args.is_empty() {
@@ -562,10 +562,17 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 );
             }
 
+            if generics.is_some() {
+                return report_error_expr(
+                    rule_name.span(),
+                    "rule closure cannot have generics".to_string()
+                );
+            }
+
             quote_spanned! { span=> #rule_name(__input, __state, __err_state, __pos) }
         }
 
-        RuleExpr(ref rule_name, ref rule_args) => {
+        RuleExpr(ref rule_name, ref generics, ref rule_args) => {
             let rule_name_str = rule_name.to_string();
 
             let rule_def = if let Some(rule_def) = context.rules.get(&rule_name_str) {
@@ -611,10 +618,10 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 .collect();
 
             if result_used {
-                quote_spanned! { span=> #func(__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*) }
+                quote_spanned! { span=> #func #generics (__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*) }
             } else {
                 quote_spanned! { span=>
-                    match #func(__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*){
+                    match #func #generics (__input, __state, __err_state, __pos #extra_args_call #(, #rule_args_call)*){
                         ::peg::RuleResult::Matched(pos, _) => ::peg::RuleResult::Matched(pos, ()),
                         ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
                     }

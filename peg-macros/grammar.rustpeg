@@ -65,7 +65,7 @@ rule rust_type()
     / ("<" rust_type() ("as" rust_ty_path())? ">")? rust_ty_path()
 
 rule rust_ty_path()
-    = "::"? (IDENT() ("::"? ("<" (LIFETIME() / rust_type() / BRACE_GROUP() / LITERAL()) ++ "," ","? ">" / PAREN_GROUP() ("->" rust_type())?))?) ++ "::"
+    = "::"? (IDENT() ("::"? (rust_generic_args() / PAREN_GROUP() ("->" rust_type())?))?) ++ "::"
 
 rule rust_ty_params() -> Vec<TokenStream>
     = "<" p:($(rust_generic_param()) ++ ",") ","? ">" { p }
@@ -87,6 +87,9 @@ rule rust_ty_param_bound()
     = LIFETIME() 
     / "?"? rust_for_lifetimes()? rust_ty_path()
     / "(" "?"? rust_for_lifetimes()? rust_ty_path() ")"
+
+rule rust_generic_args()
+    = "<" (LIFETIME() / rust_type() / BRACE_GROUP() / LITERAL()) ++ "," ","? ">"
 
 rule expression() -> SpannedExpr = choice()
 
@@ -140,8 +143,8 @@ rule primary() -> SpannedExpr
   / sp:sp() "position" "!" "(" ")" { PositionExpr.at(sp) }
   / sp:sp() "quiet" "!" "{" e:expression() "}" { QuietExpr(Box::new(e)).at(sp) }
   / sp:sp() "expected" "!" s:PAREN_GROUP() { FailExpr(s).at(sp) }
-  / &("_" / "__" / "___") sp:sp() name:IDENT() { RuleExpr(name, Vec::new()).at(sp) }
-  / sp:sp() name:IDENT() "(" args:(rule_arg() ** ",") ")" { RuleExpr(name, args).at(sp) }
+  / &("_" / "__" / "___") sp:sp() name:IDENT() { RuleExpr(name, None, Vec::new()).at(sp) }
+  / sp:sp() name:IDENT() generics:$("::" rust_generic_args())? "(" args:(rule_arg() ** ",") ")" { RuleExpr(name, generics, args).at(sp) }
   / sp:sp() l:LITERAL() { LiteralExpr(l).at(sp) }
   / sp:sp() p:BRACKET_GROUP() { PatternExpr(p).at(sp) }
   / "(" sp:sp() "@" ")" { MarkerExpr(true).at(sp) }
