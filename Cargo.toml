@@ -11,7 +11,7 @@ description = "A simple Parsing Expression Grammar (PEG) parser generator."
 keywords = ["peg", "parser", "parsing", "grammar"]
 categories = ["parsing"]
 readme = "README.md"
-edition = "2018"
+edition = "2021"
 rust-version = "1.68.0" # if changed, also update .github/workflows/rust.yml
 
 [dependencies]
