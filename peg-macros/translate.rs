@@ -267,8 +267,8 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
                 quote_spanned! { span =>
                     let loc = ::peg::Parse::position_repr(__input, __pos);
                     match &entry {
-                        &::peg::RuleResult::Matched(..) => println!("[PEG_TRACE] Cached match of rule {} at {}", #str_rule_name, loc),
-                        &Failed => println!("[PEG_TRACE] Cached fail of rule {} at {}", #str_rule_name, loc),
+                        &::peg::RuleResult::Matched(..) => println!("[PEG_TRACE] Cached match of rule `{}` at {}", #str_rule_name, loc),
+                        &Failed => println!("[PEG_TRACE] Cached fail of rule `{}` at {}", #str_rule_name, loc),
                     };
                 }
             } else {
