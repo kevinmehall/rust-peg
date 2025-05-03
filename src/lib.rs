@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 //! `rust-peg` is a simple yet flexible parser generator that makes it easy to
 //! write robust parsers. Based on the [Parsing Expression
 //! Grammar][wikipedia-peg] formalism, it provides a Rust macro that builds a
