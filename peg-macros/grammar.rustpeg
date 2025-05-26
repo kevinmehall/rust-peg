@@ -43,18 +43,19 @@ rule item() -> Item
     / r:peg_rule()     { Item::Rule(r) }
 
 rule rust_doc_comment() -> Option<TokenStream> = $(("#" "[" "doc" "=" LITERAL() "]")*)?
+rule rust_attribute() = "#" "[" rust_path() (DELIM_GROUP() / "=" LITERAL()) "]"
 
 rule rust_visibility() -> Option<TokenStream> = $("pub" PAREN_GROUP()?)?
 
 rule rust_use() -> TokenStream
-    = v:$("use" rust_path() (
-        "::" "*"
-        / "::" "{" ((IDENT() ("as" IDENT())?) ++ "," ","?) "}"
-        / ("as" IDENT())?
-    ) ";") { v.to_owned() }
+    = v:$(rust_attribute()* "use" rust_use_tree() ";") { v.to_owned() }
+
+rule rust_use_tree()
+    = (rust_path()? "::")? ("*" / "{" (rust_use_tree() ++ "," ","?)? "}")
+    / rust_path() ("as" (IDENT() / "_"))?
 
 rule rust_path()
-    = ("crate" "::")? IDENT() ++ "::"
+    = (("$"? "crate")? "::")? IDENT() ++ "::"
 
 rule rust_type()
     = BRACKET_GROUP()
@@ -172,6 +173,7 @@ rule LITERAL() -> Literal = #{|input, pos| input.literal(pos)}
 rule PAREN_GROUP()   -> Group = #{|input, pos| input.group(pos, Delimiter::Parenthesis)}
 rule BRACE_GROUP()   -> Group = #{|input, pos| input.group(pos, Delimiter::Brace)}
 rule BRACKET_GROUP() -> Group = #{|input, pos| input.group(pos, Delimiter::Bracket)}
+rule DELIM_GROUP()   -> Group = PAREN_GROUP() / BRACE_GROUP() / BRACKET_GROUP()
 rule LIFETIME() = "'" IDENT()
 rule INTEGER() = LITERAL()
 
