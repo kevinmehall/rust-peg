@@ -65,7 +65,7 @@ rule rust_type()
     = BRACKET_GROUP()
     / "&" LIFETIME()? "mut"? rust_type()
     / "dyn" rust_ty_param_bound() ++ "+"
-    / "impl" rust_ty_param_bound() ++ "+"
+    / "impl" (rust_ty_param_bound() / "use" rust_generic_args()) ++ "+"
     / "(" (rust_type() ++ "," ","?)? ")"
     / ("<" rust_type() ("as" rust_ty_path())? ">")? rust_ty_path()
 
@@ -95,6 +95,7 @@ rule rust_ty_param_bound()
 
 rule rust_generic_args()
     = "<" (LIFETIME() / rust_type() / BRACE_GROUP() / LITERAL()) ++ "," ","? ">"
+    / "<" ">"
 
 rule expression() -> SpannedExpr = choice()
 
