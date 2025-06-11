@@ -24,8 +24,9 @@ rule peg_rule() -> Rule
       )
       ret_type:("->" t:$(rust_type()) {t})?
       where_clause:$(rust_where_clause())?
-      "=" expr:expression() ";"?
-        { Rule { span, doc, name:header.0, ty_params:header.1, params:header.2, expr, ret_type, where_clause, visibility, no_eof, cache } }
+      sp:sp()
+      expr:("=" e:expression() {e})? ";"?
+        { Rule { span, doc, name:header.0, ty_params:header.1, params:header.2, expr: expr.unwrap_or(ActionExpr(vec![], None).at(sp)), ret_type, where_clause, visibility, no_eof, cache } }
 
     rule cacheflag() -> Option<Cache> = "#" "[" "cache" "]" {Some(Cache::Simple)} / "#" "[" "cache_left_rec" "]" {Some(Cache::Recursive)} / {None}
 
