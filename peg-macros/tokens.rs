@@ -43,7 +43,7 @@ impl FlatTokenStream {
                     for tree in g.stream() {
                         flatten(tokens, tree);
                     }
-                    tokens.push(Token::End(g.delimiter(), g.span()));
+                    tokens.push(Token::End(g.delimiter(), g.span_close()));
 
                     let end_pos = tokens.len();
                     tokens[start_pos] = Token::Begin(g, end_pos);
