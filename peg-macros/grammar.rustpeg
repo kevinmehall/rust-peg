@@ -3,6 +3,7 @@ pub grammar peg() for FlatTokenStream {
 use crate::ast::*;
 use crate::ast::Expr::*;
 use crate::tokens::FlatTokenStream;
+use crate::translate::report_error_expr;
 use proc_macro2::{ TokenStream, Ident, Group, Literal, Delimiter, Span };
 
 pub rule peg_grammar() -> Grammar
@@ -24,9 +25,8 @@ rule peg_rule() -> Rule
       )
       ret_type:("->" t:$(rust_type()) {t})?
       where_clause:$(rust_where_clause())?
-      sp:sp()
       expr:("=" e:expression() {e})? ";"?
-        { Rule { span, doc, name:header.0, ty_params:header.1, params:header.2, expr: expr.unwrap_or(ActionExpr(vec![], None).at(sp)), ret_type, where_clause, visibility, no_eof, cache } }
+        { Rule { span, doc, name:header.0, ty_params:header.1, params:header.2, expr: expr.unwrap_or_else(|| ActionExpr(vec![], Some(Group::new(Delimiter::Brace, report_error_expr(span, "missing rule body".to_owned())))).at(span)), ret_type, where_clause, visibility, no_eof, cache } }
 
     rule cacheflag() -> Option<Cache> = "#" "[" "cache" "]" {Some(Cache::Simple)} / "#" "[" "cache_left_rec" "]" {Some(Cache::Recursive)} / {None}
 
