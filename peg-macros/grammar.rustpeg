@@ -25,8 +25,11 @@ rule peg_rule() -> Rule
       )
       ret_type:("->" t:$(rust_type()) {t})?
       where_clause:$(rust_where_clause())?
-      expr:("=" e:expression() {e})? ";"?
-        { Rule { span, doc, name:header.0, ty_params:header.1, params:header.2, expr: expr.unwrap_or_else(|| ActionExpr(vec![], Some(Group::new(Delimiter::Brace, report_error_expr(span, "missing rule body".to_owned())))).at(span)), ret_type, where_clause, visibility, no_eof, cache } }
+      expr:("=" e:expression() {e})? ";"? {
+        // If expr is missing, allow macro expansion so rust-analyzer can complete the return type, but fail full compilation.
+        let expr = expr.unwrap_or_else(|| ActionExpr(vec![], Some(Group::new(Delimiter::Brace, report_error_expr(span, "missing rule body".to_owned())))).at(span));
+        Rule { span, doc, name: header.0, ty_params: header.1, params:header.2, expr, ret_type, where_clause, visibility, no_eof, cache }
+      }
 
     rule cacheflag() -> Option<Cache> = "#" "[" "cache" "]" {Some(Cache::Simple)} / "#" "[" "cache_left_rec" "]" {Some(Cache::Recursive)} / {None}
 
