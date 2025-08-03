@@ -1,0 +1,5 @@
+error: missing rule body
+ --> tests/compile-fail/rule-missing-eq.rs:3:5
+  |
+3 |     rule test()
+  |     ^^^^
