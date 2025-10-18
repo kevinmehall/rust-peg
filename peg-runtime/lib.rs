@@ -71,3 +71,19 @@ pub fn call_custom_closure<I, T>(
 ) -> RuleResult<T> {
     f(input, pos)
 }
+
+// this is used to convert references to ownable types for cache keys, as a
+// cleaner alternative to filtering the token tree
+#[doc(hidden)]
+#[macro_export]
+macro_rules! chomp_ref {
+    (& $lt:lifetime $ty:ty) => {
+        $ty
+    };
+    (& $ty:ty) => {
+        $ty
+    };
+    ($ty:ty) => {
+        $ty
+    };
+}
