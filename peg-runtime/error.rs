@@ -18,7 +18,7 @@ pub struct ExpectedSet {
 impl ExpectedSet {
     /// Iterator of expected literals
     pub fn tokens<'a>(&'a self) -> impl Iterator<Item = &'static str> + 'a {
-        self.expected.iter().map(|x| *x)
+        self.expected.iter().copied()
     }
 }
 
@@ -127,7 +127,7 @@ impl ErrorState {
 
     pub fn into_parse_error<I: Parse + ?Sized>(self, input: &I) -> ParseError<I::PositionRepr> {
         ParseError {
-            location: Parse::position_repr(input, self.max_err_pos.into()),
+            location: Parse::position_repr(input, self.max_err_pos),
             expected: self.expected,
         }
     }

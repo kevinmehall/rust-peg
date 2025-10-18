@@ -89,9 +89,8 @@ impl<'a> LeftRecursionVisitor<'a> {
     /// any input. This is a conservative heuristic, if unknown, we return false
     /// to avoid reporting false-positives for left recursion.
     fn walk_expr(&mut self, this_expr: &SpannedExpr) -> bool {
-        use self::Expr::*;
         match this_expr.expr {
-            RuleExpr(ref rule_ident, _, _) => {
+            Expr::Rule(ref rule_ident, _, _) => {
                 let name = rule_ident.to_string();
 
                 if let Some(rule) = self.rules.get(&name) {
@@ -118,7 +117,7 @@ impl<'a> LeftRecursionVisitor<'a> {
                 }
             }
 
-            ActionExpr(ref elems, ..) => {
+            Expr::Action(ref elems, ..) => {
                 for elem in elems {
                     if !self.walk_expr(&elem.expr) {
                         return false;
@@ -128,7 +127,7 @@ impl<'a> LeftRecursionVisitor<'a> {
                 true
             }
 
-            ChoiceExpr(ref choices) => {
+            Expr::Choice(ref choices) => {
                 let mut nullable = false;
                 for expr in choices {
                     nullable |= self.walk_expr(expr);
@@ -136,12 +135,12 @@ impl<'a> LeftRecursionVisitor<'a> {
                 nullable
             }
 
-            OptionalExpr(ref expr) | PosAssertExpr(ref expr) | NegAssertExpr(ref expr) => {
+            Expr::Optional(ref expr) | Expr::PosAssert(ref expr) | Expr::NegAssert(ref expr) => {
                 self.walk_expr(expr);
                 true
             }
 
-            Repeat {
+            Expr::Repeat {
                 ref inner,
                 ref bound,
                 ..
@@ -150,9 +149,9 @@ impl<'a> LeftRecursionVisitor<'a> {
                 inner_nullable | !bound.has_lower_bound()
             }
 
-            MatchStrExpr(ref expr) | QuietExpr(ref expr) => self.walk_expr(expr),
+            Expr::MatchStr(ref expr) | Expr::Quiet(ref expr) => self.walk_expr(expr),
 
-            PrecedenceExpr { ref levels } => {
+            Expr::Precedence { ref levels } => {
                 let mut nullable = false;
 
                 for level in levels {
@@ -171,14 +170,14 @@ impl<'a> LeftRecursionVisitor<'a> {
                 nullable
             }
 
-            LiteralExpr(_)
-            | PatternExpr(_)
-            | MethodExpr(_, _)
-            | CustomExpr(_)
-            | FailExpr(_)
-            | MarkerExpr(_) => false,
+            Expr::Literal(_)
+            | Expr::Pattern(_)
+            | Expr::Method(_, _)
+            | Expr::Custom(_)
+            | Expr::Fail(_)
+            | Expr::Marker(_) => false,
 
-            PositionExpr => true,
+            Expr::Position => true,
         }
     }
 }
@@ -196,7 +195,7 @@ pub struct LoopNullabilityError {
 
 impl LoopNullabilityError {
     pub fn msg(&self) -> String {
-        format!("loops infinitely because loop body can match without consuming input")
+        "loops infinitely because loop body can match without consuming input".to_string()
     }
 }
 
@@ -227,14 +226,13 @@ impl<'a> LoopNullabilityVisitor<'a> {
     /// entire expression tree rather than just the nullable prefix, and doesn't
     /// recurse into calls.
     fn walk_expr(&mut self, this_expr: &SpannedExpr) -> bool {
-        use self::Expr::*;
         match this_expr.expr {
-            RuleExpr(ref rule_ident, _, _) => {
+            Expr::Rule(ref rule_ident, _, _) => {
                 let name = rule_ident.to_string();
                 *self.rule_nullability.get(&name).unwrap_or(&false)
             }
 
-            ActionExpr(ref elems, ..) => {
+            Expr::Action(ref elems, ..) => {
                 let mut nullable = true;
                 for elem in elems {
                     nullable &= self.walk_expr(&elem.expr);
@@ -242,7 +240,7 @@ impl<'a> LoopNullabilityVisitor<'a> {
                 nullable
             }
 
-            ChoiceExpr(ref choices) => {
+            Expr::Choice(ref choices) => {
                 let mut nullable = false;
                 for expr in choices {
                     nullable |= self.walk_expr(expr);
@@ -250,12 +248,12 @@ impl<'a> LoopNullabilityVisitor<'a> {
                 nullable
             }
 
-            OptionalExpr(ref expr) | PosAssertExpr(ref expr) | NegAssertExpr(ref expr) => {
+            Expr::Optional(ref expr) | Expr::PosAssert(ref expr) | Expr::NegAssert(ref expr) => {
                 self.walk_expr(expr);
                 true
             }
 
-            Repeat {
+            Expr::Repeat {
                 ref inner,
                 ref bound,
                 ref sep,
@@ -273,9 +271,9 @@ impl<'a> LoopNullabilityVisitor<'a> {
                 inner_nullable | !bound.has_lower_bound()
             }
 
-            MatchStrExpr(ref expr) | QuietExpr(ref expr) => self.walk_expr(expr),
+            Expr::MatchStr(ref expr) | Expr::Quiet(ref expr) => self.walk_expr(expr),
 
-            PrecedenceExpr { ref levels } => {
+            Expr::Precedence { ref levels } => {
                 let mut nullable = false;
 
                 for level in levels {
@@ -291,14 +289,14 @@ impl<'a> LoopNullabilityVisitor<'a> {
                 nullable
             }
 
-            LiteralExpr(_)
-            | PatternExpr(_)
-            | MethodExpr(_, _)
-            | CustomExpr(_)
-            | FailExpr(_)
-            | MarkerExpr(_) => false,
+            Expr::Literal(_)
+            | Expr::Pattern(_)
+            | Expr::Method(_, _)
+            | Expr::Custom(_)
+            | Expr::Fail(_)
+            | Expr::Marker(_) => false,
 
-            PositionExpr => true,
+            Expr::Position => true,
         }
     }
 }

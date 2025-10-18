@@ -20,6 +20,8 @@ impl Grammar {
     }
 }
 
+// Lint: The Rule variant is the common variant
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum Item {
     Use(TokenStream),
@@ -72,29 +74,29 @@ pub struct SpannedExpr {
 
 #[derive(Debug, Clone)]
 pub enum Expr {
-    LiteralExpr(Literal),
-    PatternExpr(Group),
-    RuleExpr(Ident, Option<TokenStream>, Vec<RuleArg>),
-    MethodExpr(Ident, TokenStream),
-    CustomExpr(Group),
-    ChoiceExpr(Vec<SpannedExpr>),
-    OptionalExpr(Box<SpannedExpr>),
+    Literal(Literal),
+    Pattern(Group),
+    Rule(Ident, Option<TokenStream>, Vec<RuleArg>),
+    Method(Ident, TokenStream),
+    Custom(Group),
+    Choice(Vec<SpannedExpr>),
+    Optional(Box<SpannedExpr>),
     Repeat {
         inner: Box<SpannedExpr>,
         bound: BoundedRepeat,
         sep: Option<Box<SpannedExpr>>,
     },
-    PosAssertExpr(Box<SpannedExpr>),
-    NegAssertExpr(Box<SpannedExpr>),
-    ActionExpr(Vec<TaggedExpr>, Option<Group>),
-    MatchStrExpr(Box<SpannedExpr>),
-    PositionExpr,
-    QuietExpr(Box<SpannedExpr>),
-    FailExpr(Group),
-    PrecedenceExpr {
+    PosAssert(Box<SpannedExpr>),
+    NegAssert(Box<SpannedExpr>),
+    Action(Vec<TaggedExpr>, Option<Group>),
+    MatchStr(Box<SpannedExpr>),
+    Position,
+    Quiet(Box<SpannedExpr>),
+    Fail(Group),
+    Precedence {
         levels: Vec<PrecedenceLevel>,
     },
-    MarkerExpr(bool),
+    Marker(bool),
 }
 
 impl Expr {
