@@ -329,10 +329,9 @@
 //!
 //! ## Caching and left recursion
 //!
-//! A `rule` without parameters can be prefixed with `#[cache]` if it is likely
-//! to be checked repeatedly in the same position. This memoizes the rule result
-//! as a function of input position, in the style of a [packrat
-//! parser][wp-peg-packrat].
+//! A `rule` can be prefixed with `#[cache]` if it is likely to be checked
+//! repeatedly in the same position. This memoizes the rule result as a function
+//! of input position, in the style of a [packrat parser][wp-peg-packrat].
 //!
 //! [wp-peg-packrat]: https://en.wikipedia.org/wiki/Parsing_expression_grammar#Implementing_parsers_from_parsing_expression_grammars
 //!
@@ -350,6 +349,11 @@
 //!
 //! The `precedence!{}` syntax is another way to handle nested operators and avoid
 //! repeatedly matching an expression rule.
+//!
+//! Currently, rules with arguments can only be cached if all argument types are
+//! `ToOwned + Hash + Eq`. Rules with generic types or `rule<_>` arguments
+//! cannot be cached. References are converted to values when the cache is
+//! checked and when they are inserted to the cache.
 //!
 //! ## Injected variables
 //!
