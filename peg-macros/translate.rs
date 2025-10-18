@@ -565,7 +565,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             if generics.is_some() {
                 return report_error_expr(
                     rule_name.span(),
-                    "rule closure cannot have generics".to_string()
+                    "rule closure cannot have generics".to_string(),
                 );
             }
 

@@ -52,7 +52,10 @@ impl LeftRecursionError {
 }
 
 impl<'a> LeftRecursionVisitor<'a> {
-    fn check(grammar: &'a Grammar, rules: &HashMap<String, &'a Rule>) -> (HashMap<String, bool>, Vec<LeftRecursionError>) {
+    fn check(
+        grammar: &'a Grammar,
+        rules: &HashMap<String, &'a Rule>,
+    ) -> (HashMap<String, bool>, Vec<LeftRecursionError>) {
         let mut visitor = LeftRecursionVisitor {
             rules,
             errors: Vec::new(),
@@ -64,7 +67,9 @@ impl<'a> LeftRecursionVisitor<'a> {
         for rule in grammar.iter_rules() {
             let nullable = visitor.walk_rule(rule);
             debug_assert!(visitor.stack.is_empty());
-            rule_nullability.entry(rule.name.to_string()).or_insert(nullable);
+            rule_nullability
+                .entry(rule.name.to_string())
+                .or_insert(nullable);
         }
 
         (rule_nullability, visitor.errors)
@@ -98,20 +103,18 @@ impl<'a> LeftRecursionVisitor<'a> {
                         let mut recursive_loop = self.stack[loop_start..].to_vec();
                         recursive_loop.push(name.clone());
                         match rule.cache {
-                            None | Some(Cache::Simple) =>
-                                self.errors.push(LeftRecursionError {
-                                    path: recursive_loop,
-                                    span: rule_ident.span(),
-                                }),
-                            _ => ()
-
+                            None | Some(Cache::Simple) => self.errors.push(LeftRecursionError {
+                                path: recursive_loop,
+                                span: rule_ident.span(),
+                            }),
+                            _ => (),
                         }
                         return false;
                     }
                     self.walk_rule(rule)
                 } else {
                     // Missing rule would have already been reported
-                   false
+                    false
                 }
             }
 
@@ -138,7 +141,11 @@ impl<'a> LeftRecursionVisitor<'a> {
                 true
             }
 
-            Repeat { ref inner, ref bound, .. } => {
+            Repeat {
+                ref inner,
+                ref bound,
+                ..
+            } => {
                 let inner_nullable = self.walk_expr(inner);
                 inner_nullable | !bound.has_lower_bound()
             }
@@ -161,10 +168,10 @@ impl<'a> LeftRecursionVisitor<'a> {
                     }
                 }
 
-               nullable
+                nullable
             }
 
-            | LiteralExpr(_)
+            LiteralExpr(_)
             | PatternExpr(_)
             | MethodExpr(_, _)
             | CustomExpr(_)
@@ -193,9 +200,11 @@ impl LoopNullabilityError {
     }
 }
 
-
 impl<'a> LoopNullabilityVisitor<'a> {
-    fn check(grammar: &'a Grammar, rule_nullability: &HashMap<String, bool>) -> Vec<LoopNullabilityError> {
+    fn check(
+        grammar: &'a Grammar,
+        rule_nullability: &HashMap<String, bool>,
+    ) -> Vec<LoopNullabilityError> {
         let mut visitor = LoopNullabilityVisitor {
             rule_nullability,
             errors: Vec::new(),
@@ -207,7 +216,6 @@ impl<'a> LoopNullabilityVisitor<'a> {
 
         visitor.errors
     }
-
 
     /// Walk an expr and its children analyzing the nullability of loop bodies.
     ///
@@ -247,13 +255,19 @@ impl<'a> LoopNullabilityVisitor<'a> {
                 true
             }
 
-            Repeat { ref inner, ref bound, ref sep } => {
+            Repeat {
+                ref inner,
+                ref bound,
+                ref sep,
+            } => {
                 let inner_nullable = self.walk_expr(inner);
                 let sep_nullable = sep.as_ref().map_or(true, |sep| self.walk_expr(sep));
 
                 // The entire purpose of this analysis: report errors if the loop body is nullable
                 if inner_nullable && sep_nullable && !bound.has_upper_bound() {
-                    self.errors.push(LoopNullabilityError { span: this_expr.span });
+                    self.errors.push(LoopNullabilityError {
+                        span: this_expr.span,
+                    });
                 }
 
                 inner_nullable | !bound.has_lower_bound()
@@ -277,7 +291,7 @@ impl<'a> LoopNullabilityVisitor<'a> {
                 nullable
             }
 
-            | LiteralExpr(_)
+            LiteralExpr(_)
             | PatternExpr(_)
             | MethodExpr(_, _)
             | CustomExpr(_)
