@@ -10,6 +10,9 @@ if cargo run -p peg-macros -- peg-macros/grammar.rustpeg > peg-macros/grammar_ne
 then
     diff -qs peg-macros/grammar.rs peg-macros/grammar_new.rs
     rustfmt peg-macros/grammar.rs
+    # Idempotency bugs in rustfmt means this has to happen twice or the wrong
+    # output is emitted
+    rustfmt peg-macros/grammar.rs
 else
     echo "Failed"
 fi
