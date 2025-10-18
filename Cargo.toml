@@ -1,18 +1,26 @@
 [workspace]
 members = ["./peg-macros", "./peg-runtime"]
 
-[package]
-name = "peg"
+[workspace.package]
 version = "0.8.5"
 authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
+edition = "2021"
+rust-version = "1.68.0" # if changed, also update .github/workflows/rust.yml
+
+[package]
+name = "peg"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 description = "A simple Parsing Expression Grammar (PEG) parser generator."
+edition.workspace = true
+rust-version.workspace = true
 keywords = ["peg", "parser", "parsing", "grammar"]
 categories = ["parsing"]
 readme = "README.md"
-edition = "2021"
-rust-version = "1.68.0" # if changed, also update .github/workflows/rust.yml
 
 [dependencies]
 peg-macros = { path = "./peg-macros", version = "= 0.8.5" }
