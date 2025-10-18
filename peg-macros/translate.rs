@@ -4,7 +4,6 @@ use std::collections::{HashMap, HashSet};
 
 use quote::{format_ident, quote, quote_spanned};
 
-pub use self::Expr::*;
 use crate::analysis;
 use crate::ast::*;
 
@@ -30,7 +29,7 @@ fn extra_args_def(grammar: &Grammar) -> TokenStream {
     let args: Vec<TokenStream> = grammar
         .args
         .iter()
-        .map(|&(ref name, ref tp)| quote!(, #name: #tp))
+        .map(|(name, tp)| quote!(, #name: #tp))
         .collect();
     quote!(#(#args)*)
 }
@@ -39,7 +38,7 @@ fn extra_args_call(grammar: &Grammar) -> TokenStream {
     let args: Vec<TokenStream> = grammar
         .args
         .iter()
-        .map(|&(ref name, _)| quote!(, #name))
+        .map(|(name, _)| quote!(, #name))
         .collect();
     quote!(#(#args)*)
 }
@@ -457,9 +456,9 @@ fn compile_expr_continuation(
 
     let result_pat = name_or_ignore(result_name);
     match e.expr {
-        LiteralExpr(ref s) => compile_literal_expr(s, continuation),
+        Expr::Literal(ref s) => compile_literal_expr(s, continuation),
 
-        PatternExpr(ref pattern) => {
+        Expr::Pattern(ref pattern) => {
             let result_name = result_name
                 .cloned()
                 .unwrap_or_else(|| Ident::new("__ch", span));
@@ -529,14 +528,14 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
     let span = e.span.resolved_at(Span::mixed_site());
 
     match e.expr {
-        LiteralExpr(ref s) => compile_literal_expr(
+        Expr::Literal(ref s) => compile_literal_expr(
             s,
             quote_spanned! { span =>
                  ::peg::RuleResult::Matched(__pos, __val)
             },
         ),
 
-        PatternExpr(ref pattern_group) => {
+        Expr::Pattern(ref pattern_group) => {
             let res_name = Ident::new("__ch", span);
             let res = if result_used {
                 quote!(#res_name)
@@ -552,7 +551,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             )
         }
 
-        RuleExpr(ref rule_name, ref generics, ref rule_args)
+        Expr::Rule(ref rule_name, ref generics, ref rule_args)
             if context.rules_from_args.contains(&rule_name.to_string()) =>
         {
             if !rule_args.is_empty() {
@@ -572,7 +571,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             quote_spanned! { span=> #rule_name(__input, __state, __err_state, __pos) }
         }
 
-        RuleExpr(ref rule_name, ref generics, ref rule_args) => {
+        Expr::Rule(ref rule_name, ref generics, ref rule_args) => {
             let rule_name_str = rule_name.to_string();
 
             let rule_def = if let Some(rule_def) = context.rules.get(&rule_name_str) {
@@ -629,23 +628,23 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             }
         }
 
-        MethodExpr(ref method, ref args) => {
+        Expr::Method(ref method, ref args) => {
             quote_spanned! { span=> __input.#method(__pos, #args) }
         }
 
-        CustomExpr(ref code) => {
+        Expr::Custom(ref code) => {
             let code = code.stream();
             quote_spanned! { span=> ::peg::call_custom_closure((#code), __input, __pos) }
         }
 
-        ChoiceExpr(ref exprs) => ordered_choice(
+        Expr::Choice(ref exprs) => ordered_choice(
             span,
             exprs
                 .iter()
                 .map(|expr| compile_expr(context, expr, result_used)),
         ),
 
-        OptionalExpr(ref e) => {
+        Expr::Optional(ref e) => {
             let optional_res = compile_expr(context, e, result_used);
 
             if result_used {
@@ -665,7 +664,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             }
         }
 
-        Repeat {
+        Expr::Repeat {
             ref inner,
             ref bound,
             ref sep,
@@ -752,7 +751,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             }}
         }
 
-        PosAssertExpr(ref e) => {
+        Expr::PosAssert(ref e) => {
             let assert_res = compile_expr(context, e, result_used);
             quote_spanned! { span=> {
                 __err_state.suppress_fail += 1;
@@ -765,7 +764,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             }}
         }
 
-        NegAssertExpr(ref e) => {
+        Expr::NegAssert(ref e) => {
             let assert_res = compile_expr(context, e, false);
             quote_spanned! { span=> {
                 __err_state.suppress_fail += 1;
@@ -778,7 +777,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             }}
         }
 
-        ActionExpr(ref exprs, ref code) => labeled_seq(context, exprs, {
+        Expr::Action(ref exprs, ref code) => labeled_seq(context, exprs, {
             if let Some(code) = code {
                 let code_span = code.span().resolved_at(Span::mixed_site());
 
@@ -800,7 +799,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 quote_spanned! { span => ::peg::RuleResult::Matched(__pos, ()) }
             }
         }),
-        MatchStrExpr(ref expr) => {
+        Expr::MatchStr(ref expr) => {
             let inner = compile_expr(context, expr, false);
             quote_spanned! { span => {
                 let str_start = __pos;
@@ -810,10 +809,10 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 }
             }}
         }
-        PositionExpr => {
+        Expr::Position => {
             quote_spanned! { span => ::peg::RuleResult::Matched(__pos, __pos) }
         }
-        QuietExpr(ref expr) => {
+        Expr::Quiet(ref expr) => {
             let inner = compile_expr(context, expr, result_used);
             quote_spanned! { span => {
                 __err_state.suppress_fail += 1;
@@ -822,11 +821,11 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 res
             }}
         }
-        FailExpr(ref expected) => {
+        Expr::Fail(ref expected) => {
             quote_spanned! { span => { __err_state.mark_failure(__pos, #expected); ::peg::RuleResult::Failed }}
         }
 
-        PrecedenceExpr { ref levels } => {
+        Expr::Precedence { ref levels } => {
             let mut pre_rules = Vec::new();
             let mut level_code = Vec::new();
             let mut span_capture: Option<(TokenStream, TokenStream, TokenStream, &Group)> = None;
@@ -862,10 +861,10 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                     };
 
                     match (&left_arg.expr.expr, &right_arg.expr.expr) {
-                        (&PositionExpr, &PositionExpr) if op.elements.len() == 3 => {
+                        (&Expr::Position, &Expr::Position) if op.elements.len() == 3 => {
                             // wrapper rule to capture expression span
                             match &op.elements[1].expr.expr {
-                                &MarkerExpr(..) => (),
+                                &Expr::Marker(..) => (),
                                 _ => {
                                     return report_error(op_span, "span capture rule must be `l:position!() n:@ r:position!()".to_string());
                                 }
@@ -878,7 +877,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                                 &op.action,
                             ));
                         }
-                        (&MarkerExpr(la), &MarkerExpr(ra)) if op.elements.len() >= 3 => {
+                        (&Expr::Marker(la), &Expr::Marker(ra)) if op.elements.len() >= 3 => {
                             //infix
                             let new_prec = match (la, ra) {
                                 (true, false) => prec + 1, // left associative
@@ -898,7 +897,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                                 })
                             );
                         }
-                        (&MarkerExpr(_), _) if op.elements.len() >= 2 => {
+                        (&Expr::Marker(_), _) if op.elements.len() >= 2 => {
                             // postfix
                             post_rules.push(labeled_seq(
                                 context,
@@ -912,7 +911,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                                 },
                             ));
                         }
-                        (_, &MarkerExpr(a)) if op.elements.len() >= 2 => {
+                        (_, &Expr::Marker(a)) if op.elements.len() >= 2 => {
                             // prefix
                             let new_prec = match a {
                                 true => prec,
@@ -1026,7 +1025,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                 )
             }}
         }
-        MarkerExpr { .. } => {
+        Expr::Marker { .. } => {
             report_error(span, "`@` is only allowed in `precedence!{}`".to_string())
         }
     }

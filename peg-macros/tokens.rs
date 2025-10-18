@@ -22,7 +22,7 @@ impl Token {
             Token::Literal(l) => l.span(),
             Token::Punct(p) => p.span(),
             Token::Begin(g, _) => g.span(),
-            Token::End(_, span) => span.clone(),
+            Token::End(_, span) => *span,
         }
     }
 }
@@ -125,7 +125,7 @@ impl Parse for FlatTokenStream {
         let span = self
             .tokens
             .get(pos)
-            .map_or_else(|| Span::call_site(), |t| t.span());
+            .map_or_else(Span::call_site, |t| t.span());
         Sp(span, pos)
     }
 }
@@ -162,7 +162,7 @@ fn delimiter_end(d: Delimiter) -> &'static str {
 impl ParseLiteral for FlatTokenStream {
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
         match self.tokens.get(pos) {
-            Some(Token::Ident(i)) if i.to_string() == literal => RuleResult::Matched(pos + 1, ()),
+            Some(Token::Ident(i)) if *i == literal => RuleResult::Matched(pos + 1, ()),
             Some(Token::Punct(p)) if literal.starts_with(p.as_char()) => {
                 if literal.len() == 1 {
                     RuleResult::Matched(pos + 1, ())

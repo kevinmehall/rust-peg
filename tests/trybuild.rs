@@ -28,8 +28,8 @@ fn main() {
         eprintln!("!!! Skipped compile-fail tests !!!");
         eprintln!("These tests are only checked on rust version {expected_rust_ver} because");
         eprintln!("the error message text may change between compiler versions.");
-        eprintln!("");
+        eprintln!();
         eprintln!("Run `cargo +{expected_rust_ver} test` to run these tests.");
-        eprintln!("");
+        eprintln!();
     }
 }

@@ -54,6 +54,8 @@
 //!   }
 //! }
 //!
+//! # // Lint: Showing the function name is clearer in this case
+//! # #[allow(clippy::needless_doctest_main)]
 //! pub fn main() {
 //!     assert_eq!(list_parser::list("[1,1,2,3,5,8]"), Ok(vec![1, 1, 2, 3, 5, 8]));
 //! }
@@ -128,7 +130,7 @@
 //!   * `precedence!{ ... }` - Parse infix, prefix, or postfix expressions by precedence climbing.
 //!     [(details)](#precedence-climbing)
 //!   * `#{|input, pos| ... }` - _Custom:_ The provided closure is passed the full input and current
-//!      parse position, and returns a [`RuleResult`].
+//!     parse position, and returns a [`RuleResult`].
 //!
 //! ## Expression details
 //!
