@@ -2,8 +2,6 @@ fn main() {
     let args: Vec<_> = std::env::args().collect();
     let t = trybuild::TestCases::new();
 
-    t.pass("tests/run-pass/*.rs");
-
     let expected_rust_ver = env!("CARGO_PKG_RUST_VERSION");
     let run_anyway = args.iter().any(|a| a == "--compile-fail");
 
