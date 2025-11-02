@@ -7,7 +7,7 @@ authors = [ "Kevin Mehall <km@kevinmehall.net>" ]
 license = "MIT"
 repository = "https://github.com/kevinmehall/rust-peg"
 edition = "2021"
-rust-version = "1.68.0" # if changed, also update .github/workflows/rust.yml
+rust-version = "1.82.0" # if changed, also update .github/workflows/rust.yml
 
 [workspace.dependencies]
 peg-runtime = { path = "peg-runtime", version = "= 0.8.5" }

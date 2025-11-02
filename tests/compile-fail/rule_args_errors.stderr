@@ -1,17 +1,47 @@
 error: this rule takes 2 parameters but 1 parameters were supplied
- --> $DIR/rule_args_errors.rs:7:22
+ --> tests/compile-fail/rule_args_errors.rs:7:22
   |
 7 |     rule too_few() = foo(1) //~ ERROR
   |                      ^^^
 
 error: this rule takes 2 parameters but 3 parameters were supplied
- --> $DIR/rule_args_errors.rs:8:23
+ --> tests/compile-fail/rule_args_errors.rs:8:23
   |
 8 |     rule too_many() = foo(1, <[_] {}>, 2)  //~ ERROR
   |                       ^^^
 
 error: parameters on `pub rule` must be Rust types
-  --> $DIR/rule_args_errors.rs:10:27
+  --> tests/compile-fail/rule_args_errors.rs:10:27
    |
 10 |     pub rule pub_rule_arg(x: rule<()>) = "foo" //~ ERROR
    |                           ^
+
+error[E0382]: use of moved value: `x`
+  --> tests/compile-fail/rule_args_errors.rs:10:27
+   |
+10 |     pub rule pub_rule_arg(x: rule<()>) = "foo" //~ ERROR
+   |                           ^
+   |                           |
+   |                           value used here after move
+   |                           move occurs because `x` has type `impl Fn(&'input Input<>, &mut ParseState<'input>, &mut ::peg::error::ErrorState, usize) -> ::peg::RuleResult<()>`, which does not implement the `Copy` trait
+   |
+note: consider changing this parameter type in function `__parse_pub_rule_arg` to borrow instead if owning the value isn't necessary
+  --> tests/compile-fail/rule_args_errors.rs:10:9
+   |
+10 |     pub rule pub_rule_arg(x: rule<()>) = "foo" //~ ERROR
+   |         ^^^^
+   |         |
+   |         this parameter takes ownership of the value
+   |         in this function
+help: if `impl Fn(&'input Input<>, &mut ParseState<'input>, &mut ::peg::error::ErrorState, usize) -> ::peg::RuleResult<()>` implemented `Clone`, you could clone the value
+  --> tests/compile-fail/rule_args_errors.rs:10:9
+   |
+10 |     pub rule pub_rule_arg(x: rule<()>) = "foo" //~ ERROR
+   |         ^^^^              - you could clone this value
+   |         |
+   |         consider constraining this type parameter with `Clone`
+   = note: this error originates in the macro `peg::parser` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider borrowing `x`
+   |
+10 |     pub rule pub_rule_arg(&x: rule<()>) = "foo" //~ ERROR
+   |                           +

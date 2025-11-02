@@ -4,14 +4,6 @@ fn main() {
 
     t.pass("tests/run-pass/*.rs");
 
-    if version_check::is_min_version("1.82.0").unwrap_or(false) {
-        // Tests that involve syntax that is not supported on the MSRV. This
-        // version can be increased to any stable version as needed.
-        t.pass("tests/run-pass-recent-rustc/*.rs");
-    } else {
-        eprintln!("!!! Skipped run-pass-recent-rustc !!!");
-    }
-
     let expected_rust_ver = env!("CARGO_PKG_RUST_VERSION");
     let run_anyway = args.iter().any(|a| a == "--compile-fail");
 
