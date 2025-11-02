@@ -1,5 +1,5 @@
 [workspace]
-members = ["./peg-macros", "./peg-runtime"]
+members = ["./peg-macros", "./peg-runtime", "xtask"]
 
 [package]
 name = "peg"

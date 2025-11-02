@@ -89,7 +89,7 @@ rule rust_for_lifetimes()
     = "for" rust_ty_params()
 
 rule rust_ty_param_bound()
-    = LIFETIME() 
+    = LIFETIME()
     / "?"? rust_for_lifetimes()? rust_ty_path()
     / "(" "?"? rust_for_lifetimes()? rust_ty_path() ")"
 

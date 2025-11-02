@@ -34,7 +34,7 @@ pub fn main() {
 }
 ```
 
-[See the tests for more examples](./tests/run-pass/)  
+[See the tests for more examples](./tests/run-pass/)
 [Grammar rule syntax reference in rustdoc](https://docs.rs/peg)
 
 ## Comparison with similar parser generators
@@ -63,9 +63,16 @@ pub fn main() {
 
 ## Development
 
-The `rust-peg` grammar is written in `rust-peg`: `peg-macros/grammar.rustpeg`. To avoid the circular dependency, a precompiled grammar is checked in as `peg-macros/grammar.rs`. To regenerate this, run the `./bootstrap.sh` script.
+The `rust-peg` grammar is written in `rust-peg`: `peg-macros/grammar.rustpeg`.
+To avoid the circular dependency, a precompiled grammar is checked in as
+`peg-macros/grammar.rs`. To regenerate this, run `cargo xtask bootstrap`.
 
-There is a large test suite which uses [`trybuild`](https://crates.io/crates/trybuild) to test both functionality (`tests/run-pass`) and error messages for incorrect grammars (`tests/compile-fail`). Because `rustc` error messages change, the `compile-fail` tests are only run on the minimum supported Rust version to avoid spurious failures.
+There is a large test suite which uses
+[`trybuild`](https://crates.io/crates/trybuild) to test both functionality
+(`tests/run-pass`) and error messages for incorrect grammars
+(`tests/compile-fail`). Because `rustc` error messages change, the
+`compile-fail` tests are only run on the minimum supported Rust version to avoid
+spurious failures.
 
 Use `cargo test` to run the entire suite,
 or `cargo test -- trybuild trybuild=lifetimes.rs` to test just the indicated file.

@@ -1,0 +1,9 @@
+[package]
+name = "xtask"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+prettyplease = "0.2.37"
+syn = "2.0.108"
