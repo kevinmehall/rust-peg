@@ -15,7 +15,8 @@ fn main() {
     let expected_rust_ver = env!("CARGO_PKG_RUST_VERSION");
     let run_anyway = args.iter().any(|a| a == "--compile-fail");
 
-    let run_compile_fail = run_anyway || version_check::is_exact_version(expected_rust_ver).unwrap_or(true);
+    let run_compile_fail =
+        run_anyway || version_check::is_exact_version(expected_rust_ver).unwrap_or(true);
     if run_compile_fail {
         t.compile_fail("tests/compile-fail/*.rs");
     }

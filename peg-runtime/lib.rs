@@ -64,6 +64,10 @@ extern crate core as std;
 // needed for type inference on the `#{|input, pos| ..}` closure, since there
 // are different type inference rules on closures in function args.
 #[doc(hidden)]
-pub fn call_custom_closure<I, T>(f: impl FnOnce(I, usize) -> RuleResult<T>, input: I, pos: usize) -> RuleResult<T> {
+pub fn call_custom_closure<I, T>(
+    f: impl FnOnce(I, usize) -> RuleResult<T>,
+    input: I,
+    pos: usize,
+) -> RuleResult<T> {
     f(input, pos)
 }
