@@ -885,14 +885,31 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                                 (false, false) => (false, prec + 1), // no associative
                                 _ => return report_error(op_span, "precedence rules must use `@` and `(@)` to indicate associativity".to_string())
                             };
+                            let assoc_prec = if assoc { -1 } else { prec };
+
+                            let no_assoc_trap = if !assoc {
+                                quote_spanned! { op_span =>
+                                    if #prec == __assoc_prec {
+                                        println!("trap {} == {__min_prec}/{__assoc_prec} at {__pos}", #prec);
+                                        ::peg::RuleResult::Failed
+                                    } else
+                                }
+                            } else {
+                                quote!()
+                            };
 
                             post_rules.push(
                                 labeled_seq(context, &op.elements[1..op.elements.len()-1], {
                                     quote_spanned!{ op_span =>
-                                        if let ::peg::RuleResult::Matched(__pos, #r_arg) = __recurse(__pos, #new_prec, __state, __err_state) {
+                                        #no_assoc_trap
+                                        if let ::peg::RuleResult::Matched(__pos, (__assoc_prec_bound, #r_arg)) = __recurse(__pos, #new_prec, __state, __err_state) {
+                                            println!("hit {} with {__min_prec}/{__assoc_prec}#{__assoc_prec_bound}#{} to {__pos}", #prec, #assoc_prec);
                                             let #l_arg = __infix_result;
                                             __infix_result = #action;
-                                            ::peg::RuleResult::Matched(__pos, #assoc)
+                                            ::peg::RuleResult::Matched(
+                                                __pos,
+                                                __assoc_prec.max(__assoc_prec_bound).max(#assoc_prec),
+                                            )
                                         } else { ::peg::RuleResult::Failed }
                                     }
                                 })
@@ -907,7 +924,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                                     quote_spanned! { op_span =>
                                         let #l_arg = __infix_result;
                                         __infix_result = #action;
-                                        ::peg::RuleResult::Matched(__pos, true)
+                                        ::peg::RuleResult::Matched(__pos, -1)
                                     }
                                 },
                             ));
@@ -921,8 +938,8 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                             pre_rules.push(
                                 labeled_seq(context, &op.elements[..op.elements.len()-1], {
                                     quote_spanned!{ op_span =>
-                                        if let ::peg::RuleResult::Matched(__pos, #r_arg) = __recurse(__pos, #new_prec, __state, __err_state) {
-                                            ::peg::RuleResult::Matched(__pos, #action)
+                                        if let ::peg::RuleResult::Matched(__pos, (__assoc_prec, #r_arg)) = __recurse(__pos, #new_prec, __state, __err_state) {
+                                            ::peg::RuleResult::Matched(__pos, (__assoc_prec, #action))
                                         } else { ::peg::RuleResult::Failed }
                                     }
                                 })
@@ -931,7 +948,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                         _ => {
                             // atom
                             pre_rules.push(labeled_seq(context, &op.elements, {
-                                quote_spanned! { op_span => ::peg::RuleResult::Matched(__pos, #action) }
+                                quote_spanned! { op_span => ::peg::RuleResult::Matched(__pos, (-1, #action)) }
                             }));
                         }
                     };
@@ -939,13 +956,15 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
 
                 if !post_rules.is_empty() {
                     level_code.push(quote_spanned! { span =>
+                        println!("try {} >= {__min_prec}", #prec);
                         if #prec >= __min_prec {
                             #(
-                                if let ::peg::RuleResult::Matched(__pos, __assoc) = #post_rules {
-                                    return (__infix_result, ::peg::RuleResult::Matched(__pos, __assoc));
+                                if let ::peg::RuleResult::Matched(__pos, __assoc_prec) = #post_rules {
+                                    return (__infix_result, ::peg::RuleResult::Matched(__pos, __assoc_prec));
                                 }
                             )*
                         }
+                        println!("try finished {} >= {__min_prec}", #prec);
                     });
                 }
             }
@@ -968,16 +987,17 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                     err_state: &mut ::peg::error::ErrorState,
                     min_prec: i32,
                     lpos: usize,
-                    prefix_atom: &dyn Fn(usize, &mut S, &mut ::peg::error::ErrorState, &dyn Fn(usize, i32, &mut S, &mut ::peg::error::ErrorState) -> ::peg::RuleResult<T>) -> ::peg::RuleResult<T>,
-                    level_code: &dyn Fn(usize, usize, i32, T, &mut S, &mut ::peg::error::ErrorState, &dyn Fn(usize, i32, &mut S, &mut ::peg::error::ErrorState) -> ::peg::RuleResult<T>) -> (T, ::peg::RuleResult<bool>),
-                ) -> ::peg::RuleResult<T> {
+                    prefix_atom: &dyn Fn(usize, &mut S, &mut ::peg::error::ErrorState, &dyn Fn(usize, i32, &mut S, &mut ::peg::error::ErrorState) -> ::peg::RuleResult<(i32, T)>) -> ::peg::RuleResult<(i32, T)>,
+                    level_code: &dyn Fn(usize, usize, i32, i32, T, &mut S, &mut ::peg::error::ErrorState, &dyn Fn(usize, i32, &mut S, &mut ::peg::error::ErrorState) -> ::peg::RuleResult<(i32, T)>) -> (T, ::peg::RuleResult<i32>),
+                ) -> ::peg::RuleResult<(i32, T)> {
+                    println!("parse({min_prec}) at {lpos}");
                     let initial = {
                         prefix_atom(lpos, state, err_state, &|pos, min_prec, state, err_state| {
                             __infix_parse(state, err_state, min_prec, pos, prefix_atom, level_code)
                         })
                     };
 
-                    if let ::peg::RuleResult::Matched(pos, mut infix_result) = initial {
+                    if let ::peg::RuleResult::Matched(pos, (mut assoc_prec, mut infix_result)) = initial {
                         #enter
                         let mut repeat_pos = pos;
                         loop {
@@ -985,6 +1005,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                                 repeat_pos,
                                 lpos,
                                 min_prec,
+                                assoc_prec,
                                 infix_result,
                                 state,
                                 err_state,
@@ -994,23 +1015,38 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                             );
                             infix_result = val;
 
-                            if let ::peg::RuleResult::Matched(pos, assoc) = res {
+                            if let ::peg::RuleResult::Matched(pos, assoc_prec_bound) = res {
                                 repeat_pos = pos;
-                                if assoc {
-                                    continue;
-                                }
+                                println!("assoc {assoc_prec} -> {assoc_prec_bound}");
+                                assoc_prec = assoc_prec_bound;
+                                continue;
                             }
 
                             break;
                         }
                         #leave
-                        ::peg::RuleResult::Matched(repeat_pos, infix_result)
+                    println!("parse({min_prec}) matched at {lpos} to {repeat_pos}");
+                        ::peg::RuleResult::Matched(repeat_pos, (assoc_prec, infix_result))
                     } else {
+                    println!("parse({min_prec}) failed at {lpos}");
                         ::peg::RuleResult::Failed
                     }
                 }
+                fn __infix_parse_result<T, S>(
+                    state: &mut S,
+                    err_state: &mut ::peg::error::ErrorState,
+                    min_prec: i32,
+                    lpos: usize,
+                    prefix_atom: &dyn Fn(usize, &mut S, &mut ::peg::error::ErrorState, &dyn Fn(usize, i32, &mut S, &mut ::peg::error::ErrorState) -> ::peg::RuleResult<(i32, T)>) -> ::peg::RuleResult<(i32, T)>,
+                    level_code: &dyn Fn(usize, usize, i32, i32, T, &mut S, &mut ::peg::error::ErrorState, &dyn Fn(usize, i32, &mut S, &mut ::peg::error::ErrorState) -> ::peg::RuleResult<(i32, T)>) -> (T, ::peg::RuleResult<i32>),
+                ) -> ::peg::RuleResult<T> {
+                    match __infix_parse(state, err_state, 0, lpos, prefix_atom, level_code) {
+                        ::peg::RuleResult::Matched(__pos, (_, __v)) => ::peg::RuleResult::Matched(__pos, __v),
+                        ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                    }
+                }
 
-                __infix_parse(__state, __err_state, 0, __pos,
+                __infix_parse_result(__state, __err_state, 0, __pos,
                     &|__pos, __state, __err_state, __recurse| {
                         let __lpos = __pos;
                         #(
@@ -1021,7 +1057,8 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
 
                         ::peg::RuleResult::Failed
                     },
-                    &|__pos, __lpos, __min_prec, mut __infix_result, __state, __err_state, __recurse| {
+                    &|__pos, __lpos, __min_prec, __assoc_prec, mut __infix_result, __state, __err_state, __recurse| {
+                        println!("level {__min_prec}/{__assoc_prec} at {__lpos}~{__pos}");
                         #(#level_code)*
                         (__infix_result, ::peg::RuleResult::Failed)
                     }
