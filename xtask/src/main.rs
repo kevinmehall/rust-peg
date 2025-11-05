@@ -64,7 +64,7 @@ fn generate_grammar() -> Result<String, Box<dyn std::error::Error>> {
 
     let output = Command::new(cargo)
         .current_dir(project_root())
-        .args(&[
+        .args([
             "run",
             "-p",
             "peg-macros",
