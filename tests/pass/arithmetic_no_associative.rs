@@ -66,7 +66,6 @@ fn main() {
 
     assert!(arithmetic::no_assoc("x<x<x||x").is_err());
     assert!(arithmetic::no_assoc("x<x<x||x<x").is_err());
-    dbg!(2);
     assert!(arithmetic::no_assoc("x||x<x<x").is_err());
     assert!(arithmetic::no_assoc("x<x||x<x<x").is_err());
     assert!(arithmetic::no_assoc("x<x<x@@x").is_err());
