@@ -3,6 +3,7 @@ mod arithmetic_ast;
 mod arithmetic_infix;
 mod arithmetic_infix_ast;
 mod arithmetic_infix_ast_span;
+mod arithmetic_no_associative;
 mod arithmetic_with_left_recursion;
 mod assembly_ast_dyn_type_param_bounds;
 mod borrow_from_input;
