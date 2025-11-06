@@ -49,6 +49,16 @@ pub struct Rule {
     pub no_eof: bool,
 }
 
+impl Rule {
+    pub fn cacheable(&self) -> bool {
+        self.ty_params.is_none()
+            && self
+                .params
+                .iter()
+                .all(|param| matches!(param.ty, RuleParamTy::Rust(..)))
+    }
+}
+
 #[derive(Debug)]
 pub struct RuleParam {
     pub name: Ident,

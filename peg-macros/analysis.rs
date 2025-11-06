@@ -259,7 +259,7 @@ impl<'a> LoopNullabilityVisitor<'a> {
                 ref sep,
             } => {
                 let inner_nullable = self.walk_expr(inner);
-                let sep_nullable = sep.as_ref().map_or(true, |sep| self.walk_expr(sep));
+                let sep_nullable = sep.as_ref().is_none_or(|sep| self.walk_expr(sep));
 
                 // The entire purpose of this analysis: report errors if the loop body is nullable
                 if inner_nullable && sep_nullable && !bound.has_upper_bound() {

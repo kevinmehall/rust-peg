@@ -7,6 +7,7 @@ mod arithmetic_with_left_recursion;
 mod assembly_ast_dyn_type_param_bounds;
 mod borrow_from_input;
 mod bytes;
+mod cache_with_args;
 mod conditional_block;
 mod crate_import;
 mod custom_expr;
