@@ -25,7 +25,7 @@
 //! language.
 //!
 //! Rules are defined with `rule NAME(PARAMETERS) -> RETURN_TYPE = PEG_EXPR`.
-//! The body of the rule, following the `=`, is a PEG expression, definining how
+//! The body of the rule, following the `=`, is a PEG expression, defining how
 //! the input is matched to produce a value.
 //!
 //! PEG expressions are evaluated at a particular position of the input. When an
