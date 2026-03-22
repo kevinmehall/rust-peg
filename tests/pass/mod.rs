@@ -13,6 +13,7 @@ mod custom_expr;
 mod errors;
 mod generic_fn_traits;
 mod grammar_with_args_and_cache;
+mod inject_span;
 mod keyval;
 mod lifetimes;
 mod memoization;

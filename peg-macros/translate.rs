@@ -52,12 +52,16 @@ struct Context<'a> {
     parse_state_ty: TokenStream,
     extra_args_call: TokenStream,
     extra_args_def: TokenStream,
+    injected_vars: TokenStream,
 }
 
 pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     let analysis = analysis::check(grammar);
 
     let grammar_lifetime_params = ty_params_slice(&grammar.lifetime_params);
+    let extra_args_def = extra_args_def(grammar);
+    let extra_args_call = extra_args_call(grammar);
+    let injected_vars = invoke_injected_vars(grammar, &extra_args_call);
 
     let context = &Context {
         rules: &analysis.rules,
@@ -65,8 +69,9 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
         grammar_lifetime_params,
         input_ty: quote!(&'input Input<#(#grammar_lifetime_params),*>),
         parse_state_ty: quote!(&mut ParseState<'input #(, #grammar_lifetime_params)*>),
-        extra_args_call: extra_args_call(grammar),
-        extra_args_def: extra_args_def(grammar),
+        extra_args_call,
+        extra_args_def,
+        injected_vars,
     };
 
     let mut seen_rule_names = HashSet::new();
@@ -75,6 +80,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     for item in &grammar.items {
         match item {
             Item::Use(tt) => items.push(tt.clone()),
+            Item::InjectVar(var) => items.push(compile_inject_func(context, var)),
             Item::Rule(rule) => {
                 if !seen_rule_names.insert(rule.name.to_string()) {
                     items.push(report_error(
@@ -206,6 +212,61 @@ fn rule_params_list(context: &Context, rule: &Rule) -> Vec<TokenStream> {
             },
         }
     }).collect()
+}
+
+fn compile_inject_func(context: &Context, var: &InjectVar) -> TokenStream {
+    let span = var.name.span().resolved_at(Span::mixed_site());
+
+    let InjectVar {
+        doc,
+        name,
+        input_param,
+        lpos_param,
+        rpos_param,
+        ty,
+        body,
+    } = var;
+
+    let name = format_ident!("__inject_{}", name, span = span);
+
+    let Context {
+        input_ty,
+        grammar_lifetime_params,
+        extra_args_def,
+        ..
+    } = context;
+
+    quote_spanned! { span =>
+        #doc
+        fn #name<'input #(, #grammar_lifetime_params)*>(
+            #input_param: #input_ty,
+            #lpos_param: usize,
+            #rpos_param: usize
+            #extra_args_def
+        ) -> #ty #body
+    }
+}
+
+fn invoke_injected_vars(grammar: &Grammar, extra_args_call: &TokenStream) -> TokenStream {
+    let vars = grammar
+        .items
+        .iter()
+        .filter_map(|item| match item {
+            Item::InjectVar(var) => Some(var),
+            _ => None,
+        })
+        .map(|var| {
+            let name = &var.name;
+            let name_fn = format_ident!("__inject_{}", var.name);
+            let span = var.name.span().resolved_at(Span::mixed_site());
+            quote_spanned! { span =>
+                #[allow(unused)]
+                let #name = #name_fn(__input, __lpos, __pos #extra_args_call);
+            }
+        })
+        .collect::<Vec<_>>();
+
+    quote!(#(#vars)*)
 }
 
 /// Compile a rule to a function for use internal to the grammar.
@@ -777,28 +838,44 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
             }}
         }
 
-        Expr::Action(ref exprs, ref code) => labeled_seq(context, exprs, {
-            if let Some(code) = code {
-                let code_span = code.span().resolved_at(Span::mixed_site());
+        Expr::Action(ref exprs, ref code) => {
+            let seq = labeled_seq(context, exprs, {
+                if let Some(code) = code {
+                    let injected_vars = &context.injected_vars;
+                    let code_span = code.span().resolved_at(Span::mixed_site());
 
-                // Peek and see if the first token in the block is '?'. If so, it's a conditional block
-                if let Some(body) = group_check_prefix(code, '?') {
-                    quote_spanned! {code_span =>
-                        match (||{ #body })() {
-                            Ok(res) => ::peg::RuleResult::Matched(__pos, res),
-                            Err(expected) => {
-                                __err_state.mark_failure(__pos, expected);
-                                ::peg::RuleResult::Failed
-                            },
+                    // Peek and see if the first token in the block is '?'. If so, it's a conditional block
+                    if let Some(body) = group_check_prefix(code, '?') {
+                        quote_spanned! {code_span =>
+                            match (||{ #injected_vars #body })() {
+                                Ok(res) => ::peg::RuleResult::Matched(__pos, res),
+                                Err(expected) => {
+                                    __err_state.mark_failure(__pos, expected);
+                                    ::peg::RuleResult::Failed
+                                },
+                            }
                         }
+                    } else {
+                        let body = code.stream();
+                        quote_spanned! {code_span => ::peg::RuleResult::Matched(__pos, (|| {
+                            #injected_vars
+                            #body
+                        } )()) }
                     }
                 } else {
-                    quote_spanned! {code_span => ::peg::RuleResult::Matched(__pos, (||#code)()) }
+                    quote_spanned! { span => ::peg::RuleResult::Matched(__pos, ()) }
                 }
+            });
+
+            if context.injected_vars.is_empty() {
+                seq
             } else {
-                quote_spanned! { span => ::peg::RuleResult::Matched(__pos, ()) }
+                quote_spanned! { span => {
+                    let __lpos = __pos;
+                    #seq
+                }}
             }
-        }),
+        }
         Expr::MatchStr(ref expr) => {
             let inner = compile_expr(context, expr, false);
             quote_spanned! { span => {
@@ -826,6 +903,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
         }
 
         Expr::Precedence { ref levels } => {
+            let injected_vars = &context.injected_vars;
             let mut pre_rules = Vec::new();
             let mut level_code = Vec::new();
             let mut span_capture: Option<(TokenStream, TokenStream, TokenStream, &Group)> = None;
@@ -848,8 +926,8 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                     let right_arg = &op.elements[op.elements.len() - 1];
                     let r_arg = name_or_ignore(right_arg.name.as_ref());
 
-                    let action = &op.action;
-                    let action = quote_spanned!(op.action.span()=>(||#action)());
+                    let action = &op.action.stream();
+                    let action = quote_spanned!(op.action.span()=>(||{ #injected_vars #action })());
 
                     let action = if let Some((lpos_name, val_name, rpos_name, wrap_action)) =
                         &span_capture

@@ -533,6 +533,257 @@ pub mod peg {
             }
         }
     }
+    fn __parse_item<'input>(
+        __input: &'input Input,
+        __state: &mut ParseState<'input>,
+        __err_state: &mut ::peg::error::ErrorState,
+        __pos: usize,
+    ) -> ::peg::RuleResult<Item> {
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
+        {
+            let __choice_res = {
+                let __seq_res = __parse_rust_use(__input, __state, __err_state, __pos);
+                match __seq_res {
+                    ::peg::RuleResult::Matched(__pos, u) => {
+                        ::peg::RuleResult::Matched(__pos, (|| { Item::Use(u) })())
+                    }
+                    ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                }
+            };
+            match __choice_res {
+                ::peg::RuleResult::Matched(__pos, __value) => {
+                    ::peg::RuleResult::Matched(__pos, __value)
+                }
+                ::peg::RuleResult::Failed => {
+                    let __choice_res = {
+                        let __seq_res = __parse_peg_rule(
+                            __input,
+                            __state,
+                            __err_state,
+                            __pos,
+                        );
+                        match __seq_res {
+                            ::peg::RuleResult::Matched(__pos, r) => {
+                                ::peg::RuleResult::Matched(__pos, (|| { Item::Rule(r) })())
+                            }
+                            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                        }
+                    };
+                    match __choice_res {
+                        ::peg::RuleResult::Matched(__pos, __value) => {
+                            ::peg::RuleResult::Matched(__pos, __value)
+                        }
+                        ::peg::RuleResult::Failed => {
+                            let __seq_res = __parse_inject_var(
+                                __input,
+                                __state,
+                                __err_state,
+                                __pos,
+                            );
+                            match __seq_res {
+                                ::peg::RuleResult::Matched(__pos, f) => {
+                                    ::peg::RuleResult::Matched(
+                                        __pos,
+                                        (|| { Item::InjectVar(f) })(),
+                                    )
+                                }
+                                ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    fn __parse_inject_var<'input>(
+        __input: &'input Input,
+        __state: &mut ParseState<'input>,
+        __err_state: &mut ::peg::error::ErrorState,
+        __pos: usize,
+    ) -> ::peg::RuleResult<InjectVar> {
+        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
+        {
+            let __seq_res = __parse_rust_doc_comment(
+                __input,
+                __state,
+                __err_state,
+                __pos,
+            );
+            match __seq_res {
+                ::peg::RuleResult::Matched(__pos, doc) => {
+                    match ::peg::ParseLiteral::parse_string_literal(
+                        __input,
+                        __pos,
+                        "inject",
+                    ) {
+                        ::peg::RuleResult::Matched(__pos, __val) => {
+                            let __seq_res = __parse_IDENT(
+                                __input,
+                                __state,
+                                __err_state,
+                                __pos,
+                            );
+                            match __seq_res {
+                                ::peg::RuleResult::Matched(__pos, name) => {
+                                    match ::peg::ParseLiteral::parse_string_literal(
+                                        __input,
+                                        __pos,
+                                        "(",
+                                    ) {
+                                        ::peg::RuleResult::Matched(__pos, __val) => {
+                                            let __seq_res = __parse_IDENT(
+                                                __input,
+                                                __state,
+                                                __err_state,
+                                                __pos,
+                                            );
+                                            match __seq_res {
+                                                ::peg::RuleResult::Matched(__pos, input_param) => {
+                                                    match ::peg::ParseLiteral::parse_string_literal(
+                                                        __input,
+                                                        __pos,
+                                                        ",",
+                                                    ) {
+                                                        ::peg::RuleResult::Matched(__pos, __val) => {
+                                                            let __seq_res = __parse_IDENT(
+                                                                __input,
+                                                                __state,
+                                                                __err_state,
+                                                                __pos,
+                                                            );
+                                                            match __seq_res {
+                                                                ::peg::RuleResult::Matched(__pos, lpos_param) => {
+                                                                    match ::peg::ParseLiteral::parse_string_literal(
+                                                                        __input,
+                                                                        __pos,
+                                                                        ",",
+                                                                    ) {
+                                                                        ::peg::RuleResult::Matched(__pos, __val) => {
+                                                                            let __seq_res = __parse_IDENT(
+                                                                                __input,
+                                                                                __state,
+                                                                                __err_state,
+                                                                                __pos,
+                                                                            );
+                                                                            match __seq_res {
+                                                                                ::peg::RuleResult::Matched(__pos, rpos_param) => {
+                                                                                    match ::peg::ParseLiteral::parse_string_literal(
+                                                                                        __input,
+                                                                                        __pos,
+                                                                                        ")",
+                                                                                    ) {
+                                                                                        ::peg::RuleResult::Matched(__pos, __val) => {
+                                                                                            match ::peg::ParseLiteral::parse_string_literal(
+                                                                                                __input,
+                                                                                                __pos,
+                                                                                                "->",
+                                                                                            ) {
+                                                                                                ::peg::RuleResult::Matched(__pos, __val) => {
+                                                                                                    let __seq_res = {
+                                                                                                        let str_start = __pos;
+                                                                                                        match match __parse_rust_type(
+                                                                                                            __input,
+                                                                                                            __state,
+                                                                                                            __err_state,
+                                                                                                            __pos,
+                                                                                                        ) {
+                                                                                                            ::peg::RuleResult::Matched(pos, _) => {
+                                                                                                                ::peg::RuleResult::Matched(pos, ())
+                                                                                                            }
+                                                                                                            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                                                                                                        } {
+                                                                                                            ::peg::RuleResult::Matched(__newpos, _) => {
+                                                                                                                ::peg::RuleResult::Matched(
+                                                                                                                    __newpos,
+                                                                                                                    ::peg::ParseSlice::parse_slice(__input, str_start, __newpos),
+                                                                                                                )
+                                                                                                            }
+                                                                                                            ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                                                                                                        }
+                                                                                                    };
+                                                                                                    match __seq_res {
+                                                                                                        ::peg::RuleResult::Matched(__pos, ty) => {
+                                                                                                            let __seq_res = __parse_BRACE_GROUP(
+                                                                                                                __input,
+                                                                                                                __state,
+                                                                                                                __err_state,
+                                                                                                                __pos,
+                                                                                                            );
+                                                                                                            match __seq_res {
+                                                                                                                ::peg::RuleResult::Matched(__pos, body) => {
+                                                                                                                    ::peg::RuleResult::Matched(
+                                                                                                                        __pos,
+                                                                                                                        (|| {
+                                                                                                                            InjectVar {
+                                                                                                                                doc,
+                                                                                                                                name,
+                                                                                                                                input_param,
+                                                                                                                                lpos_param,
+                                                                                                                                rpos_param,
+                                                                                                                                ty,
+                                                                                                                                body,
+                                                                                                                            }
+                                                                                                                        })(),
+                                                                                                                    )
+                                                                                                                }
+                                                                                                                ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                                                                                                            }
+                                                                                                        }
+                                                                                                        ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                                                                                                    }
+                                                                                                }
+                                                                                                ::peg::RuleResult::Failed => {
+                                                                                                    __err_state.mark_failure(__pos, "\"->\"");
+                                                                                                    ::peg::RuleResult::Failed
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                        ::peg::RuleResult::Failed => {
+                                                                                            __err_state.mark_failure(__pos, "\")\"");
+                                                                                            ::peg::RuleResult::Failed
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                                ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                                                                            }
+                                                                        }
+                                                                        ::peg::RuleResult::Failed => {
+                                                                            __err_state.mark_failure(__pos, "\",\"");
+                                                                            ::peg::RuleResult::Failed
+                                                                        }
+                                                                    }
+                                                                }
+                                                                ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                                                            }
+                                                        }
+                                                        ::peg::RuleResult::Failed => {
+                                                            __err_state.mark_failure(__pos, "\",\"");
+                                                            ::peg::RuleResult::Failed
+                                                        }
+                                                    }
+                                                }
+                                                ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                                            }
+                                        }
+                                        ::peg::RuleResult::Failed => {
+                                            __err_state.mark_failure(__pos, "\"(\"");
+                                            ::peg::RuleResult::Failed
+                                        }
+                                    }
+                                }
+                                ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+                            }
+                        }
+                        ::peg::RuleResult::Failed => {
+                            __err_state.mark_failure(__pos, "\"inject\"");
+                            ::peg::RuleResult::Failed
+                        }
+                    }
+                }
+                ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
+            }
+        }
+    }
     fn __parse_peg_rule<'input>(
         __input: &'input Input,
         __state: &mut ParseState<'input>,
@@ -1435,44 +1686,6 @@ pub mod peg {
             ::peg::RuleResult::Failed => {
                 __err_state.mark_failure(__pos, "\"(\"");
                 ::peg::RuleResult::Failed
-            }
-        }
-    }
-    fn __parse_item<'input>(
-        __input: &'input Input,
-        __state: &mut ParseState<'input>,
-        __err_state: &mut ::peg::error::ErrorState,
-        __pos: usize,
-    ) -> ::peg::RuleResult<Item> {
-        #![allow(non_snake_case, unused, clippy::redundant_closure_call)]
-        {
-            let __choice_res = {
-                let __seq_res = __parse_rust_use(__input, __state, __err_state, __pos);
-                match __seq_res {
-                    ::peg::RuleResult::Matched(__pos, u) => {
-                        ::peg::RuleResult::Matched(__pos, (|| { Item::Use(u) })())
-                    }
-                    ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
-                }
-            };
-            match __choice_res {
-                ::peg::RuleResult::Matched(__pos, __value) => {
-                    ::peg::RuleResult::Matched(__pos, __value)
-                }
-                ::peg::RuleResult::Failed => {
-                    let __seq_res = __parse_peg_rule(
-                        __input,
-                        __state,
-                        __err_state,
-                        __pos,
-                    );
-                    match __seq_res {
-                        ::peg::RuleResult::Matched(__pos, r) => {
-                            ::peg::RuleResult::Matched(__pos, (|| { Item::Rule(r) })())
-                        }
-                        ::peg::RuleResult::Failed => ::peg::RuleResult::Failed,
-                    }
-                }
             }
         }
     }

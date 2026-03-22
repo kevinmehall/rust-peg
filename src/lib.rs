@@ -351,6 +351,33 @@
 //! The `precedence!{}` syntax is another way to handle nested operators and avoid
 //! repeatedly matching an expression rule.
 //!
+//! ## Injected variables
+//!
+//! When building a syntax tree, you commonly want to attach location information to each node.
+//!
+//! `inject name(input, lpos, rpos) -> Type { expr }` defines an internal function
+//! that is evaluated before entering each action code block. It is passed the full
+//! input and the `usize` start and end positions of the text matched by the sequence
+//! leading up to the action block. The returned value is available in the block as
+//! the variable with the same name.
+//!
+//! For example,
+//!
+//! ```rust,no_run
+//! // (Type defined outside the grammar)
+//! struct Identifier { span: std::ops::Range<usize>, name: String }
+//!
+//! # peg::parser!{grammar doc() for str {
+//! inject span(_input, lpos, rpos) -> std::ops::Range<usize> { lpos..rpos }
+//!
+//! rule identifier() -> Identifier
+//!   = name:$([ 'a'..='z']+) { Identifier { span, name: name.to_owned() } }
+//! # }}
+//! # fn main() {}
+//! ```
+//!
+//! defines a variable `span` that is a `Range` of the matched text for each action block.
+//!
 //! ## Tracing
 //!
 //! If you pass the `peg/trace` feature to Cargo when building your project, a

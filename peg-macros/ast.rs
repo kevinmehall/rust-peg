@@ -25,7 +25,19 @@ impl Grammar {
 #[derive(Debug)]
 pub enum Item {
     Use(TokenStream),
+    InjectVar(InjectVar),
     Rule(Rule),
+}
+
+#[derive(Debug)]
+pub struct InjectVar {
+    pub doc: Option<TokenStream>,
+    pub name: Ident,
+    pub input_param: Ident,
+    pub lpos_param: Ident,
+    pub rpos_param: Ident,
+    pub ty: TokenStream,
+    pub body: Group,
 }
 
 #[derive(Debug)]

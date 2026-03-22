@@ -15,6 +15,15 @@ pub rule peg_grammar() -> Grammar
 rule grammar_args() -> Vec<(Ident, TokenStream)>
     = "(" args:((i:IDENT() ":" t:$(rust_type()) { (i, t) })**",") ","? ")" { args }
 
+rule item() -> Item
+    = u:rust_use()     { Item::Use(u) }
+    / r:peg_rule()     { Item::Rule(r) }
+    / f:inject_var()   { Item::InjectVar(f) }
+
+rule inject_var() -> InjectVar
+     = doc:rust_doc_comment() "inject" name:IDENT() "(" input_param:IDENT() "," lpos_param:IDENT() "," rpos_param:IDENT() ")" "->" ty:$(rust_type()) body:BRACE_GROUP()
+     { InjectVar { doc, name, input_param, lpos_param, rpos_param, ty, body } }
+
 rule peg_rule() -> Rule
     = doc:rust_doc_comment() cache:cacheflag() no_eof:no_eof_flag() visibility:rust_visibility()
       span:sp() "rule"
@@ -40,10 +49,6 @@ rule peg_rule() -> Rule
 
     rule rule_params() -> Vec<RuleParam>
         = "(" params:(x:(name:IDENT() ":" ty:rule_param_ty() { RuleParam { name, ty} }) ++ "," ","? {x})? ")" { params.unwrap_or_default() }
-
-rule item() -> Item
-    = u:rust_use()     { Item::Use(u) }
-    / r:peg_rule()     { Item::Rule(r) }
 
 rule rust_doc_comment() -> Option<TokenStream> = $(("#" "[" "doc" "=" LITERAL() "]")*)?
 rule rust_attribute() = "#" "[" rust_path() (DELIM_GROUP() / "=" LITERAL()) "]"
