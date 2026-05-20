@@ -6,6 +6,7 @@ pub struct Grammar {
     pub visibility: Option<TokenStream>,
     pub name: Ident,
     pub lifetime_params: Option<Vec<TokenStream>>,
+    pub lifetime_bounds: Option<Vec<TokenStream>>,
     pub args: Vec<(Ident, TokenStream)>,
     pub items: Vec<Item>,
     pub input_type: TokenStream,

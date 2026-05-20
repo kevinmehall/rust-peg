@@ -48,6 +48,7 @@ struct Context<'a> {
     rules: &'a HashMap<String, &'a Rule>,
     rules_from_args: HashSet<String>,
     grammar_lifetime_params: &'a [TokenStream],
+    grammar_lifetime_bounds: &'a [TokenStream],
     input_ty: TokenStream,
     parse_state_ty: TokenStream,
     extra_args_call: TokenStream,
@@ -59,6 +60,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
     let analysis = analysis::check(grammar);
 
     let grammar_lifetime_params = ty_params_slice(&grammar.lifetime_params);
+    let grammar_lifetime_bounds = ty_params_slice(&grammar.lifetime_bounds);
     let extra_args_def = extra_args_def(grammar);
     let extra_args_call = extra_args_call(grammar);
     let injected_vars = invoke_injected_vars(grammar, &extra_args_call);
@@ -67,6 +69,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
         rules: &analysis.rules,
         rules_from_args: HashSet::new(),
         grammar_lifetime_params,
+        grammar_lifetime_bounds,
         input_ty: quote!(&'input Input<#(#grammar_lifetime_params),*>),
         parse_state_ty: quote!(&mut ParseState<'input #(, #grammar_lifetime_params)*>),
         extra_args_call,
@@ -161,6 +164,7 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
 fn make_parse_state(grammar: &Grammar) -> TokenStream {
     let span = Span::mixed_site();
     let grammar_lifetime_params = ty_params_slice(&grammar.lifetime_params);
+    let grammar_lifetime_bounds = ty_params_slice(&grammar.lifetime_bounds);
     let mut cache_fields_def: Vec<TokenStream> = Vec::new();
     let mut cache_fields: Vec<Ident> = Vec::new();
     for rule in grammar.iter_rules() {
@@ -194,12 +198,12 @@ fn make_parse_state(grammar: &Grammar) -> TokenStream {
 
     quote_spanned! { span =>
         #[allow(unused_parens)]
-        struct ParseState<'input #(, #grammar_lifetime_params)*> {
+        struct ParseState<'input #(, #grammar_lifetime_bounds)*> {
             _phantom: ::core::marker::PhantomData<(&'input () #(, &#grammar_lifetime_params ())*)>,
             #(#cache_fields_def),*
         }
 
-        impl<'input #(, #grammar_lifetime_params)*> ParseState<'input #(, #grammar_lifetime_params)*> {
+        impl<'input #(, #grammar_lifetime_bounds)*> ParseState<'input #(, #grammar_lifetime_params)*> {
             fn new() -> ParseState<'input #(, #grammar_lifetime_params)*> {
                 ParseState {
                     _phantom: ::core::marker::PhantomData,
@@ -300,7 +304,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let Context {
         input_ty,
         parse_state_ty,
-        grammar_lifetime_params,
+        grammar_lifetime_bounds,
         extra_args_def,
         ..
     } = context;
@@ -410,7 +414,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     };
 
     quote_spanned! { span =>
-        fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(
+        fn #name<'input #(, #grammar_lifetime_bounds)* #(, #ty_params)*>(
             __input: #input_ty,
             __state: #parse_state_ty,
             __err_state: &mut ::peg::error::ErrorState,
@@ -454,6 +458,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
         extra_args_call,
         extra_args_def,
         grammar_lifetime_params,
+        grammar_lifetime_bounds,
         ..
     } = context;
     let eof_check = if rule.no_eof {
@@ -468,7 +473,7 @@ fn compile_rule_export(context: &Context, rule: &Rule) -> TokenStream {
 
     quote_spanned! { span =>
         #doc
-        #visibility fn #name<'input #(, #grammar_lifetime_params)* #(, #ty_params)*>(
+        #visibility fn #name<'input #(, #grammar_lifetime_bounds)* #(, #ty_params)*>(
             __input: #input_ty #extra_args_def #(, #rule_params)*
         ) -> ::core::result::Result<
             #ret_ty,
