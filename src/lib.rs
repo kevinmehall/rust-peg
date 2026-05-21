@@ -350,8 +350,8 @@
 //! The `precedence!{}` syntax is another way to handle nested operators and avoid
 //! repeatedly matching an expression rule.
 //!
-//! Currently, rules with arguments can only be cached if all argument types are
-//! `ToOwned + Hash + Eq`. Rules with generic types or `rule<_>` arguments
+//! Currently, rules with arguments can only be cached if all argument types
+//! implement [`Cacheable`]. Rules with generic types or `rule<_>` arguments
 //! cannot be cached. References are converted to values when the cache is
 //! checked and when they are inserted to the cache.
 //!

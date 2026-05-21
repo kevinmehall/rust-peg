@@ -8,6 +8,9 @@ description = "Runtime support for rust-peg grammars. To use rust-peg, see the `
 edition.workspace = true
 rust-version.workspace = true
 
+[dependencies]
+hashbrown = "0.16"
+
 [lib]
 path = "lib.rs"
 
