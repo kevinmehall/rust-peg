@@ -1,11 +1,11 @@
-error: rules with generics or parameters cannot use #[cache] or #[cache_left_rec]
- --> $DIR/cache_with_args.rs:5:10
+error: rules with generic types or `rule<_>` types cannot use #[cache] or #[cache_left_rec]
+ --> tests/compile-fail/cache_with_args.rs:5:10
   |
-5 |     rule foo(x: u32) = "foo" //~ ERROR
-  |          ^^^
-
-error: rules with generics or parameters cannot use #[cache] or #[cache_left_rec]
- --> $DIR/cache_with_args.rs:8:10
-  |
-8 |     rule ltarg<'a>() -> &'a str = { "" } //~ ERROR
+5 |     rule ltarg<'a>() -> &'a str = { "" } //~ ERROR
   |          ^^^^^
+
+error: rules with generic types or `rule<_>` types cannot use #[cache] or #[cache_left_rec]
+ --> tests/compile-fail/cache_with_args.rs:8:10
+  |
+8 |     rule rulearg(r: rule<()>) -> &'a str = { "" } //~ ERROR
+  |          ^^^^^^^

@@ -6,6 +6,7 @@ pub struct Grammar {
     pub visibility: Option<TokenStream>,
     pub name: Ident,
     pub lifetime_params: Option<Vec<TokenStream>>,
+    pub lifetime_bounds: Option<Vec<TokenStream>>,
     pub args: Vec<(Ident, TokenStream)>,
     pub items: Vec<Item>,
     pub input_type: TokenStream,
@@ -59,6 +60,16 @@ pub struct Rule {
     pub visibility: Option<TokenStream>,
     pub cache: Option<Cache>,
     pub no_eof: bool,
+}
+
+impl Rule {
+    pub fn cacheable(&self) -> bool {
+        self.ty_params.is_none()
+            && self
+                .params
+                .iter()
+                .all(|param| matches!(param.ty, RuleParamTy::Rust(..)))
+    }
 }
 
 #[derive(Debug)]
