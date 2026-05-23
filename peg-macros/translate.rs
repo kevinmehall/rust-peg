@@ -270,7 +270,7 @@ fn invoke_injected_vars(grammar: &Grammar, extra_args_call: &TokenStream) -> Tok
     quote!(#(#vars)*)
 }
 
-/// Compile a rule to a function for use internal to the grammar.
+/// Compile a rule to a function for internal use in the grammar.
 /// Returns `RuleResult<T>`.
 fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
     let span = rule.span.resolved_at(Span::mixed_site());
@@ -348,7 +348,7 @@ fn compile_rule(context: &Context, rule: &Rule) -> TokenStream {
                     __rule_result
                 },
                 Cache::Recursive =>
-                // `#[cache_left_rec] support for recursive rules using the technique described here:
+                // `#[cache_left_rec]` support for recursive rules using the technique described here:
                 // <https://medium.com/@gvanrossum_83706/left-recursive-peg-grammars-65dab3c580e1>
                 {
                     quote_spanned! { span =>
@@ -957,7 +957,7 @@ fn compile_expr(context: &Context, e: &SpannedExpr, result_used: bool) -> TokenS
                             ));
                         }
                         (&Expr::Marker(la), &Expr::Marker(ra)) if op.elements.len() >= 3 => {
-                            //infix
+                            // infix
                             let new_prec = match (la, ra) {
                                 (true, false) => prec + 1, // left associative
                                 (false, true) => prec,     // right associative
