@@ -1,13 +1,9 @@
 //! Parse error reporting
 
 use crate::{Parse, RuleResult};
-use std::fmt::{self, Debug, Display};
-
-#[cfg(feature = "std")]
-use std::collections::BTreeSet;
-
-#[cfg(not(feature = "std"))]
-use {alloc::collections::BTreeSet, alloc::vec::Vec};
+use alloc::{collections::BTreeSet, vec::Vec};
+use core::error::Error;
+use core::fmt::{self, Debug, Display, Formatter};
 
 /// A set of literals or names that failed to match
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -54,7 +50,7 @@ pub struct ParseError<L> {
 }
 
 impl<L: Display> Display for ParseError<L> {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), fmt::Error> {
         write!(
             fmt,
             "error at {}: expected {}",
@@ -63,8 +59,7 @@ impl<L: Display> Display for ParseError<L> {
     }
 }
 
-#[cfg(any(feature = "std", feature = "unstable"))]
-impl<L: Display + Debug> ::std::error::Error for ParseError<L> {
+impl<L: Display + Debug> Error for ParseError<L> {
     fn description(&self) -> &str {
         "parse error"
     }

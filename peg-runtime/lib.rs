@@ -1,7 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(feature = "unstable", feature(error_in_core))]
 
-use std::fmt::Display;
+extern crate alloc;
+
+use core::fmt::Display;
 
 pub mod error;
 mod slice;
@@ -12,7 +13,7 @@ pub mod str;
 /// You'll only need this if implementing the `Parse*` traits for a custom input
 /// type, or using the `#{}` syntax to embed a custom Rust snippet within the parser.
 ///
-/// The public API of a parser adapts errors to `std::result::Result` instead of using this type.
+/// The public API of a parser adapts errors to `Result` instead of using this type.
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub enum RuleResult<T> {
     /// Success, with final location
@@ -55,11 +56,6 @@ pub trait ParseSlice<'input>: Parse {
     /// Get a slice of input.
     fn parse_slice(&'input self, p1: usize, p2: usize) -> Self::Slice;
 }
-
-#[cfg(not(feature = "std"))]
-extern crate alloc;
-#[cfg(not(feature = "std"))]
-extern crate core as std;
 
 // needed for type inference on the `#{|input, pos| ..}` closure, since there
 // are different type inference rules on closures in function args.
