@@ -20,7 +20,7 @@ Parse a comma-separated list of numbers surrounded by brackets into a `Vec<u32>`
 
 ```rust
 peg::parser!{
-  grammar list_parser() for str {
+  grammar list_parser() for &str {
     rule number() -> u32
       = n:$(['0'..='9']+) {? n.parse().or(Err("u32")) }
 

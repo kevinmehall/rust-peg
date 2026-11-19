@@ -1,0 +1,53 @@
+error: input type should be borrowed (`&str`) for rust-peg 1.0
+ --> tests/compile-fail/peg_08_input.rs:1:35
+  |
+1 | peg::parser!(grammar string() for str {
+  |                                   ^^^
+
+error: input type should be borrowed (`&[u8]`) for rust-peg 1.0
+ --> tests/compile-fail/peg_08_input.rs:5:34
+  |
+5 | peg::parser!(grammar slice() for [u8] {
+  |                                  ^^^^
+
+error[E0277]: the size for values of type `str` cannot be known at compilation time
+ --> tests/compile-fail/peg_08_input.rs:1:35
+  |
+1 | peg::parser!(grammar string() for str {
+  |                                   ^^^ doesn't have a size known at compile-time
+  |
+  = help: the trait `Sized` is not implemented for `str`
+help: function arguments must have a statically known size, borrowed types always have a known size
+  |
+1 | peg::parser!(grammar string() for &str {
+  |                                   +
+
+error[E0277]: the trait bound `str: ParseLiteral` is not satisfied
+ --> tests/compile-fail/peg_08_input.rs:2:19
+  |
+2 |     rule test() = ""
+  |                   ^^ the trait `ParseLiteral` is not implemented for `str`
+  |
+  = help: the trait `ParseLiteral` is implemented for `&str`
+  = note: this error originates in the macro `peg::parser` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the size for values of type `[u8]` cannot be known at compilation time
+ --> tests/compile-fail/peg_08_input.rs:5:34
+  |
+5 | peg::parser!(grammar slice() for [u8] {
+  |                                  ^^^^ doesn't have a size known at compile-time
+  |
+  = help: the trait `Sized` is not implemented for `[u8]`
+help: function arguments must have a statically known size, borrowed slices always have a known size
+  |
+5 | peg::parser!(grammar slice() for &[u8] {
+  |                                  +
+
+error[E0277]: the trait bound `[u8]: ParseLiteral` is not satisfied
+ --> tests/compile-fail/peg_08_input.rs:6:19
+  |
+6 |     rule test() = ""
+  |                   ^^ the trait `ParseLiteral` is not implemented for `[u8]`
+  |
+  = help: the trait `ParseLiteral` is implemented for `&[u8]`
+  = note: this error originates in the macro `peg::parser` (in Nightly builds, run with -Z macro-backtrace for more info)

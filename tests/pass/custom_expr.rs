@@ -1,6 +1,6 @@
 use peg::RuleResult;
 
-peg::parser!( grammar test() for str {
+peg::parser!( grammar test() for &str {
     rule position() -> usize = #{|input, pos| RuleResult::Matched(pos, pos)}
     pub rule test1() -> usize = ['a']* p1:position() ['b']* { p1 }
 

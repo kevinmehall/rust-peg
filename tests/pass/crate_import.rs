@@ -1,5 +1,5 @@
 peg::parser! {
-    pub grammar foo_parser() for str {
+    pub grammar foo_parser() for &str {
         use super::types::Foo;
 
         pub rule foo() -> Foo

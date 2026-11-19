@@ -1,4 +1,4 @@
-peg::parser!(grammar borrows() for str {
+peg::parser!(grammar borrows<'input>() for &'input str {
     use std::borrow::{ToOwned, Cow};
 
     pub rule borrowed() -> &'input str

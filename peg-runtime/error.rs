@@ -120,7 +120,7 @@ impl ErrorState {
         RuleResult::Failed
     }
 
-    pub fn into_parse_error<I: Parse + ?Sized>(self, input: &I) -> ParseError<I::PositionRepr> {
+    pub fn into_parse_error<I: Parse + ?Sized>(self, input: I) -> ParseError<I::PositionRepr> {
         ParseError {
             location: Parse::position_repr(input, self.max_err_pos),
             expected: self.expected,

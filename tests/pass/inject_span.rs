@@ -19,7 +19,7 @@ enum NodeKind {
     Var(String),
 }
 
-peg::parser!( grammar lang() for str {
+peg::parser!( grammar lang() for &str {
     inject span(_input, lpos, rpos) -> Range<usize> { lpos..rpos }
 
     rule number() -> Node
@@ -94,7 +94,7 @@ fn main() {
     );
 }
 
-peg::parser!( grammar inject2(offset: usize) for str {
+peg::parser!( grammar inject2<'input>(offset: usize) for &'input str {
     inject span(_input, lpos, rpos) -> Range<usize> { (offset + lpos)..(offset + rpos) }
     inject text(input, lpos, rpos) -> &'input str { &input[lpos..rpos] }
 

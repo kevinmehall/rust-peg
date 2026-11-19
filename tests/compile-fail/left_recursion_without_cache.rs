@@ -1,6 +1,6 @@
 extern crate peg;
 
-peg::parser!(grammar foo() for str {
+peg::parser!(grammar foo() for &str {
     rule rec() = rec() //~ ERROR left recursive rules create an infinite loop: rec -> rec
 
     rule foo()

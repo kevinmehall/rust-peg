@@ -1,4 +1,4 @@
-peg::parser!( grammar test() for str {
+peg::parser!( grammar test() for &str {
     rule number<T: std::str::FromStr>() -> T = s:$(['0'..='9']+) {? s.parse().or(Err("number")) }
 
     pub rule numbers() -> (u8, i32)

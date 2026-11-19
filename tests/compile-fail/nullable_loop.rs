@@ -1,4 +1,4 @@
-peg::parser!(grammar e() for str {
+peg::parser!(grammar e() for &str {
     rule nested() = ("a"*)* //~ ERROR
 
     rule nested_ok() = ("a"+)*

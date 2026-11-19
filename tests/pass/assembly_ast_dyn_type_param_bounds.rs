@@ -51,7 +51,7 @@ struct Literal(i32);
 impl<'a> Operand<'a> for Literal {}
 
 parser! {
-grammar assembly() for str {
+grammar assembly<'input>() for &'input str {
     pub rule program() -> Program<'input>
         = op:operation() ** "\n" { Program(op) }
 
