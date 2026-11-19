@@ -129,11 +129,31 @@ pub(crate) fn compile_grammar(grammar: &Grammar) -> TokenStream {
         ..
     } = grammar;
 
-    let mut errors: Vec<TokenStream> = analysis
-        .left_recursion
-        .iter()
-        .map(|rec| report_error(rec.span, rec.msg()))
-        .collect();
+    let mut errors: Vec<TokenStream> = Vec::new();
+
+    let input_type_str = grammar.input_type.to_string();
+    if input_type_str == "str" || input_type_str.starts_with("[") {
+        let input_type_span = grammar
+            .input_type
+            .clone()
+            .into_iter()
+            .next()
+            .map_or(Span::call_site(), |t| t.span());
+        errors.push(report_error(
+            input_type_span,
+            format!(
+                "input type should be borrowed (`&{}`) for rust-peg 1.0",
+                input_type_str
+            ),
+        ));
+    }
+
+    errors.extend(
+        analysis
+            .left_recursion
+            .iter()
+            .map(|rec| report_error(rec.span, rec.msg())),
+    );
 
     errors.extend(
         analysis
